@@ -1,0 +1,36 @@
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: fitai-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: fitai_trainer
+      MYSQL_USER: fitai
+      MYSQL_PASSWORD: fitai_password
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: fitai-phpmyadmin
+    restart: unless-stopped
+
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+
+    ports:
+      - "8081:80"
+
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:

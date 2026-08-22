@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  emailVerified Boolean @default(false)
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile         Profile?
+  chatSessions    ChatSession[]
+  workoutSessions WorkoutSession[]
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+model Profile {
+  id        Int    @id @default(autoincrement())
+  gender    String?
+  age       Int
+  height    Float
+  weight    Float
+  bmi       Float
+  bmiStatus String
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Exercise {
+  id           Int     @id @default(autoincrement())
+  name         String  @unique
+  description  String  @db.Text
+  category     String
+  difficulty   String
+  targetMuscle String?
+  instructions String  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workoutSessions WorkoutSession[]
+}
+
+model WorkoutSession {
+  id         Int @id @default(autoincrement())
+  userId     Int
+  exerciseId Int
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  repetitions Int?
+  duration    Int?
+  score       Float?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model ChatSession {
+  id     Int @id @default(autoincrement())
+  userId Int
+
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int @id @default(autoincrement())
+  sessionId Int
+
+  role    String
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

@@ -1,0 +1,20 @@
+{
+  "images": {
+    "train": 929,
+    "valid": 264,
+    "test": 131
+  },
+  "labels": {
+    "train": 929,
+    "valid": 264,
+    "test": 131
+  },
+  "instances_by_class": {
+    "Bird Dog": 269,
+    "Knee Push up": 199,
+    "Plank": 240,
+    "Push up": 66,
+    "Revese Lunge": 274,
+    "Squat": 270
+  }
+}

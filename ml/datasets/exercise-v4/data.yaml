@@ -1,0 +1,19 @@
+path: E:/FitAI Trainer/ml/datasets/exercise-v4
+train: train/images
+val: valid/images
+test: test/images
+
+kpt_shape: [13, 3]
+flip_idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+nc: 6
+names:
+  0: Bird Dog
+  1: Knee Push up
+  2: Plank
+  3: Push up
+  4: Revese Lunge
+  5: Squat
+
+# This dataset uses 13 custom keypoints per instance.
+# Keep the keypoint index order exactly as provided by the dataset.

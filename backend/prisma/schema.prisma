@@ -50,6 +50,32 @@ model Exercise {
   updatedAt DateTime @updatedAt
 
   workoutSessions WorkoutSession[]
+  videos          ExerciseVideo[]
+}
+
+model ExerciseVideo {
+  id              Int      @id @default(autoincrement())
+  exerciseId      Int
+  title           String
+  url             String   @unique
+  videoId         String?
+  platform        String   @default("youtube")
+  description     String?  @db.Text
+  goal            String?
+  difficulty      String?
+  intensity       String?
+  equipment       String?
+  language        String?
+  durationSeconds Int?
+  priority        Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
+  @@map("exercisevideo")
 }
 
 model WorkoutSession {

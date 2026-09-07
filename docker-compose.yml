@@ -5,17 +5,31 @@ services:
     container_name: fitai-mysql
     restart: unless-stopped
 
+    command:
+      - --lower_case_table_names=1
+
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: fitai_trainer
-      MYSQL_USER: fitai
-      MYSQL_PASSWORD: fitai_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
 
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
 
     volumes:
       - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -25,12 +39,15 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
+      PMA_ARBITRARY: 0
 
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
 
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+
 
 volumes:
   mysql_data:

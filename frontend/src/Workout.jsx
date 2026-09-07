@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import api from "./services/api";
 import PoseDetector from "./PoseDetector";
 import PoseAnalyzer from "./PoseAnalyzer";
+import UnityWorkout3D from "./UnityWorkout3D";
 import {
   createExerciseEngine,
 } from "./ai/exerciseEngine";
@@ -23,6 +24,7 @@ const [
   const [selectedExercise, setSelectedExercise] =
     useState(null);
   const [activePlan, setActivePlan] = useState(null);
+  const [viewMode, setViewMode] = useState("split"); // "split" | "camera" | "3d"
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -92,11 +94,19 @@ const [poseDetected, setPoseDetected] =
         setExercises(items);
         const savedPlan = sessionStorage.getItem("fitai-active-plan");
         if (savedPlan) {
-          const plan = JSON.parse(savedPlan);
-          const recommendedExercise = items.find((exercise) => exercise.name.toLowerCase() === String(plan.exerciseName).toLowerCase());
-          if (recommendedExercise) {
-            setSelectedExercise(recommendedExercise);
-            setActivePlan(plan);
+          try {
+            const plan = JSON.parse(savedPlan);
+            const targetClean = String(plan.exerciseName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            const recommendedExercise = items.find((exercise) => {
+              const itemClean = exercise.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+              return itemClean === targetClean || itemClean.includes(targetClean) || targetClean.includes(itemClean);
+            });
+            if (recommendedExercise) {
+              setSelectedExercise(recommendedExercise);
+              setActivePlan(plan);
+            }
+          } catch (e) {
+            console.warn("Could not parse fitai-active-plan:", e);
           }
         }
     } catch (error) {
@@ -756,82 +766,136 @@ const [poseDetected, setPoseDetected] =
           </div>
 
           {/* =====================================
-              Camera View
+              View Mode Switcher
           ===================================== */}
 
-          <div className="camera-wrapper">
-
-            <video
-              ref={videoRef}
-              className="camera-video"
-              autoPlay
-              playsInline
-              muted
-            />
-
-            {!cameraActive && (
-              <div className="camera-placeholder">
-
-                <div className="camera-placeholder-icon">
-                  📷
-                </div>
-
-                <h3>
-                  กล้องยังไม่เปิด
-                </h3>
-
-                <p>
-                  เลือกท่าออกกำลังกาย
-                  แล้วกด Start Workout
-                </p>
-
-              </div>
-            )}
-
-            {/* AI Overlay Placeholder */}
-
-            {cameraActive && (
-  <div className="camera-overlay">
-
-    <PoseDetector
-      videoRef={videoRef}
-      active={cameraActive}
-      onPoseDetected={
-        handlePoseDetected
-      }
-    />
-
-    <PoseAnalyzer
-      landmarks={poseLandmarks}
-      exercise={
-        selectedExercise?.name?.toLowerCase() ||
-        "squat"
-      }
-      onAnalysis={
-        handlePoseAnalysis
-      }
-    />
-
-    <div className="camera-ai-label">
-      🤖 AI READY
-    </div>
-
-    <div className="camera-guide">
-
-      <div className="guide-corner top-left" />
-
-      <div className="guide-corner top-right" />
-
-      <div className="guide-corner bottom-left" />
-
-      <div className="guide-corner bottom-right" />
-
-    </div>
-
-  </div>
-)}
-
+          <div className="workout-view-toggle">
+            <button
+              type="button"
+              className={`workout-view-btn ${viewMode === "split" ? "active" : ""}`}
+              onClick={() => setViewMode("split")}
+            >
+              🔲 มุมมองคู่ (Split)
+            </button>
+            <button
+              type="button"
+              className={`workout-view-btn ${viewMode === "camera" ? "active" : ""}`}
+              onClick={() => setViewMode("camera")}
+            >
+              📷 กล้อง AI
+            </button>
+            <button
+              type="button"
+              className={`workout-view-btn ${viewMode === "3d" ? "active" : ""}`}
+              onClick={() => setViewMode("3d")}
+            >
+              🧍 Malong 3D Coach
+            </button>
           </div>
+
+          {/* =====================================
+              Camera & Malong 3D View
+          ===================================== */}
+
+          {viewMode === "split" ? (
+            <div className="workout-split-grid">
+              <div className="camera-wrapper">
+                <video
+                  ref={videoRef}
+                  className="camera-video"
+                  autoPlay
+                  playsInline
+                  muted
+                />
+
+                {!cameraActive && (
+                  <div className="camera-placeholder">
+                    <div className="camera-placeholder-icon">📷</div>
+                    <h3>กล้องยังไม่เปิด</h3>
+                    <p>เลือกท่าออกกำลังกาย แล้วกด Start Workout</p>
+                  </div>
+                )}
+
+                {cameraActive && (
+                  <div className="camera-overlay">
+                    <PoseDetector
+                      videoRef={videoRef}
+                      active={cameraActive}
+                      onPoseDetected={handlePoseDetected}
+                    />
+                    <PoseAnalyzer
+                      landmarks={poseLandmarks}
+                      exercise={selectedExercise?.name?.toLowerCase() || "squat"}
+                      onAnalysis={handlePoseAnalysis}
+                    />
+                    <div className="camera-ai-label">🤖 AI READY</div>
+                    <div className="camera-guide">
+                      <div className="guide-corner top-left" />
+                      <div className="guide-corner top-right" />
+                      <div className="guide-corner bottom-left" />
+                      <div className="guide-corner bottom-right" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <UnityWorkout3D
+                exercise={selectedExercise?.name || "Squat"}
+                isWorkoutStarted={isWorkoutStarted}
+                repetitions={aiResult?.repetitions || 0}
+                score={aiResult?.score || 0}
+                feedback={aiResult?.feedback || ""}
+              />
+            </div>
+          ) : viewMode === "3d" ? (
+            <UnityWorkout3D
+              exercise={selectedExercise?.name || "Squat"}
+              isWorkoutStarted={isWorkoutStarted}
+              repetitions={aiResult?.repetitions || 0}
+              score={aiResult?.score || 0}
+              feedback={aiResult?.feedback || ""}
+            />
+          ) : (
+            <div className="camera-wrapper">
+              <video
+                ref={videoRef}
+                className="camera-video"
+                autoPlay
+                playsInline
+                muted
+              />
+
+              {!cameraActive && (
+                <div className="camera-placeholder">
+                  <div className="camera-placeholder-icon">📷</div>
+                  <h3>กล้องยังไม่เปิด</h3>
+                  <p>เลือกท่าออกกำลังกาย แล้วกด Start Workout</p>
+                </div>
+              )}
+
+              {cameraActive && (
+                <div className="camera-overlay">
+                  <PoseDetector
+                    videoRef={videoRef}
+                    active={cameraActive}
+                    onPoseDetected={handlePoseDetected}
+                  />
+                  <PoseAnalyzer
+                    landmarks={poseLandmarks}
+                    exercise={selectedExercise?.name?.toLowerCase() || "squat"}
+                    onAnalysis={handlePoseAnalysis}
+                  />
+                  <div className="camera-ai-label">🤖 AI READY</div>
+                  <div className="camera-guide">
+                    <div className="guide-corner top-left" />
+                    <div className="guide-corner top-right" />
+                    <div className="guide-corner bottom-left" />
+                    <div className="guide-corner bottom-right" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* =====================================
               Camera Controls

@@ -4,38 +4,68 @@ import {
   useState,
 } from "react";
 
-import api from "./services/api";
-import { applyPlanAdjustment, createPersonalizedWeeklyPlan } from "./ai/recommendationEngine";
+import {
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Mic,
+  Square,
+  Send,
+  Volume2,
+  User,
+  Settings,
+  LogOut,
+  ArrowRight,
+  Plus,
+  Dumbbell,
+} from "lucide-react";
 
-function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout }) {
+import api from "./services/api";
+
+import {
+  applyPlanAdjustment,
+  createPersonalizedWeeklyPlan,
+} from "./ai/recommendationEngine";
+import ChatMessageContent from "./components/ChatMessageContent";
+
+function AIAssistant({
+  user,
+  onProfile,
+  onSettings,
+  onWorkout,
+  onBack,
+  onLogout,
+}) {
   // =====================================
   // State
   // =====================================
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [sessionId, setSessionId] =
-    useState(null);
 
-  const [loading, setLoading] =
-    useState(false);
+  const [sessionId, setSessionId] = useState(null);
 
-  const [isListening, setIsListening] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [isSpeaking, setIsSpeaking] =
-    useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  const [sessions, setSessions] =
-    useState([]);
+  const [sessions, setSessions] = useState([]);
 
+  // Weekly Plan
   const [weeklyPlan, setWeeklyPlan] = useState([]);
   const [planProfile, setPlanProfile] = useState(null);
   const [planExercises, setPlanExercises] = useState([]);
   const [planSummary, setPlanSummary] = useState("");
   const [showPlanDetails, setShowPlanDetails] = useState(false);
   const [planAnalytics, setPlanAnalytics] = useState(null);
+  const [justUpdatedPlan, setJustUpdatedPlan] = useState(false);
+
+  // Profile menu
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+
+  // Chat context menu
+  const [openSessionMenu, setOpenSessionMenu] = useState(null);
 
   const [
     selectedSessionId,
@@ -46,19 +76,17 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
   // Refs
   // =====================================
 
-  const recognitionRef =
-    useRef(null);
+  const recognitionRef = useRef(null);
 
-  const shouldListenRef =
-    useRef(false);
+  const shouldListenRef = useRef(false);
 
-  const sessionIdRef =
-    useRef(null);
+  const sessionIdRef = useRef(null);
+
   const profileMenuRef = useRef(null);
 
-  // Auto Scroll
-  const chatEndRef =
-    useRef(null);
+  const sessionMenuRef = useRef(null);
+
+  const chatEndRef = useRef(null);
 
   // =====================================
   // Auto Scroll
@@ -70,56 +98,234 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
     });
   }, [messages, loading]);
 
+  // =====================================
+  // Close Profile Menu
+  // =====================================
+
   useEffect(() => {
     const closeProfileMenu = (event) => {
-      if (!profileMenuRef.current?.contains(event.target)) setProfileMenuOpen(false);
+      if (
+        !profileMenuRef.current?.contains(
+          event.target
+        )
+      ) {
+        setProfileMenuOpen(false);
+      }
     };
-    document.addEventListener("mousedown", closeProfileMenu);
-    return () => document.removeEventListener("mousedown", closeProfileMenu);
+
+    document.addEventListener(
+      "mousedown",
+      closeProfileMenu
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        closeProfileMenu
+      );
+    };
   }, []);
 
+  // =====================================
+  // Close Chat Context Menu
+  // =====================================
+
   useEffect(() => {
-    Promise.all([api.get("/profile/me"), api.get("/exercises")])
-      .then(([profileResponse, exerciseResponse]) => {
-        const profile = profileResponse.data?.data || {};
-        const exercises = exerciseResponse.data?.data || [];
-        const generated = createPersonalizedWeeklyPlan(profile, exercises);
-        const saved = localStorage.getItem("fitai-weekly-plan");
-        let savedPlan = null;
-        try {
-          savedPlan = saved ? JSON.parse(saved) : null;
-        } catch {
-          savedPlan = null;
+    const closeSessionMenu = (event) => {
+      if (
+        !sessionMenuRef.current?.contains(
+          event.target
+        )
+      ) {
+        setOpenSessionMenu(null);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      closeSessionMenu
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        closeSessionMenu
+      );
+    };
+  }, []);
+
+  // =====================================
+  // Load Profile + Exercise Catalog
+  // =====================================
+
+  useEffect(() => {
+    Promise.all([
+      api.get("/profile/me"),
+      api.get("/exercises"),
+    ])
+      .then(
+        ([
+          profileResponse,
+          exerciseResponse,
+        ]) => {
+          const profile =
+            profileResponse.data?.data || {};
+
+          const exercises =
+            exerciseResponse.data?.data || [];
+
+          const generated =
+            createPersonalizedWeeklyPlan(
+              profile,
+              exercises
+            );
+
+          const saved =
+            localStorage.getItem(
+              "fitai-weekly-plan"
+            );
+
+          let savedPlan = null;
+
+          try {
+            savedPlan = saved
+              ? JSON.parse(saved)
+              : null;
+          } catch {
+            savedPlan = null;
+          }
+
+          setPlanProfile(profile);
+          setPlanExercises(exercises);
+
+          setPlanSummary(
+            generated.summary
+          );
+
+          const profileSignature = `${profile.id || profile.userId || ""}_${profile.height || ""}_${profile.weight || ""}_${profile.age || ""}_${profile.gender || ""}`;
+          const savedSignature = localStorage.getItem("fitai-plan-signature");
+          const isSameProfile = Boolean(savedSignature && savedSignature === profileSignature);
+
+          const hasCurrentPlan =
+            isSameProfile &&
+            Array.isArray(savedPlan) &&
+            savedPlan.every(
+              (day) =>
+                day.catalogVersion === 2 &&
+                (
+                  day.exerciseName ===
+                  "Rest" ||
+                  (
+                    Array.isArray(
+                      day.exercises
+                    ) &&
+                    day.exercises.length >= 5
+                  )
+                )
+            );
+
+          const planToUse =
+            hasCurrentPlan
+              ? savedPlan
+              : generated.plan;
+
+          setWeeklyPlan(planToUse);
+
+          if (!hasCurrentPlan) {
+            localStorage.setItem(
+              "fitai-weekly-plan",
+              JSON.stringify(planToUse)
+            );
+            localStorage.setItem(
+              "fitai-plan-signature",
+              profileSignature
+            );
+          }
         }
-        setPlanProfile(profile);
-        setPlanExercises(exercises);
-        setPlanSummary(generated.summary);
-        const hasCurrentPlan = savedPlan?.every(
-          (day) => day.catalogVersion === 2 && (day.exerciseName === "Rest" || (Array.isArray(day.exercises) && day.exercises.length >= 5))
+      )
+      .catch((error) => {
+        console.error(
+          "Plan load error:",
+          error
         );
-        const planToUse = hasCurrentPlan ? savedPlan : generated.plan;
-        setWeeklyPlan(planToUse);
-        if (!hasCurrentPlan) {
-          localStorage.setItem("fitai-weekly-plan", JSON.stringify(planToUse));
-        }
-      })
-      .catch((error) => console.error("Plan load error:", error));
+      });
   }, []);
 
+  // =====================================
+  // Load Plan Analytics
+  // =====================================
+
   useEffect(() => {
-    if (!showPlanDetails || planAnalytics) return;
-    api.get("/analytics/dashboard")
-      .then((response) => setPlanAnalytics(response.data?.data || null))
-      .catch((error) => console.warn("Plan analytics unavailable", error));
-  }, [showPlanDetails, planAnalytics]);
-
-  const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
-  const todayPlan = weeklyPlan.find((day) => day.key === todayKey);
-
-  const startWorkoutMode = () => {
-    if (todayPlan && todayPlan.exerciseName !== "Rest") {
-      sessionStorage.setItem("fitai-active-plan", JSON.stringify(todayPlan));
+    if (
+      !showPlanDetails ||
+      planAnalytics
+    ) {
+      return;
     }
+
+    api
+      .get("/analytics/dashboard")
+      .then((response) => {
+        setPlanAnalytics(
+          response.data?.data || null
+        );
+      })
+      .catch((error) => {
+        console.warn(
+          "Plan analytics unavailable",
+          error
+        );
+      });
+  }, [
+    showPlanDetails,
+    planAnalytics,
+  ]);
+
+  // =====================================
+  // Today Plan
+  // =====================================
+
+  const todayKey =
+    [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ][new Date().getDay()];
+
+  const todayPlan =
+    weeklyPlan.find(
+      (day) =>
+        day.key === todayKey
+    );
+
+  // =====================================
+  // Start Workout Mode
+  // =====================================
+
+  const startWorkoutMode = (targetExercise = null) => {
+    if (
+      todayPlan &&
+      todayPlan.exerciseName !== "Rest"
+    ) {
+      const planToStart = targetExercise
+        ? {
+            ...todayPlan,
+            exerciseName: targetExercise.name,
+            sets: targetExercise.sets || todayPlan.sets,
+            repetitions: targetExercise.repetitions || todayPlan.repetitions,
+          }
+        : todayPlan;
+
+      sessionStorage.setItem(
+        "fitai-active-plan",
+        JSON.stringify(planToStart)
+      );
+    }
+
     onWorkout();
   };
 
@@ -129,7 +335,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
   const createNewChat = () => {
     console.log(
-      "➕ Creating new chat"
+      "Creating new chat"
     );
 
     setSessionId(null);
@@ -142,15 +348,20 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
     setMessage("");
 
+    setOpenSessionMenu(null);
+
     // Stop AI Voice
     window.speechSynthesis?.cancel();
 
     setIsSpeaking(false);
 
     // Stop Voice Recognition
-    shouldListenRef.current = false;
+    shouldListenRef.current =
+      false;
 
-    if (recognitionRef.current) {
+    if (
+      recognitionRef.current
+    ) {
       try {
         recognitionRef.current.stop();
       } catch (error) {
@@ -451,6 +662,8 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
         setMessage("");
       }
+
+      setOpenSessionMenu(null);
     } catch (error) {
       console.error(
         "Delete Chat Error:",
@@ -480,50 +693,115 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
     const userMessage =
       message.trim();
 
-    // A generic request to change the plan is the start of a conversation,
-    // not enough information to safely replace today's exercises. Let the
-    // assistant ask for the user's preference first.
-    const isStartingPlanChange = /^(?:ต้องการ|อยาก|ขอ)?\s*(?:เปลี่ยน|ปรับ)\s*(?:แผน|ตาราง)(?:\s*(?:ออกกำลังกาย|วันนี้))?[.!?]*$/i.test(userMessage);
+    // =====================================
+    // Generic Plan Change Request
+    // =====================================
 
-    let adjustment = applyPlanAdjustment(
-      weeklyPlan,
-      planProfile || {},
-      planExercises,
-      userMessage
-    );
+    const isStartingPlanChange =
+      /^(?:ต้องการ|อยาก|ขอ)?\s*(?:เปลี่ยน|ปรับ)\s*(?:แผน|ตาราง)(?:\s*(?:ออกกำลังกาย|วันนี้))?[.!?]*$/i.test(
+        userMessage
+      );
+
+    // =====================================
+    // Local Plan Adjustment
+    // =====================================
+
+    let adjustment =
+      applyPlanAdjustment(
+        weeklyPlan,
+        planProfile || {},
+        planExercises,
+        userMessage
+      );
+
     if (isStartingPlanChange) {
-      adjustment = { plan: weeklyPlan, changed: false };
+      adjustment = {
+        plan: weeklyPlan,
+        changed: false,
+      };
     }
-    const asksForAiPlan = /(แนะนำ.*(ท่า|แผน)|เลือก.*ท่า|จัด.*แผน|suggest.*exercise|recommend.*exercise)/i.test(userMessage);
 
-    if (adjustment.changed || asksForAiPlan) {
+    // =====================================
+    // AI Plan Request Detection
+    // =====================================
+
+    const asksForAiPlan =
+      /(แนะนำ.*(ท่า|แผน|ออกกำลัง)|เลือก.*ท่า|จัด.*แผน|suggest.*exercise|recommend.*exercise|เปลี่ยน|ปรับ|แก้ไข|กิจกรรม|แทน|สลับ|ขอลด|ขอเซ็ต)/i.test(
+        userMessage
+      );
+
+    // =====================================
+    // Ollama Plan Adjustment
+    // =====================================
+
+    if (
+      adjustment.changed ||
+      asksForAiPlan
+    ) {
       try {
-        const planResponse = await api.post("/ai/plan-adjustment", {
-          plan: weeklyPlan,
-          message: userMessage,
-          todayKey,
-        });
-        const aiAdjustment = planResponse.data?.data;
-        if (aiAdjustment?.changed && Array.isArray(aiAdjustment.plan)) {
-          adjustment = aiAdjustment;
+        const planResponse =
+          await api.post(
+            "/ai/plan-adjustment",
+            {
+              plan: weeklyPlan,
+              message: userMessage,
+              todayKey,
+            },
+            { timeout: 6000 }
+          );
+
+        const aiAdjustment =
+          planResponse.data?.data;
+
+        if (
+          aiAdjustment?.changed &&
+          Array.isArray(
+            aiAdjustment.plan
+          )
+        ) {
+          adjustment =
+            aiAdjustment;
         }
       } catch (error) {
-        console.warn("Ollama plan adjustment unavailable; using safe local adjustment.", error);
+        console.warn(
+          "Ollama plan adjustment unavailable; using safe local adjustment.",
+          error
+        );
       }
     }
-    const activePlanForMessage = adjustment.changed
-      ? adjustment.plan.find((day) => day.key === todayKey)
-      : todayPlan;
+
+    const activePlanForMessage =
+      adjustment.changed
+        ? adjustment.plan.find(
+            (day) =>
+              day.key === todayKey
+          )
+        : todayPlan;
+
+    // =====================================
+    // Save Updated Plan
+    // =====================================
 
     if (adjustment.changed) {
-      setWeeklyPlan(adjustment.plan);
+      setWeeklyPlan(
+        adjustment.plan
+      );
+
       localStorage.setItem(
         "fitai-weekly-plan",
-        JSON.stringify(adjustment.plan)
+        JSON.stringify(
+          adjustment.plan
+        )
       );
+
+      setJustUpdatedPlan(true);
+      setTimeout(() => setJustUpdatedPlan(false), 8000);
     }
 
-    // User message
+    // =====================================
+    // Add User Message
+    // =====================================
+
     setMessages((prev) => [
       ...prev,
       {
@@ -540,7 +818,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
       let currentSessionId =
         sessionIdRef.current;
 
-      // Create Session
+      // Create session if needed
       if (!currentSessionId) {
         currentSessionId =
           await createSession(
@@ -548,7 +826,10 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
           );
       }
 
-      // Send message
+      // =====================================
+      // Send Message To Backend
+      // =====================================
+
       const response =
         await api.post(
           "/chat/messages",
@@ -559,8 +840,11 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
             message:
               userMessage,
 
-            activePlan: activePlanForMessage,
-            planUpdated: adjustment.changed,
+            activePlan:
+              activePlanForMessage,
+
+            planUpdated:
+              adjustment.changed,
           }
         );
 
@@ -572,7 +856,10 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
       const data =
         response.data;
 
-      // AI Response
+      // =====================================
+      // Extract AI Response
+      // =====================================
+
       let aiResponse =
         data.data
           ?.assistantMessage
@@ -582,13 +869,18 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
           ?.content ||
         data.data?.message ||
         data.message ||
-        "ขออภัยครับ ไม่พบคำตอบจาก AI";
+        "";
 
-      if (adjustment.changed) {
-        aiResponse = `${adjustment.message}\n\n${aiResponse}`;
+      if (!aiResponse) {
+        aiResponse = adjustment.changed
+          ? adjustment.message
+          : "ขออภัยครับ ไม่พบคำตอบจาก AI";
       }
 
-      // Add AI message
+      // =====================================
+      // Add AI Message
+      // =====================================
+
       setMessages((prev) => [
         ...prev,
         {
@@ -598,7 +890,10 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
         },
       ]);
 
-      // Update session messages
+      // =====================================
+      // Update Session Messages
+      // =====================================
+
       setSessions((prev) =>
         prev.map((session) =>
           session.id ===
@@ -627,7 +922,10 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
         )
       );
 
-      // Speak
+      // =====================================
+      // Text To Speech
+      // =====================================
+
       speakAIResponse(
         aiResponse
       );
@@ -637,18 +935,31 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
         error
       );
 
-      const errorMessage =
-        error.response?.data
-          ?.message ||
-        error.message ||
-        "เกิดข้อผิดพลาดในการส่งข้อความ";
+      const isTimeout =
+        error.code === "ECONNABORTED" ||
+        /timeout/i.test(error.message || "");
+
+      let fallbackText = "";
+      if (isTimeout) {
+        fallbackText =
+          "ขออภัยครับ ขณะนี้ระบบประมวลผลนานกว่าปกติ FitAI ขอแนะนำท่าออกกำลังกายพื้นฐานที่คุณสามารถทำได้ทันทีครับ:\n\n" +
+          "- Squat (3 เซ็ต, 10–12 ครั้ง)  ▶️ [วิดีโอสอน: Squat](https://youtu.be/fKrzVBsUIv4)\n" +
+          "- Push-up (3 เซ็ต, 8–10 ครั้ง)  ▶️ [วิดีโอสอน: Push-up](https://youtu.be/s3z0w-82Y00)\n" +
+          "- Plank (3 เซ็ต, 20–30 วินาที)  ▶️ [วิดีโอสอน: Plank](https://youtu.be/jDZsXIkwWQ4)\n" +
+          "- Glute Bridge (3 เซ็ต, 12–15 ครั้ง)  ▶️ [วิดีโอสอน: Glute Bridge](https://youtu.be/tBSaB_cnVeE)\n\n" +
+          "คุณสามารถส่งคำถามใหม่เพื่อสอบถามท่าอื่น ๆ หรือข้อมูลสุขภาพเพิ่มเติมได้เลยครับ";
+      } else {
+        const errorMsg =
+          error.response?.data?.message ||
+          "ขณะนี้ระบบการสื่อสารขัดข้องชั่วคราว กรุณาลองส่งข้อความใหม่อีกครั้งครับ";
+        fallbackText = `⚠️ ${errorMsg}`;
+      }
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            `❌ ${errorMessage}`,
+          content: fallbackText,
         },
       ]);
     } finally {
@@ -657,13 +968,12 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
   };
 
   // =====================================
-  // Handle Input
+  // Handle Input Key Down
   // =====================================
 
   const handleInputKeyDown = (
     event
   ) => {
-    // Enter = Send
     if (
       event.key === "Enter" &&
       !event.shiftKey
@@ -672,9 +982,6 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
       sendMessage();
     }
-
-    // Shift + Enter
-    // Browser จะขึ้นบรรทัดใหม่เอง
   };
 
   // =====================================
@@ -690,7 +997,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
   };
 
   // =====================================
-  // Stop AI Speaking
+  // Stop Speaking
   // =====================================
 
   const stopSpeaking = () => {
@@ -710,7 +1017,11 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
   const speakAIResponse = (
     text
   ) => {
-    if (localStorage.getItem("fitai-ai-voice-enabled") === "false") {
+    if (
+      localStorage.getItem(
+        "fitai-ai-voice-enabled"
+      ) === "false"
+    ) {
       return;
     }
 
@@ -727,7 +1038,6 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
       return;
     }
 
-    // Stop previous speech
     window.speechSynthesis.cancel();
 
     const utterance =
@@ -735,11 +1045,8 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
         text
       );
 
-    utterance.lang =
-      "th-TH";
-
+    utterance.lang = "th-TH";
     utterance.rate = 1;
-
     utterance.pitch = 1;
 
     utterance.onstart = () => {
@@ -782,6 +1089,8 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
     sessionIdRef.current =
       session.id;
 
+    setOpenSessionMenu(null);
+
     const history =
       (
         session.messages || []
@@ -817,12 +1126,15 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
       return;
     }
 
+    // =====================================
     // STOP
+    // =====================================
+
     if (
       shouldListenRef.current
     ) {
       console.log(
-        "⏹️ Stop voice"
+        "Stop voice"
       );
 
       shouldListenRef.current =
@@ -846,28 +1158,27 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
       return;
     }
 
+    // =====================================
     // START
+    // =====================================
+
     shouldListenRef.current =
       true;
 
     const recognition =
       new SpeechRecognition();
 
-    recognition.lang =
-      "th-TH";
+    recognition.lang = "th-TH";
 
-    recognition.continuous =
-      false;
+    recognition.continuous = false;
 
-    recognition.interimResults =
-      true;
+    recognition.interimResults = true;
 
-    recognition.maxAlternatives =
-      1;
+    recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
       console.log(
-        "🎙️ Voice started"
+        "Voice started"
       );
 
       setIsListening(true);
@@ -890,12 +1201,10 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
             .transcript;
       }
 
-      setMessage(
-        text
-      );
+      setMessage(text);
 
       console.log(
-        "🎤 Hearing:",
+        "Hearing:",
         text
       );
     };
@@ -919,7 +1228,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
     recognition.onend = () => {
       console.log(
-        "🔚 Voice ended"
+        "Voice ended"
       );
 
       shouldListenRef.current =
@@ -991,22 +1300,22 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
         <div className="sidebar-header">
 
           <button
-            type="button"
-            className="new-chat-button"
-            onClick={
-              createNewChat
-            }
-          >
-            ＋ New Chat
-          </button>
+  type="button"
+  className="new-chat-button"
+  onClick={createNewChat}
+>
+  <Plus size={18} strokeWidth={2} />
+  <span>New Chat</span>
+</button>
 
           <button
-            type="button"
-            className="workout-mode-button"
-            onClick={startWorkoutMode}
-          >
-            Mode 3D
-          </button>
+  type="button"
+  className="workout-mode-button"
+  onClick={startWorkoutMode}
+>
+  <Dumbbell size={18} strokeWidth={2} />
+  <span>Mode 3D</span>
+</button>
 
         </div>
 
@@ -1016,8 +1325,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
         <div className="session-list">
 
-          {sessions.length ===
-          0 ? (
+          {sessions.length === 0 ? (
             <div className="empty-history">
               ยังไม่มีบทสนทนา
             </div>
@@ -1030,7 +1338,10 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
                   key={session.id}
                 >
 
-                  {/* Chat */}
+                  {/* ===========================
+                      Chat
+                      =========================== */}
+
                   <button
                     type="button"
                     className={
@@ -1060,44 +1371,119 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
                   </button>
 
-                  {/* Actions */}
-                  <div className="session-actions">
+                  {/* ===========================
+                      Chat Actions
+                      =========================== */}
 
-                    {/* Rename */}
+                  <div
+                    className="session-actions"
+                    ref={
+                      openSessionMenu ===
+                      session.id
+                        ? sessionMenuRef
+                        : null
+                    }
+                  >
+
                     <button
                       type="button"
-                      className="session-action rename"
-                      title="เปลี่ยนชื่อ"
+                      className="session-more-button"
+                      title="ตัวเลือก"
+                      aria-label="ตัวเลือก Chat"
+                      onMouseDown={(
+                        event
+                      ) => {
+                        event.stopPropagation();
+                      }}
                       onClick={(
                         event
                       ) => {
                         event.stopPropagation();
 
-                        renameChat(
-                          session
+                        setOpenSessionMenu(
+                          (current) =>
+                            current ===
+                            session.id
+                              ? null
+                              : session.id
                         );
                       }}
                     >
-                      ✏️
+                      <MoreHorizontal
+                        size={18}
+                        strokeWidth={2}
+                      />
                     </button>
 
-                    {/* Delete */}
-                    <button
-                      type="button"
-                      className="session-action delete"
-                      title="ลบ Chat"
-                      onClick={(
-                        event
-                      ) => {
-                        event.stopPropagation();
+                    {openSessionMenu ===
+                      session.id && (
+                      <div
+                        className="session-context-menu"
+                        role="menu"
+                        onMouseDown={(
+                          event
+                        ) => {
+                          event.stopPropagation();
+                        }}
+                        onClick={(
+                          event
+                        ) => {
+                          event.stopPropagation();
+                        }}
+                      >
 
-                        deleteChat(
-                          session
-                        );
-                      }}
-                    >
-                      🗑️
-                    </button>
+                        {/* Rename */}
+
+                        <button
+                          type="button"
+                          className="context-menu-item"
+                          onClick={() => {
+                            setOpenSessionMenu(
+                              null
+                            );
+
+                            renameChat(
+                              session
+                            );
+                          }}
+                        >
+                          <Pencil
+                            size={16}
+                            strokeWidth={2}
+                          />
+
+                          <span>
+                            เปลี่ยนชื่อ
+                          </span>
+                        </button>
+
+                        {/* Delete */}
+
+                        <button
+                          type="button"
+                          className="context-menu-item danger"
+                          onClick={() => {
+                            setOpenSessionMenu(
+                              null
+                            );
+
+                            deleteChat(
+                              session
+                            );
+                          }}
+                        >
+                          <Trash2
+                            size={16}
+                            strokeWidth={2}
+                          />
+
+                          <span>
+                            ลบ
+                          </span>
+                        </button>
+
+                      </div>
+                    )}
 
                   </div>
 
@@ -1111,7 +1497,6 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
       </aside>
 
-
       {/* =====================================
           Main
           ===================================== */}
@@ -1124,42 +1509,190 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
         <div className="assistant-topbar">
 
-          <div className="assistant-title" ref={profileMenuRef}>
+          <div
+            className="assistant-title"
+            ref={profileMenuRef}
+          >
+
+            {/* Profile Button */}
 
             <button
               type="button"
               className="assistant-profile-button"
-              onClick={() => setProfileMenuOpen((open) => !open)}
+              onClick={() =>
+                setProfileMenuOpen(
+                  (open) => !open
+                )
+              }
               title="Profile"
+              aria-label="เปิดเมนู Profile"
             >
+
               <span className="assistant-avatar">
-                {user?.avatarUrl || user?.profileImage || user?.image ? (
+
+                {user?.avatarUrl ||
+                user?.profileImage ||
+                user?.image ? (
                   <img
-                    src={user.avatarUrl || user.profileImage || user.image}
-                    alt={user?.name || "User profile"}
+                    src={
+                      user.avatarUrl ||
+                      user.profileImage ||
+                      user.image
+                    }
+                    alt={
+                      user?.name ||
+                      "User profile"
+                    }
                   />
                 ) : (
-                  (user?.name || "U").trim().charAt(0).toUpperCase()
+                  (
+                    user?.name ||
+                    "U"
+                  )
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase()
                 )}
+
               </span>
+
               <span className="assistant-profile-copy">
-                <strong>{user?.name || "Profile"}</strong>
-                <small>Profile</small>
+
+                <strong>
+                  {user?.name ||
+                    "Profile"}
+                </strong>
+
+                <small>
+                  Profile
+                </small>
+
               </span>
+
             </button>
 
+            {/* Profile Menu */}
+
             {profileMenuOpen && (
-              <div className="profile-menu" role="menu">
-                <button className="profile-menu-account" type="button" onClick={() => { setProfileMenuOpen(false); onProfile(); }}>
-                  <span className="profile-menu-avatar">{(user?.name || "U").trim().charAt(0).toUpperCase()}</span>
-                  <span><strong>{user?.name || "FitAI User"}</strong><small>{user?.email || "บัญชีผู้ใช้"}</small></span>
-                  <i>›</i>
+              <div
+                className="profile-menu"
+                role="menu"
+              >
+
+                {/* Account */}
+
+                <button
+                  className="profile-menu-account"
+                  type="button"
+                  onClick={() => {
+                    setProfileMenuOpen(
+                      false
+                    );
+
+                    onProfile();
+                  }}
+                >
+
+                  <span className="profile-menu-avatar">
+                    {(
+                      user?.name ||
+                      "U"
+                    )
+                      .trim()
+                      .charAt(0)
+                      .toUpperCase()}
+                  </span>
+
+                  <span>
+                    <strong>
+                      {user?.name ||
+                        "FitAI User"}
+                    </strong>
+
+                    <small>
+                      {user?.email ||
+                        "บัญชีผู้ใช้"}
+                    </small>
+                  </span>
+
+                  <ArrowRight
+                    size={16}
+                    strokeWidth={2}
+                  />
+
                 </button>
+
                 <div className="profile-menu-divider" />
-                <button type="button" onClick={() => { setProfileMenuOpen(false); onProfile(); }}>◎ โปรไฟล์</button>
-                <button type="button" onClick={() => { setProfileMenuOpen(false); onSettings(); }}>⚙ การตั้งค่า</button>
+
+                {/* Profile */}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileMenuOpen(
+                      false
+                    );
+
+                    onProfile();
+                  }}
+                >
+                  <User
+                    size={17}
+                    strokeWidth={2}
+                  />
+
+                  <span>
+                    โปรไฟล์
+                  </span>
+                </button>
+
+                {/* Settings */}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileMenuOpen(
+                      false
+                    );
+
+                    onSettings();
+                  }}
+                >
+                  <Settings
+                    size={17}
+                    strokeWidth={2}
+                  />
+
+                  <span>
+                    การตั้งค่า
+                  </span>
+                </button>
+
                 <div className="profile-menu-divider" />
-                <button type="button" className="profile-menu-logout" onClick={onLogout}>↪ ออกจากระบบ</button>
+
+                {/* Logout */}
+
+                <button
+                  type="button"
+                  className="profile-menu-logout"
+                  onClick={() => {
+                    setProfileMenuOpen(
+                      false
+                    );
+
+                    onLogout();
+                  }}
+                >
+                  <LogOut
+                    size={17}
+                    strokeWidth={2}
+                  />
+
+                  <span>
+                    ออกจากระบบ
+                  </span>
+                </button>
+
               </div>
             )}
 
@@ -1168,7 +1701,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
             </div>
 
             <h1>
-              🤖 FitAI Assistant
+              FitAI Assistant
             </h1>
 
             <p>
@@ -1179,7 +1712,6 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
         </div>
 
-
         {/* =====================================
             Chat
             ===================================== */}
@@ -1188,97 +1720,306 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
           <div className="assistant-chat">
 
+            {/* Weekly Plan */}
+
             {weeklyPlan.length > 0 && (
               <section
-                className={showPlanDetails ? "assistant-plan-rail chat-plan-card expanded" : "assistant-plan-rail chat-plan-card"}
-                role={showPlanDetails ? undefined : "button"}
-                tabIndex={showPlanDetails ? undefined : 0}
-                onClick={() => !showPlanDetails && setShowPlanDetails(true)}
+                className={
+                  showPlanDetails
+                    ? "assistant-plan-rail chat-plan-card expanded"
+                    : "assistant-plan-rail chat-plan-card"
+                }
+                role={
+                  showPlanDetails
+                    ? undefined
+                    : "button"
+                }
+                tabIndex={
+                  showPlanDetails
+                    ? undefined
+                    : 0
+                }
+                onClick={() =>
+                  !showPlanDetails &&
+                  setShowPlanDetails(
+                    true
+                  )
+                }
                 onKeyDown={(event) => {
-                  if (!showPlanDetails && (event.key === "Enter" || event.key === " ")) {
+                  if (
+                    !showPlanDetails &&
+                    (
+                      event.key ===
+                        "Enter" ||
+                      event.key ===
+                        " "
+                    )
+                  ) {
                     event.preventDefault();
-                    setShowPlanDetails(true);
+
+                    setShowPlanDetails(
+                      true
+                    );
                   }
                 }}
               >
+
                 <div className="chat-plan-heading">
+
                   <div>
-                    <span>แผนที่ AI จัดให้</span>
-                    <strong>{planSummary}</strong>
+                    <div className="chat-plan-title-row">
+                      <span>แผนออกกำลังกาย AI</span>
+                      {justUpdatedPlan && (
+                        <span className="badge-plan-updated">✨ ปรับตามคำขอแล้ว</span>
+                      )}
+                    </div>
+
+                    <strong>
+                      {todayPlan ? `${todayPlan.focus} · ${todayPlan.exerciseName}` : planSummary}
+                    </strong>
                   </div>
-                  <button
-                    type="button"
-                    className="plan-details-button"
-                    onClick={() => setShowPlanDetails((visible) => !visible)}
-                  >
-                    {showPlanDetails ? "แผนวันนี้" : "ดูตารางทั้งหมด"}
-                  </button>
+
+                  <div className="chat-plan-header-actions">
+                    <button
+                      type="button"
+                      className="plan-details-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+
+                        setShowPlanDetails(
+                          (visible) =>
+                            !visible
+                        );
+                      }}
+                    >
+                      {showPlanDetails
+                        ? "แผนวันนี้"
+                        : "ดูทั้งสัปดาห์"}
+                    </button>
+                  </div>
+
                 </div>
 
                 <div className="chat-plan-days">
-                  {(showPlanDetails ? weeklyPlan : [todayPlan].filter(Boolean)).map((day) => (
+
+                  {(
+                    showPlanDetails
+                      ? weeklyPlan
+                      : [
+                          todayPlan,
+                        ].filter(
+                          Boolean
+                        )
+                  ).map((day) => (
+
                     <div
                       className={
-                        day.key === todayKey
+                        day.key ===
+                        todayKey
                           ? "chat-plan-day today"
                           : "chat-plan-day"
                       }
                       key={day.key}
                     >
+
                       <span>
-                        {day.key === todayKey
+                        {day.key ===
+                        todayKey
                           ? "วันนี้"
-                          : day.key.slice(0, 3)}
+                          : day.key.slice(
+                              0,
+                              3
+                            )}
                       </span>
-                      <strong>{day.focus}</strong>
+
+                      <strong>
+                        {day.focus}
+                      </strong>
+
                       <ol>
-                        {(day.exercises || [{ name: day.exerciseName, sets: day.sets, repetitions: day.repetitions }]).map((exercise, index) => (
-                          <li key={`${day.key}-${exercise.name}-${index}`}>
-                            <b>{exercise.name}</b>
-                            <small>{exercise.sets ? `${exercise.sets} เซ็ต · ${exercise.repetitions}` : exercise.repetitions}</small>
-                          </li>
-                        ))}
+
+                        {(
+                          day.exercises ||
+                          [
+                            {
+                              name:
+                                day.exerciseName,
+
+                              sets:
+                                day.sets,
+
+                              repetitions:
+                                day.repetitions,
+                            },
+                          ]
+                        ).map(
+                          (
+                            exercise,
+                            index
+                          ) => (
+
+                            <li
+                              key={`${day.key}-${exercise.name}-${index}`}
+                              className="chat-plan-exercise-row"
+                            >
+                              <div className="chat-plan-exercise-meta">
+                                <b>
+                                  {
+                                    exercise.name
+                                  }
+                                </b>
+
+                                <small>
+                                  {exercise.sets
+                                    ? `${exercise.sets} เซ็ต · ${exercise.repetitions}`
+                                    : exercise.repetitions}
+                                </small>
+                              </div>
+                            </li>
+
+                          )
+                        )}
+
                       </ol>
+
                     </div>
+
                   ))}
+
                 </div>
 
                 <p>
-                  ต้องการปรับแผน? พิมพ์หรือกดไมค์ เช่น
-                  “วันนี้เหนื่อยมาก” หรือ “ขอท่าแรงกระแทกต่ำ”
+                  ต้องการปรับแผน?
+                  พิมพ์หรือกดไมค์ เช่น
+                  “วันนี้เหนื่อยมาก”
+                  หรือ “ขอท่าแรงกระแทกต่ำ”
                   แล้ว AI จะเลือกท่าทดแทนให้
                 </p>
+
                 {showPlanDetails && (
                   <section className="plan-analytics-summary">
-                    <h3>สถิติการออกกำลังกาย</h3>
+
+                    <h3>
+                      สถิติการออกกำลังกาย
+                    </h3>
+
                     <div>
-                      <span><b>{planAnalytics?.totals?.sessions ?? "–"}</b> ครั้งที่ฝึก</span>
-                      <span><b>{planAnalytics?.totals?.repetitions ?? "–"}</b> ครั้งรวม</span>
-                      <span><b>{planAnalytics?.totals?.uniqueDays ?? "–"}</b> วันที่ฝึก</span>
-                      <span><b>{planAnalytics?.totals?.averageScore || "–"}</b> คะแนนเฉลี่ย</span>
+                      <span>
+                        <b>
+                          {
+                            planAnalytics
+                              ?.totals
+                              ?.sessions ??
+                            "–"
+                          }
+                        </b>{" "}
+                        ครั้งที่ฝึก
+                      </span>
+
+                      <span>
+                        <b>
+                          {
+                            planAnalytics
+                              ?.totals
+                              ?.repetitions ??
+                            "–"
+                          }
+                        </b>{" "}
+                        ครั้งรวม
+                      </span>
+
+                      <span>
+                        <b>
+                          {
+                            planAnalytics
+                              ?.totals
+                              ?.uniqueDays ??
+                            "–"
+                          }
+                        </b>{" "}
+                        วันที่ฝึก
+                      </span>
+
+                      <span>
+                        <b>
+                          {
+                            planAnalytics
+                              ?.totals
+                              ?.averageScore ||
+                            "–"
+                          }
+                        </b>{" "}
+                        คะแนนเฉลี่ย
+                      </span>
                     </div>
-                    <h3>ประวัติล่าสุด</h3>
+
+                    <h3>
+                      ประวัติล่าสุด
+                    </h3>
+
                     <ul>
-                      {(planAnalytics?.recent || []).slice(0, 4).map((workout) => (
-                        <li key={workout.id}>{workout.exercise?.name || "Exercise"}<small>{new Date(workout.startedAt).toLocaleDateString("th-TH")}</small></li>
-                      ))}
-                      {!planAnalytics?.recent?.length && <li>ยังไม่มีประวัติการออกกำลังกาย</li>}
+
+                      {(
+                        planAnalytics
+                          ?.recent ||
+                        []
+                      )
+                        .slice(
+                          0,
+                          4
+                        )
+                        .map(
+                          (
+                            workout
+                          ) => (
+
+                            <li
+                              key={
+                                workout.id
+                              }
+                            >
+                              {
+                                workout
+                                  .exercise
+                                  ?.name ||
+                                "Exercise"
+                              }
+
+                              <small>
+                                {new Date(
+                                  workout.startedAt
+                                ).toLocaleDateString(
+                                  "th-TH"
+                                )}
+                              </small>
+                            </li>
+
+                          )
+                        )}
+
+                      {!planAnalytics
+                        ?.recent
+                        ?.length && (
+                        <li>
+                          ยังไม่มีประวัติการออกกำลังกาย
+                        </li>
+                      )}
+
                     </ul>
+
                   </section>
                 )}
+
               </section>
             )}
 
-            {messages.length ===
-            0 ? (
+            {/* Empty State */}
+
+            {messages.length === 0 ? (
               <div className="assistant-empty">
 
-                <div className="assistant-icon">
-                  🤖
-                </div>
-
                 <h2>
-                  สวัสดีครับ 👋
+                  สวัสดีครับ 
                 </h2>
 
                 <p>
@@ -1297,9 +2038,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
 
                   <div
                     key={index}
-                    className={
-                      `assistant-message ${item.role}`
-                    }
+                    className={`assistant-message ${item.role}`}
                   >
 
                     <strong>
@@ -1309,9 +2048,13 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
                         : "FitAI"}
                     </strong>
 
-                    <p>
-                      {item.content}
-                    </p>
+                    {item.role === "user" ? (
+                      <p className="user-message-text">
+                        {item.content}
+                      </p>
+                    ) : (
+                      <ChatMessageContent content={item.content} />
+                    )}
 
                   </div>
 
@@ -1320,6 +2063,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
             )}
 
             {/* Loading */}
+
             {loading && (
               <div className="assistant-message assistant">
 
@@ -1334,30 +2078,43 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
               </div>
             )}
 
-            {/* Auto Scroll Target */}
-            <div
-              ref={chatEndRef}
-            />
+            {/* Auto Scroll */}
+
+            <div ref={chatEndRef} />
 
           </div>
 
-
-          {/* =====================================
-              Input
-              ===================================== */}
+          {/* Suggestion Chips */}
+          <div className="assistant-chips">
+            {[
+              "🎯 เปลี่ยนท่าวันนี้เป็น Squat",
+              "🦵 แนะนำท่าช่วงล่างพร้อมคลิป 🎥",
+              "💪 ปรับแผนวันนี้เน้นช่วงบน",
+              "🔥 ขอท่าเล่นหน้าท้อง/ลดพุง",
+              "🛡️ ขอท่าแรงกระแทกต่ำ",
+              "🌿 วันนี้ล้ามาก ขอพักฟื้นฟู",
+            ].map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="chip-btn"
+                onClick={() => {
+                  setMessage(chip.replace(/[🎯🎥🦵🔥💪🛡️🌿]/g, "").trim());
+                }}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
 
           <form
             className="assistant-input"
-            onSubmit={
-              handleSubmit
-            }
+            onSubmit={handleSubmit}
           >
 
             <textarea
               value={message}
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 setMessage(
                   event.target.value
                 )
@@ -1371,6 +2128,7 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
             />
 
             {/* Voice */}
+
             <button
               type="button"
               className={
@@ -1387,13 +2145,29 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
                   ? "หยุดฟัง"
                   : "พูดกับ FitAI"
               }
+              aria-label={
+                isListening
+                  ? "หยุดฟัง"
+                  : "พูดกับ FitAI"
+              }
             >
-              {isListening
-                ? "⏹️"
-                : "🎤"}
+
+              {isListening ? (
+                <Square
+                  size={18}
+                  strokeWidth={2}
+                />
+              ) : (
+                <Mic
+                  size={18}
+                  strokeWidth={2}
+                />
+              )}
+
             </button>
 
             {/* Send */}
+
             <button
               type="submit"
               className="send-button"
@@ -1401,14 +2175,24 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
                 loading ||
                 !message.trim()
               }
+              title="ส่งข้อความ"
+              aria-label="ส่งข้อความ"
             >
-              {loading
-                ? "กำลังส่ง..."
-                : "ส่ง"}
+
+              {loading ? (
+                <span className="send-loading-dot">
+                  ...
+                </span>
+              ) : (
+                <Send
+                  size={18}
+                  strokeWidth={2}
+                />
+              )}
+
             </button>
 
           </form>
-
 
           {/* =====================================
               Status
@@ -1417,14 +2201,27 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
           <div className="assistant-status">
 
             {isListening && (
-              <span>
-                🎙️ กำลังฟัง...
+              <span className="status-item">
+
+                <Mic
+                  size={15}
+                  strokeWidth={2}
+                />
+
+                กำลังฟัง...
+
               </span>
             )}
 
             {isSpeaking && (
-              <span>
-                🔊 FitAI กำลังพูด...
+              <span className="status-item">
+
+                <Volume2
+                  size={15}
+                  strokeWidth={2}
+                />
+
+                FitAI กำลังพูด...
 
                 <button
                   type="button"
@@ -1433,8 +2230,18 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
                     stopSpeaking
                   }
                 >
-                  ⏹ หยุดเสียง
+
+                  <Square
+                    size={14}
+                    strokeWidth={2}
+                  />
+
+                  <span>
+                    หยุดเสียง
+                  </span>
+
                 </button>
+
               </span>
             )}
 
@@ -1442,9 +2249,8 @@ function AIAssistant({ user, onProfile, onSettings, onWorkout, onBack, onLogout 
               !isSpeaking &&
               !loading && (
                 <span>
-                  Enter เพื่อส่ง •
-                  Shift + Enter
-                  เพื่อขึ้นบรรทัดใหม่
+                  Enter เพื่อส่ง • Shift +
+                  Enter เพื่อขึ้นบรรทัดใหม่
                 </span>
               )}
 

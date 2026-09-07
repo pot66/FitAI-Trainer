@@ -5,8 +5,8 @@ const api = axios.create({
     import.meta.env.VITE_API_URL ||
     "http://localhost:5000/api",
 
-  // Local Ollama can take longer on the first response while the model loads.
-  timeout: 45000,
+  // Local Ollama timeout buffer
+  timeout: 60000,
 
   headers: {
     Accept: "application/json",

@@ -47,6 +47,8 @@ function Onboarding({ onComplete }) {
         weight,
       });
 
+      localStorage.removeItem("fitai-plan-signature");
+      localStorage.removeItem("fitai-weekly-plan");
       const updatedUser = { ...user, name };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);

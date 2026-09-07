@@ -1,38 +1,28 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
-const express = require("express");
-const cors = require("cors");
+const app = require("./app");
 
-const authRoutes = require("./routes/authRoutes");
-const profileRoutes = require("./routes/profileRoutes");
-const exerciseRoutes = require("./routes/exerciseRoutes");
-const workoutRoutes = require("./routes/workoutRoutes");
-const chatRoutes = require("./routes/chatRoutes");
-const aiRoutes = require("./routes/aiRoutes");
-const analyticsRoutes = require("./routes/analyticsRoutes");
+const PORT = Number(process.env.PORT || 5000);
+const HOST = process.env.HOST || "0.0.0.0";
 
-const app = express();
+const server = app.listen(PORT, HOST, () => {
+  console.log(`FitAI Trainer API running at http://${HOST}:${PORT}`);
+});
 
-app.use(cors());
-app.use(express.json());
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received. Shutting down server...");
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "FitAI Trainer API is running",
+  server.close(() => {
+    process.exit(0);
   });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/exercises", exerciseRoutes);
-app.use("/api/workouts", workoutRoutes);
-app.use("/api/chat", chatRoutes);
-app.use("/api/ai", aiRoutes);
-app.use("/api/analytics", analyticsRoutes);
+process.on("SIGINT", () => {
+  console.log("SIGINT received. Shutting down server...");
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`FitAI Trainer API running on port ${PORT}`);
+  server.close(() => {
+    process.exit(0);
+  });
 });

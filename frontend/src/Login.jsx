@@ -1,16 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthProvider";
-import Register from "./Register";
 
 function Login() {
+  const navigate = useNavigate();
   const {
     login,
   } = useAuth();
-
-  const [
-    showRegister,
-    setShowRegister,
-  ] = useState(false);
 
   const [email, setEmail] =
     useState("");
@@ -23,22 +19,6 @@ function Login() {
 
   const [error, setError] =
     useState("");
-
-  // ============================================
-  // Register Page
-  // ============================================
-
-  if (showRegister) {
-    return (
-      <Register
-        onBackToLogin={() =>
-          setShowRegister(
-            false
-          )
-        }
-      />
-    );
-  }
 
   // ============================================
   // Login
@@ -211,9 +191,7 @@ function Login() {
           <button
             type="button"
             onClick={() =>
-              setShowRegister(
-                true
-              )
+              navigate("/register")
             }
             disabled={loading}
             style={{

@@ -1,9 +1,19 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthProvider";
 
 function Register({
   onBackToLogin,
 }) {
+  const navigate = useNavigate();
+  const handleBack = () => {
+    if (onBackToLogin) {
+      onBackToLogin();
+    } else {
+      navigate("/login");
+    }
+  };
+
   const {
     register,
     login,
@@ -163,7 +173,7 @@ function Register({
         );
 
         setTimeout(() => {
-          onBackToLogin?.();
+          handleBack();
         }, 1200);
 
         return;
@@ -378,7 +388,7 @@ function Register({
           <button
             type="button"
             onClick={
-              onBackToLogin
+              handleBack
             }
             disabled={loading}
             style={{

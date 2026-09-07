@@ -26,7 +26,7 @@ function calculateBmi(profile) {
   const height = number(profile?.height);
   const weight = number(profile?.weight);
   if (!height || !weight) return 0;
-  return weight / ((height / 100) ** 2);
+  return Number((weight / ((height / 100) ** 2)).toFixed(2));
 }
 
 export function getTrainingProfile(profile = {}) {
@@ -34,6 +34,7 @@ export function getTrainingProfile(profile = {}) {
   const height = number(profile.height);
   const weight = number(profile.weight);
   const bmi = number(profile.bmi) || calculateBmi(profile);
+  const gender = String(profile.gender || "").toLowerCase();
   const notes = [];
   let level = "standard";
   let sets = 3;
@@ -45,143 +46,432 @@ export function getTrainingProfile(profile = {}) {
     sets = 2;
     repetitions = "8–10 ครั้ง";
     notes.push("เน้นเรียนรู้ท่าและควบคุมการเคลื่อนไหวก่อนเพิ่มความหนัก");
-  }
-  if (age >= 55) {
+  } else if (age >= 50) {
     level = "gentle";
     sets = 2;
     repetitions = "8–10 ครั้ง";
     allowImpact = false;
-    notes.push("เพิ่มการวอร์มอัพและเน้นท่าทรงตัว หลีกเลี่ยงการกระแทกที่ไม่จำเป็น");
+    notes.push("เน้นท่าที่ปลอดภัยต่อข้อต่อและการทรงตัว หลีกเลี่ยงแรงกระแทก");
   }
+
   if (bmi && bmi < 18.5) {
     level = "strength-focus";
-    sets = Math.min(sets, 3);
+    sets = 3;
     repetitions = "8–10 ครั้ง";
-    notes.push("เน้นสร้างความแข็งแรงและพักระหว่างเซ็ตให้เพียงพอ");
+    notes.push("เน้นสร้างกล้ามเนื้อและความแข็งแรง พักให้เพียงพอ");
   } else if (bmi >= 25 && bmi < 30) {
     level = "low-impact";
     sets = 2;
     repetitions = "10–12 ครั้ง";
     allowImpact = false;
-    notes.push("เริ่มด้วยคาร์ดิโอแรงกระแทกต่ำและน้ำหนักตัวในช่วงการเคลื่อนไหวที่สบาย");
+    notes.push("เน้นท่าแรงกระแทกต่ำเพื่อถนอมข้อต่อเข่าและข้อเท้า");
   } else if (bmi >= 30) {
     level = "low-impact";
     sets = 2;
-    repetitions = "6–8 ครั้ง";
+    repetitions = "8–10 ครั้ง";
     allowImpact = false;
-    notes.push("เน้นเดิน ยืดเหยียด และท่ารับน้ำหนักตัวที่ควบคุมได้ หยุดเมื่อเจ็บหรือเวียนศีรษะ");
-  }
-  if (height && weight && height < 150 && weight > 70) {
-    notes.push("ลดระยะการย่อตัวหรือใช้จุดยึดพยุงได้ เพื่อให้ข้อเข่ารับแรงอย่างสบาย");
+    notes.push("เลือกท่าที่ควบคุมง่าย เช่น เก้าอี้สควอต หรือวิดพื้นผนัง ไม่กระโดด");
   }
 
-  // Gender is retained for inclusive profile context, but the plan does not assume
-  // fitness level from gender alone. Health conditions should always override this plan.
-  const genderNote = profile.gender
-    ? "แผนนี้ไม่เหมารวมจากเพศ และควรปรับตามสุขภาพ ความเจ็บปวด หรือข้อจำกัดของคุณ"
-    : "เพิ่มเพศใน Profile ได้หากต้องการให้ข้อมูลส่วนตัวครบขึ้น แต่ความปลอดภัยขึ้นกับสุขภาพจริงเป็นหลัก";
+  let genderNote = "";
+  if (gender === "female") {
+    genderNote = "ปรับสมดุลเน้นความกระชับของกล้ามเนื้อแกนกลางและช่วงล่าง ควบคู่กับความแข็งแรงของช่วงบน";
+  } else if (gender === "male") {
+    genderNote = "ปรับสมดุลสร้างความแข็งแกร่งของกล้ามเนื้อทั่วร่างกายทั้งช่วงบนและล่าง";
+  } else {
+    genderNote = "ปรับแผนตามระดับความพร้อมทางกายภาพและสุขภาพโดยรวมเป็นหลัก";
+  }
 
-  return { age, height, weight, bmi, level, sets, repetitions, allowImpact, notes, genderNote };
+  return { age, height, weight, bmi, gender, level, sets, repetitions, allowImpact, notes, genderNote };
 }
 
-function availableForFocus(exercises, focus, training) {
-  const compatible = exercises.filter((exercise) => {
-    const text = `${exercise.name} ${exercise.category || ""} ${exercise.targetMuscle || ""}`;
-    return KEYWORDS[focus]?.test(text);
-  });
-  const safe = exercises.filter((exercise) => !training.allowImpact || !HIGH_IMPACT.test(exercise.name));
-  return (compatible.length ? compatible : safe).filter((exercise) => training.allowImpact || !HIGH_IMPACT.test(exercise.name));
-}
+export const FOCUS_CATEGORIES = {
+  lower: {
+    focusName: "ช่วงล่าง",
+    primary: ["Squat", "Lunges", "Glute Bridge", "Bulgarian Split Squat", "Calf Raise", "Leg Press", "Chair Squat", "Sumo Squat", "Hip Thrust", "Donkey Kick", "Romanian Deadlift", "Forward Lunge", "Reverse Lunge", "Step Up"],
+    lowImpact: ["Chair Squat", "Glute Bridge", "Calf Raise", "Sumo Squat", "Step Up", "Donkey Kick", "Leg Press"],
+    femalePriority: ["Squat", "Glute Bridge", "Hip Thrust", "Lunges", "Calf Raise", "Sumo Squat"],
+  },
+  upper: {
+    focusName: "ช่วงบน",
+    primary: ["Push Up", "Push-up", "Decline Push-up", "Incline Push-up", "Wall Push Up", "Diamond Push-up", "Chest Dip", "Bodyweight Row", "Pull-up", "Inverted Row", "Superman", "Lateral Raise", "Shoulder Press", "Biceps Curl", "Triceps Dip"],
+    lowImpact: ["Wall Push Up", "Incline Push-up", "Bodyweight Row", "Superman", "Decline Push-up"],
+    femalePriority: ["Incline Push-up", "Wall Push Up", "Bodyweight Row", "Superman", "Decline Push-up"],
+  },
+  core: {
+    focusName: "แกนกลางลำตัว",
+    primary: ["Plank", "Crunch", "Bicycle Crunch", "Russian Twist", "Dead Bug", "Bird Dog", "Side Plank", "Leg Raise", "Mountain Climber", "Reverse Crunch", "Sit-up"],
+    lowImpact: ["Bird Dog", "Dead Bug", "Plank", "Glute Bridge", "Side Plank"],
+    femalePriority: ["Plank", "Dead Bug", "Bird Dog", "Bicycle Crunch", "Russian Twist"],
+  },
+  cardio: {
+    focusName: "คาร์ดิโอและความทนทาน",
+    primary: ["Jumping Jack", "High Knees", "Burpee", "Squat Jump", "Skater", "March In Place", "Jump Rope"],
+    lowImpact: ["March In Place", "Step Up", "Walking", "Stationary Bike"],
+    femalePriority: ["March In Place", "Jumping Jack", "High Knees", "Skater", "Step Up"],
+  },
+  full: {
+    focusName: "ทั้งร่างกาย",
+    primary: ["Burpee", "Squat", "Push Up", "Plank", "Lunges", "Jumping Jack", "Glute Bridge"],
+    lowImpact: ["Chair Squat", "Wall Push Up", "Glute Bridge", "Bird Dog", "March In Place"],
+    femalePriority: ["Squat", "Incline Push-up", "Glute Bridge", "Plank", "Lunges"],
+  },
+  mobility: {
+    focusName: "ฟื้นฟูและยืดเหยียด",
+    primary: ["Cat Cow", "Arm Circles", "Bird Dog", "Dead Bug", "Glute Bridge"],
+    lowImpact: ["Cat Cow", "Arm Circles", "Bird Dog", "Dead Bug", "Glute Bridge"],
+    femalePriority: ["Cat Cow", "Arm Circles", "Bird Dog", "Dead Bug", "Glute Bridge"],
+  },
+};
 
-function chooseDailyExercises(exercises, focus, training, used) {
-  const safe = exercises
-    .filter((exercise) => training.allowImpact || !HIGH_IMPACT.test(exercise.name))
-    .sort((left, right) => left.name.localeCompare(right.name));
-  const focused = availableForFocus(exercises, focus, training)
-    .sort((left, right) => left.name.localeCompare(right.name));
-  const ordered = [...focused, ...safe.filter((exercise) => !focused.some((item) => item.id === exercise.id))];
-  const selected = [];
-
-  for (const exercise of ordered) {
-    if (!used.has(exercise.name)) {
-      selected.push(exercise);
-      used.add(exercise.name);
-    }
-    if (selected.length === 5) return selected;
-  }
-
-  // A smaller exercise catalogue can legitimately repeat after every safe
-  // option has been used. This preserves a deterministic order, never random.
-  for (const exercise of ordered) {
-    if (!selected.some((item) => item.id === exercise.id)) selected.push(exercise);
-    if (selected.length === 5) break;
-  }
-  return selected;
-}
-
-export function createPersonalizedWeeklyPlan(profile, exercises = []) {
+export function createPersonalizedWeeklyPlan(profile = {}, exercises = []) {
   const training = getTrainingProfile(profile);
-  const used = new Set();
-  const plan = DAY_TEMPLATE.map(([key, focusKey, focus], index) => {
-    if (focusKey === "rest") return { catalogVersion: 2, key, focus, exerciseName: "Rest", exercises: [], sets: "", repetitions: "พักผ่อน", reason: "ให้กล้ามเนื้อฟื้นตัว" };
-    const selected = chooseDailyExercises(exercises, focusKey, training, used);
-    const exercise = selected[0];
+  const isLow = !training.allowImpact || training.level === "low-impact";
+  const isFemale = training.gender === "female";
+
+  const DAY_SCHEDULE = [
+    ["monday", "lower", "ช่วงล่าง"],
+    ["tuesday", "upper", "ช่วงบน"],
+    ["wednesday", "core", "แกนกลางลำตัว"],
+    ["thursday", "cardio", "คาร์ดิโอและความทนทาน"],
+    ["friday", "full", "ทั้งร่างกาย"],
+    ["saturday", "mobility", "ฟื้นฟูและยืดเหยียด"],
+    ["sunday", "rest", "พักผ่อนและฟื้นฟู"],
+  ];
+
+  const plan = DAY_SCHEDULE.map(([key, focusKey, focus], index) => {
+    if (focusKey === "rest") {
+      return {
+        catalogVersion: 2,
+        key,
+        focus,
+        exerciseName: "Rest",
+        exercises: [],
+        sets: "",
+        repetitions: "พักผ่อน / ยืดเหยียดเบา ๆ",
+        reason: "วันพักผ่อนเพื่อให้กล้ามเนื้อได้ซ่อมแซมและฟื้นฟูอย่างเต็มที่",
+        dayIndex: index,
+      };
+    }
+
+    const cat = FOCUS_CATEGORIES[focusKey] || FOCUS_CATEGORIES.lower;
+    let pool = isLow
+      ? cat.lowImpact || cat.primary
+      : isFemale && cat.femalePriority
+        ? cat.femalePriority
+        : cat.primary;
+
+    const availableNames = pool.filter((name) =>
+      exercises.length === 0 || exercises.some((e) => e.name.toLowerCase().replace(/[^a-z0-9]/g, "") === name.toLowerCase().replace(/[^a-z0-9]/g, ""))
+    );
+    const selectedNames = (availableNames.length >= 5 ? availableNames : pool).slice(0, 5);
+
     const isCardio = focusKey === "cardio";
-    const repetitions = focusKey === "mobility" ? "8–10 นาที" : isCardio ? (training.allowImpact ? "30–45 วินาที" : "10–15 นาที") : training.repetitions;
+    const isMobility = focusKey === "mobility";
+    const defaultReps = isMobility
+      ? "8–10 นาที"
+      : isCardio
+        ? (isLow ? "30–45 วินาที" : "40–60 วินาที")
+        : training.repetitions;
+
+    const dailyExercises = selectedNames.map((name) => ({
+      name,
+      sets: isMobility ? 1 : training.sets,
+      repetitions: defaultReps,
+    }));
+
     return {
       catalogVersion: 2,
       key,
       focus,
-      exerciseName: exercise?.name || "Rest",
-      exercises: selected.map((item) => ({ name: item.name, sets: focusKey === "mobility" ? 1 : training.sets, repetitions })),
-      sets: focusKey === "mobility" ? 1 : training.sets,
-      repetitions,
-      reason: training.level === "low-impact" ? "เลือกท่าควบคุมง่ายและแรงกระแทกต่ำ" : "สลับกล้ามเนื้อเพื่อให้ร่างกายฟื้นตัว",
+      exerciseName: dailyExercises[0]?.name || "Squat",
+      exercises: dailyExercises,
+      sets: isMobility ? 1 : training.sets,
+      repetitions: defaultReps,
+      reason: isLow
+        ? `คำนวณจาก BMI ${training.bmi || "-"} และอายุ ${training.age || "-"} ปี เน้นท่าแรงกระแทกต่ำเพื่อถนอมข้อต่อ`
+        : `คำนวณตามข้อมูลส่วนบุคคลเพื่อเสริมสร้างกล้ามเนื้อกลุ่ม ${focus} อย่างสมดุล`,
       dayIndex: index,
     };
   });
 
+  const profileSignature = `${profile.id || profile.userId || ""}_${training.height}_${training.weight}_${training.age}_${training.gender}`;
+
   return {
     plan,
     training,
+    profileSignature,
     summary: training.bmi
-      ? `BMI ${training.bmi.toFixed(1)} · ระดับแผน ${training.level.replace("-", " ")}`
-      : "ใช้แผนเริ่มต้น — เติมข้อมูล Profile เพื่อให้ AI ปรับให้แม่นยำขึ้น",
+      ? `BMI ${training.bmi} (${training.level === "low-impact" ? "เน้นแรงกระแทกต่ำ ปลอดภัยต่อข้อต่อ" : "ระดับมาตรฐาน สร้างความแข็งแรง"})`
+      : "แผนคำนวณเฉพาะบุคคลอ้างอิงจากข้อมูล Profile",
   };
 }
 
-export function applyPlanAdjustment(plan, profile, exercises, request) {
+export const THAI_EXERCISE_MAP = {
+  "เก้าอี้สควอต": "Chair Squat",
+  "สควอตเก้าอี้": "Chair Squat",
+  "วิดพื้นผนัง": "Wall Push Up",
+  "วิดพื้นกำแพง": "Wall Push Up",
+  "บูลกาเรียน": "Bulgarian Split Squat",
+  "รัสเชียนทวิสต์": "Russian Twist",
+  "เบิร์ดด็อก": "Bird Dog",
+  "เดดบัก": "Dead Bug",
+  "ไฟร์ไฮแดรนต์": "Fire Hydrant",
+  "ฮิปทรัสต์": "Hip Thrust",
+  "ดองกีคิก": "Donkey Kick",
+  "คาล์ฟเรส": "Calf Raise",
+  "เดินเร็ว": "March In Place",
+  "เดินอยู่กับที่": "March In Place",
+  "สควอต": "Squat",
+  "สควัต": "Squat",
+  "วิดพื้น": "Push Up",
+  "แพลงก์": "Plank",
+  "แพลงค์": "Plank",
+  "ลันจ์": "Lunges",
+  "ครันช์": "Crunch",
+  "ซิทอัพ": "Sit-up",
+  "กระโดดตบ": "Jumping Jack",
+  "เบอร์ปี": "Burpee",
+  "ดึงข้อ": "Pull-up",
+  "บริดจ์": "Glute Bridge",
+  "ซูเปอร์แมน": "Superman",
+  "เลกเพรส": "Leg Press",
+  "เลกเอ็กซ์เทนชั่น": "Leg Extension",
+  "กระโดดเชือก": "Jump Rope",
+  "ปั่นจักรยาน": "Stationary Bike",
+  "ว่ายน้ำ": "Swimming",
+  "วิ่ง": "Jogging",
+};
+
+export function extractTargetExercise(text, exercises = []) {
+  const lower = String(text || "").toLowerCase();
+
+  // 1. Check if user specified "เป็น [ท่า]" or "แทน [ท่า]"
+  const afterPattern = /(?:เป็น|แทน|มาเป็น|ไปเป็น|เปลี่ยนเป็น|ขอท่า|ฝึกท่า)\s+([A-Za-zก-๙\s\-]+)/i;
+  const match = lower.match(afterPattern);
+  if (match && match[1]) {
+    const sub = match[1].trim();
+    for (const [thaiTerm, engName] of Object.entries(THAI_EXERCISE_MAP).sort((a, b) => b[0].length - a[0].length)) {
+      if (sub.includes(thaiTerm)) {
+        const found = exercises.find((ex) =>
+          ex.name.toLowerCase().replace(/[^a-z0-9]/g, "") === engName.toLowerCase().replace(/[^a-z0-9]/g, "")
+        );
+        if (found) return found;
+      }
+    }
+    const sorted = [...exercises].sort((a, b) => b.name.length - a.name.length);
+    for (const ex of sorted) {
+      if (sub.includes(ex.name.toLowerCase())) return ex;
+    }
+  }
+
+  // 2. Search general Thai exercise terms (longer phrases first)
+  for (const [thaiTerm, engName] of Object.entries(THAI_EXERCISE_MAP).sort((a, b) => b[0].length - a[0].length)) {
+    if (lower.includes(thaiTerm)) {
+      const found = exercises.find((ex) =>
+        ex.name.toLowerCase().replace(/[^a-z0-9]/g, "") === engName.toLowerCase().replace(/[^a-z0-9]/g, "")
+      );
+      if (found) return found;
+    }
+  }
+
+  // 3. Search English exercise names (longer phrases first)
+  const sortedByLen = [...exercises].sort((a, b) => b.name.length - a.name.length);
+  for (const ex of sortedByLen) {
+    if (lower.includes(ex.name.toLowerCase())) {
+      return ex;
+    }
+  }
+
+  return null;
+}
+
+export function applyPlanAdjustment(plan, profile, exercises = [], request) {
   const text = String(request || "").toLowerCase();
   const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
-  const training = getTrainingProfile(profile);
   const targetIndex = Math.max(0, plan.findIndex((day) => day.key === todayKey));
-  const next = plan.map((day) => ({ ...day }));
-  const day = next[targetIndex];
-  const needsRecovery = /(พัก|เหนื่อย|ล้า|เจ็บ|ปวด|rest|tired|sore)/.test(text);
-  const needsLowImpact = /(เข่า|knee|แรงกระแทก|เบา|low impact|ลดน้ำหนัก|cardio)/.test(text);
-  const needsUpper = /(แขน|อก|ไหล่|upper|push)/.test(text);
-  const needsLower = /(ขา|สะโพก|lower|leg)/.test(text);
-  const needsCore = /(ท้อง|แกนกลาง|core|plank)/.test(text);
-  const wantsPlanChange = /(เปลี่ยน|ปรับ|ตาราง|วันนี้|พัก|เหนื่อย|ล้า|เจ็บ|ปวด|แรงกระแทก|เบา|low impact|rest|tired|sore|cardio)/.test(text);
+  const current = plan[targetIndex] || { key: todayKey, focus: "ช่วงล่าง", exercises: [] };
+  const next = plan.map((day) => ({ ...day, exercises: Array.isArray(day.exercises) ? [...day.exercises] : [] }));
 
-  if (!wantsPlanChange) {
+  const wantsChange = /(เปลี่ยน|ปรับ|แก้ไข|กิจกรรม|แนะนำ|เลือก|จัด|ขอ|สลับ|แทน|อยาก|ช่วย|ท่า|ตาราง|แผน|วันนี้|เหนื่อย|ล้า|เจ็บ|ปวด|เบา|พัก|rest|tired|change|adjust|edit)/i.test(text);
+  if (!wantsChange) {
     return { plan, changed: false, message: "" };
   }
 
-  const focusKey = needsUpper ? "upper" : needsLower ? "lower" : needsCore ? "core" : needsLowImpact ? "cardio" : day.focus.includes("ช่วงบน") ? "upper" : day.focus.includes("ช่วงล่าง") ? "lower" : day.focus.includes("แกน") ? "core" : "full";
-
-  if (needsRecovery) {
-    next[targetIndex] = { ...day, focus: "พักและฟื้นฟู", exerciseName: "Rest", exercises: [], sets: "", repetitions: "พักผ่อน / ยืดเหยียดเบา ๆ", reason: "AI ลดภาระการฝึกจากข้อความที่แจ้งถึงความล้าหรืออาการเจ็บ" };
-    return { plan: next, changed: true, message: "ผมปรับแผนวันนี้เป็นวันพักและฟื้นฟูแล้ว เพื่อไม่ฝืนร่างกายครับ" };
+  // 1. Check if user needs rest / recovery
+  const needsRecovery = /(พัก|เหนื่อย|ล้า|เจ็บ|ปวด|เมื่อย|ไม่ไหว|rest|tired|sore|pain)/i.test(text);
+  if (needsRecovery && !/(ไม่พัก|อยากออก|ขอท่า|เปลี่ยนเป็น)/i.test(text)) {
+    next[targetIndex] = {
+      ...current,
+      focus: "พักผ่อนและฟื้นฟู",
+      exerciseName: "Rest",
+      exercises: [],
+      sets: "",
+      repetitions: "พักผ่อน / ยืดเหยียดเบา ๆ",
+      reason: "AI ปรับเป็นวันพักตามที่ผู้ใช้แจ้งถึงความเหนื่อยล้าหรืออาการเจ็บ",
+      updatedAt: new Date().toISOString(),
+    };
+    return {
+      plan: next,
+      changed: true,
+      message: "ผมปรับแผนของวันนี้เป็น “วันพักและฟื้นฟูร่างกาย” ให้เรียบร้อยแล้วครับ พักผ่อนและดื่มน้ำให้เพียงพอนะครับ",
+    };
   }
 
-  const safetyProfile = needsLowImpact ? { ...training, allowImpact: false } : training;
-  const choices = availableForFocus(exercises, focusKey, safetyProfile).sort((left, right) => left.name.localeCompare(right.name));
-  const replacement = choices.find((exercise) => exercise.name !== day.exerciseName) || choices[0];
-  if (!replacement) return { plan, changed: false, message: "ยังไม่มีท่าที่เหมาะสมในคลัง Exercise กรุณาเพิ่มท่าในระบบก่อนครับ" };
+  // 2. Custom sets or repetitions request (e.g. "ขอ 2 เซ็ต", "ขอ 15 ครั้ง")
+  const setsMatch = text.match(/(\d+)\s*เซ็ต/);
+  const customSets = setsMatch ? Number(setsMatch[1]) : null;
+  const repsMatch = text.match(/(\d+[-–]\d+|\d+)\s*(?:ครั้ง|วินาที|นาที)/);
+  const customReps = repsMatch ? repsMatch[0] : null;
 
-  const remaining = (day.exercises || []).filter((exercise) => exercise.name !== replacement.name);
-  const replacementRepetitions = focusKey === "cardio" ? "10–15 นาที" : safetyProfile.repetitions;
-  next[targetIndex] = { ...day, focus: focusKey === "cardio" ? "คาร์ดิโอแรงกระแทกต่ำ" : day.focus, exerciseName: replacement.name, exercises: [{ name: replacement.name, sets: safetyProfile.sets, repetitions: replacementRepetitions }, ...remaining].slice(0, 5), sets: safetyProfile.sets, repetitions: replacementRepetitions, reason: "AI เลือกท่าทดแทนจากข้อมูล Profile และเงื่อนไขที่แจ้ง โดยไม่สุ่มท่า" };
-  return { plan: next, changed: true, message: `ผมปรับแผนวันนี้เป็น ${replacement.name} แล้ว โดยเลือกจากความเหมาะสมกับข้อมูลร่างกายและคำขอของคุณครับ` };
+  // 3. Extract target exercise if user specified a pose
+  const specificExercise = extractTargetExercise(text, exercises);
+
+  // Check if user specifically requested to replace an existing pose: "เปลี่ยนท่า [A] เป็น [B]"
+  let replacedOldExercise = null;
+  const replacePattern = /เปลี่ยน(?:ท่า)?\s+([A-Za-zก-๙\s\-]+?)\s+(?:เป็น|แทน|มาเป็น)\s+([A-Za-zก-๙\s\-]+)/i;
+  const replaceMatch = text.match(replacePattern);
+  if (replaceMatch && replaceMatch[1]) {
+    const oldTerm = replaceMatch[1].trim().toLowerCase();
+    replacedOldExercise = (current.exercises || []).find((e) => {
+      const eLow = e.name.toLowerCase();
+      return eLow.includes(oldTerm) || oldTerm.includes(eLow);
+    });
+  }
+
+  // 4. Determine category focus / activity
+  const isLower = /(ช่วงล่าง|ขา|ก้น|สะโพก|ต้นขา|lower|leg|squat|lunge)/i.test(text);
+  const isUpper = /(ช่วงบน|อก|หลัง|แขน|ไหล่|upper|push|pull|chest)/i.test(text);
+  const isCore = /(แกนกลาง|หน้าท้อง|พุง|เอว|core|abs|plank|crunch)/i.test(text);
+  const isCardio = /(คาร์ดิโอ|ลดน้ำหนัก|ลดไขมัน|เบิร์น|cardio|fat|burn|เดินเร็ว|วิ่ง|ปั่นจักรยาน)/i.test(text);
+  const isMobility = /(ยืดเหยียด|ฟื้นฟู|โยคะ|mobility|stretch)/i.test(text);
+  const isFull = /(ทั้งตัว|ทั้งร่างกาย|full\s*body)/i.test(text);
+  const isLowImpact = /(แรงกระแทกต่ำ|เจ็บเข่า|ปวดเข่า|ข้อเข่า|low\s*impact|เข่าไม่ดี|น้ำหนักเยอะ)/i.test(text);
+
+  let categoryKey = isLower ? "lower"
+    : isUpper ? "upper"
+    : isCore ? "core"
+    : isCardio ? "cardio"
+    : isMobility ? "mobility"
+    : isFull ? "full"
+    : null;
+
+  if (!categoryKey) {
+    if (specificExercise) {
+      const cat = (specificExercise.category || "").toLowerCase();
+      if (cat.includes("leg") || cat.includes("quad") || cat.includes("glute") || cat.includes("lower")) categoryKey = "lower";
+      else if (cat.includes("chest") || cat.includes("back") || cat.includes("shoulder") || cat.includes("arm") || cat.includes("upper")) categoryKey = "upper";
+      else if (cat.includes("core") || cat.includes("abs")) categoryKey = "core";
+      else if (cat.includes("cardio")) categoryKey = "cardio";
+      else categoryKey = "lower";
+    } else {
+      categoryKey = (current.focus || "").includes("บน") ? "upper"
+        : (current.focus || "").includes("แกน") ? "core"
+        : (current.focus || "").includes("คาร์ดิโอ") ? "cardio"
+        : (current.focus || "").includes("ยืด") || (current.focus || "").includes("ฟื้นฟู") ? "mobility"
+        : (current.focus || "").includes("ทั้ง") ? "full"
+        : "lower";
+    }
+  }
+
+  const categoryInfo = FOCUS_CATEGORIES[categoryKey] || FOCUS_CATEGORIES.lower;
+  const training = getTrainingProfile(profile);
+  const useLowImpact = isLowImpact || !training.allowImpact;
+
+  const targetPool = useLowImpact && categoryInfo.lowImpact
+    ? categoryInfo.lowImpact
+    : categoryInfo.primary;
+
+  // Case A: User replaced a single exercise in today's table
+  if (specificExercise && replacedOldExercise && Array.isArray(current.exercises) && current.exercises.length > 0) {
+    const updatedExercises = current.exercises.map((ex) => {
+      if (ex.name === replacedOldExercise.name) {
+        return {
+          name: specificExercise.name,
+          sets: customSets || ex.sets || training.sets,
+          repetitions: customReps || ex.repetitions || training.repetitions,
+        };
+      }
+      return {
+        ...ex,
+        sets: customSets || ex.sets,
+        repetitions: customReps || ex.repetitions,
+      };
+    });
+
+    next[targetIndex] = {
+      ...current,
+      exerciseName: updatedExercises[0].name,
+      exercises: updatedExercises,
+      reason: `เปลี่ยนท่า ${replacedOldExercise.name} เป็น ${specificExercise.name} ตามคำขอของผู้ใช้`,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const exerciseListStr = updatedExercises.map((ex, i) => `${i + 1}. **${ex.name}** (${ex.sets ? `${ex.sets} เซ็ต · ` : ""}${ex.repetitions})`).join("\n");
+    return {
+      plan: next,
+      changed: true,
+      message: `FitAI ปรับตารางแผนออกกำลังกายให้แล้วครับ โดยเปลี่ยนท่า ${replacedOldExercise.name} เป็น **${specificExercise.name}** เรียบร้อยแล้วครับ:\n\n${exerciseListStr}`,
+    };
+  }
+
+  // Case B: General adjustment or category switch
+  let primaryName = specificExercise?.name;
+  if (!primaryName) {
+    const candidates = targetPool.filter((name) =>
+      exercises.some((e) => e.name.toLowerCase().replace(/[^a-z0-9]/g, "") === name.toLowerCase().replace(/[^a-z0-9]/g, ""))
+    );
+    primaryName = candidates[0] || targetPool[0];
+  }
+
+  const compPool = targetPool.filter((name) =>
+    name.toLowerCase().replace(/[^a-z0-9]/g, "") !== primaryName.toLowerCase().replace(/[^a-z0-9]/g, "")
+  );
+
+  const selectedExerciseNames = [primaryName, ...compPool].slice(0, 5);
+
+  const newExercises = selectedExerciseNames.map((name) => {
+    const existing = (current.exercises || []).find((e) => e.name === name);
+    return {
+      name,
+      sets: customSets || existing?.sets || training.sets || 3,
+      repetitions: customReps || existing?.repetitions || (categoryKey === "cardio" ? "30–45 วินาที" : training.repetitions || "10–12 ครั้ง"),
+    };
+  });
+
+  const dayLabels = {
+    monday: "จันทร์",
+    tuesday: "อังคาร",
+    wednesday: "พุธ",
+    thursday: "พฤหัสบดี",
+    friday: "ศุกร์",
+    saturday: "เสาร์",
+    sunday: "อาทิตย์",
+  };
+  const dayLabel = dayLabels[todayKey] || "วันนี้";
+
+  next[targetIndex] = {
+    ...current,
+    focus: categoryInfo.focusName,
+    exerciseName: newExercises[0].name,
+    exercises: newExercises,
+    sets: newExercises[0].sets,
+    repetitions: newExercises[0].repetitions,
+    reason: specificExercise
+      ? `เปลี่ยนท่าหลักเป็น ${specificExercise.name} ตามคำขอของผู้ใช้`
+      : `FitAI ปรับท่าสำหรับกลุ่ม ${categoryInfo.focusName}${useLowImpact ? " (แรงกระแทกต่ำ)" : ""}`,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const exerciseListStr = newExercises.map((ex, i) => `${i + 1}. **${ex.name}** (${ex.sets ? `${ex.sets} เซ็ต · ` : ""}${ex.repetitions})`).join("\n");
+
+  const messageText = specificExercise
+    ? `FitAI ปรับตารางแผนออกกำลังกายวัน${dayLabel} ให้แล้วครับ โดยเปลี่ยนท่าหลักเป็น **${specificExercise.name}** พร้อมจัดท่าเสริมในกลุ่ม ${categoryInfo.focusName} ให้เข้าชุดกันเรียบร้อยแล้วครับ:\n\n${exerciseListStr}`
+    : `FitAI ปรับตารางแผนออกกำลังกายวัน${dayLabel} ให้เน้นกลุ่ม ${categoryInfo.focusName}${useLowImpact ? " (แรงกระแทกต่ำ)" : ""} เรียบร้อยแล้วครับ:\n\n${exerciseListStr}`;
+
+  return {
+    plan: next,
+    changed: true,
+    message: messageText,
+  };
 }

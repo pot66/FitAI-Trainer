@@ -258,8 +258,10 @@ function ProfileEditor({ onBack }) {
         response.data
       );
 
+      localStorage.removeItem("fitai-plan-signature");
+      localStorage.removeItem("fitai-weekly-plan");
       setSuccess(
-        "บันทึกข้อมูล Profile สำเร็จ ✓"
+        "บันทึกข้อมูล Profile สำเร็จ ✓ และคำนวณตารางใหม่ให้เหมาะสมแล้ว"
       );
     } catch (error) {
       console.error(

@@ -1,14 +1,13 @@
-const path = require("path");
-require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
-require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
-
+const { appConfig, validateConfig } = require("./config");
 const app = require("./app");
 
-const PORT = Number(process.env.PORT || 5000);
-const HOST = process.env.HOST || "0.0.0.0";
+// Check and validate configuration on startup
+validateConfig();
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`FitAI Trainer API running at http://${HOST}:${PORT}`);
+const { port, host } = appConfig;
+
+const server = app.listen(port, host, () => {
+  console.log(`FitAI Trainer API running at http://${host}:${port} [${appConfig.env}]`);
 });
 
 process.on("SIGTERM", () => {

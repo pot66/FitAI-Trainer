@@ -1,5 +1,6 @@
 const prisma = require('../services/prisma');
 const { generateWeeklyPlan, suggestPlanAdjustment } = require('../services/aiService');
+const { aiConfig } = require('../config');
 
 async function createWeeklyPlan(req, res) {
   try {
@@ -19,7 +20,7 @@ async function createWeeklyPlan(req, res) {
 
 async function detectExercise(req, res) {
   try {
-    const aiUrl = process.env.AI_SERVICE_URL || "http://ai-service:8000";
+    const aiUrl = aiConfig.aiService.url;
     const response = await fetch(`${aiUrl}/exercise/detect`, {
       method: "POST",
       headers: { "content-type": "application/json" },

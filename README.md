@@ -167,6 +167,7 @@ FitAI Trainer/
 │   ├── prisma/               # Prisma Schema & Database Migrations
 │   ├── scripts/              # DB Smoke Test & Management Scripts
 │   └── src/
+│       ├── config/           # App, DB, and AI Configuration & Pre-boot Validation
 │       ├── controllers/      # Route Request Handlers
 │       ├── middlewares/      # JWT Authentication Middleware
 │       ├── routes/           # API Endpoints (/api/auth, /api/ai, /api/workout ฯลฯ)

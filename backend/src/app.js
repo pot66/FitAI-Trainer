@@ -9,15 +9,11 @@ const chatRoutes = require("./routes/chatRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 
+const { appConfig } = require("./config");
+
 const app = express();
 
-const allowedOrigins = (
-  process.env.CORS_ORIGINS ||
-  "http://localhost:5173,http://localhost:3000"
-)
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = appConfig.cors.allowedOrigins;
 
 app.use(
   cors({
@@ -39,7 +35,7 @@ app.use(
 
 app.use(
   express.json({
-    limit: process.env.JSON_BODY_LIMIT || "8mb",
+    limit: appConfig.jsonLimit,
   })
 );
 

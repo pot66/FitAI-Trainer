@@ -1,5 +1,5 @@
-const DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434";
 const { getPromptCatalog } = require("./exerciseVideoService");
+const { aiConfig } = require("../config");
 
 function compactProfile(profile) {
   if (!profile) return "ยังไม่มีข้อมูล Profile";
@@ -50,16 +50,15 @@ function createSystemPrompt(context, videoCatalog = "") {
 }
 
 function getOllamaUrl() {
-  const raw = process.env.OLLAMA_BASE_URL || process.env.OLLAMA_URL || DEFAULT_OLLAMA_URL;
-  return raw.replace("://ollama:", "://127.0.0.1:").replace(/\/$/, "");
+  return aiConfig.ollama.url;
 }
 
 function getOllamaModel() {
-  return process.env.OLLAMA_MODEL || "qwen2.5:3b";
+  return aiConfig.ollama.model;
 }
 
 async function callOllamaChat(baseUrl, model, messages, format = null, temperature = 0.45, customTimeoutMs = null) {
-  const timeoutMs = customTimeoutMs || Number(process.env.OLLAMA_TIMEOUT_MS || 12000);
+  const timeoutMs = customTimeoutMs || aiConfig.ollama.timeoutMs;
   const payload = {
     model,
     messages,
@@ -86,7 +85,7 @@ async function callOllamaChat(baseUrl, model, messages, format = null, temperatu
 }
 
 async function askOllama(message, context = {}) {
-  if (String(process.env.OLLAMA_ENABLED || "true").toLowerCase() === "false") return null;
+  if (!aiConfig.ollama.enabled) return null;
 
   const baseUrl = getOllamaUrl();
   const primaryModel = getOllamaModel();
@@ -109,7 +108,7 @@ async function askOllama(message, context = {}) {
     { role: "user", content: String(message).slice(0, 3000) },
   ];
 
-  const primaryTimeout = Number(process.env.OLLAMA_TIMEOUT_MS || 12000);
+  const primaryTimeout = aiConfig.ollama.timeoutMs;
 
   try {
     return await callOllamaChat(baseUrl, primaryModel, messages, null, 0.45, primaryTimeout);
@@ -137,7 +136,7 @@ async function askOllama(message, context = {}) {
 }
 
 async function askOllamaStructured(instruction) {
-  if (String(process.env.OLLAMA_ENABLED || "true").toLowerCase() === "false") return null;
+  if (!aiConfig.ollama.enabled) return null;
 
   const baseUrl = getOllamaUrl();
   const primaryModel = getOllamaModel();

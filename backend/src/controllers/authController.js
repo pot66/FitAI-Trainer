@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const prisma = require("../services/prisma");
 const crypto = require("crypto");
+const { appConfig } = require("../config");
 
 const {
   sendVerificationEmail,
@@ -158,9 +159,7 @@ const verificationToken =
     user.id
   );
 
-const frontendUrl =
-  process.env.FRONTEND_URL ||
-  "http://localhost:5173";
+const frontendUrl = appConfig.frontendUrl;
 
 const verificationUrl =
   `${frontendUrl}/verify-email?token=${verificationToken.token}`;
@@ -306,7 +305,7 @@ async function login(req, res) {
     // Create JWT
     // ----------------------------------------
 
-    if (!process.env.JWT_SECRET) {
+    if (!appConfig.jwt.secret) {
       console.error(
         "JWT_SECRET is missing"
       );
@@ -324,11 +323,10 @@ async function login(req, res) {
           userId: user.id,
           email: user.email,
         },
-        process.env.JWT_SECRET,
+        appConfig.jwt.secret,
         {
           expiresIn:
-            process.env.JWT_EXPIRES_IN ||
-            "7d",
+            appConfig.jwt.expiresIn,
         }
       );
 
@@ -532,9 +530,7 @@ async function resendVerificationEmail(
         user.id
       );
 
-    const frontendUrl =
-      process.env.FRONTEND_URL ||
-      "http://localhost:5173";
+    const frontendUrl = appConfig.frontendUrl;
 
     const verificationUrl =
       `${frontendUrl}/verify-email?token=${verificationToken.token}`;

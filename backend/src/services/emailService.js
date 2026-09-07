@@ -1,10 +1,9 @@
 const { Resend } = require("resend");
+const { aiConfig } = require("../config");
 
 const resend =
-  process.env.RESEND_API_KEY
-    ? new Resend(
-        process.env.RESEND_API_KEY
-      )
+  aiConfig.email.apiKey
+    ? new Resend(aiConfig.email.apiKey)
     : null;
 
 async function sendVerificationEmail({
@@ -47,9 +46,7 @@ async function sendVerificationEmail({
   // Send Email
   // ============================================
 
-  const from =
-    process.env.EMAIL_FROM ||
-    "FitAI Trainer <onboarding@resend.dev>";
+  const from = aiConfig.email.from;
 
   const { data, error } =
     await resend.emails.send({

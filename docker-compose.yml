@@ -4,22 +4,17 @@ services:
     image: mysql:8.4
     container_name: fitai-mysql
     restart: unless-stopped
-
     command:
       - --lower_case_table_names=1
-
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-
     ports:
       - "127.0.0.1:3307:3306"
-
     volumes:
       - mysql_data:/var/lib/mysql
-
     healthcheck:
       test:
         [
@@ -35,19 +30,38 @@ services:
     image: phpmyadmin:latest
     container_name: fitai-phpmyadmin
     restart: unless-stopped
-
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
       PMA_ARBITRARY: 0
-
     ports:
       - "127.0.0.1:8081:80"
-
     depends_on:
       mysql:
         condition: service_healthy
 
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    image: fitai-ai-service:latest
+    container_name: fitai-ai-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - EXERCISE_YOLO_MODEL=/app/models/best.pt
+      - EXERCISE_YOLO_CONF=0.45
+      - EXERCISE_YOLO_IMGSZ=640
+    volumes:
+      - ./ai-service/models:/app/models
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   mysql_data:

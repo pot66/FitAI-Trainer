@@ -829,22 +829,398 @@ function AIAssistant({
       setDeleteModal((prev) => ({ ...prev, loading: true }));
       await api.delete(`/chat/sessions/${deleteModal.session.id}`);
 
-      const remaining = sessions.filter((item) => item.id !== deleteModal.session.id);
-      setSessions(remaining);
+      setSessions((prev) =>
+        prev.filter((item) => item.id !== deleteModal.session.id)
+      );
 
-      if (sessionId === deleteModal.session.id) {
-        if (remaining.length > 0) {
-          selectSession(remaining[0]);
-        } else {
-          startNewChat();
-        }
+      if (
+        (typeof selectedSessionId !== "undefined" && selectedSessionId === deleteModal.session.id) ||
+        sessionId === deleteModal.session.id
+      ) {
+        if (typeof setSelectedSessionId === "function") setSelectedSessionId(null);
+        setSessionId(null);
+        if (sessionIdRef?.current) sessionIdRef.current = null;
+        setMessages([]);
+        setMessage("");
       }
+
+      setOpenSessionMenu(null);
       setDeleteModal({ isOpen: false, session: null, loading: false });
     } catch (error) {
       console.error("Delete Chat Error:", error);
       setDeleteModal((prev) => ({ ...prev, loading: false }));
-      alert(error.response?.data?.message || "ไม่สามารถลบห้องแชทได้");
+      alert(error.response?.data?.message || "ไม่สามารถลบ Chat ได้");
     }
+  };
+
+  // =====================================
+  // Send Message
+  // =====================================
+
+  const sendMessage = async () => {
+    if (
+      !message.trim() ||
+      loading
+    ) {
+      return;
+    }
+
+    const userMessage =
+      message.trim();
+
+    // =====================================
+    // Generic Plan Change Request
+    // =====================================
+
+    const isStartingPlanChange =
+      /^(?:à¸•à¹‰à¸­à¸‡à¸à¸²à¸£|à¸­à¸¢à¸²à¸|à¸‚à¸­)?\s*(?:à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™|à¸›à¸£à¸±à¸š)\s*(?:à¹à¸œà¸™|à¸•à¸²à¸£à¸²à¸‡)(?:\s*(?:à¸­à¸­à¸à¸à¸³à¸¥à¸±à¸‡à¸à¸²à¸¢|à¸§à¸±à¸™à¸™à¸µà¹‰))?[.!?]*$/i.test(
+        userMessage
+      );
+
+    // =====================================
+    // Local Plan Adjustment
+    // =====================================
+
+    // Guard: Food & Nutrition queries must not alter workout plans
+    const isFoodQuery = /(อาหาร|เมนู|กิน|ทาน|แดก|แคล|แคลอรี่|กี่แคล|calorie|calories|nutrition|โภชนาการ|โปรตีน|คาร์บ|ไขมัน|ข้าว|อกไก่|สลัด|กะเพรา|ก๋วยเตี๋ยว|ส้มตำ|มื้อ|diet|food|bmr|tdee|น้ำหนักเกิน|ลดความอ้วน|เพิ่มกล้าม|สร้างกล้าม|คลีน)/i.test(userMessage);
+    const isExplicitPlanRequest = /(เปลี่ยนท่า|เปลี่ยนตาราง|ปรับตาราง|แก้ตาราง|ขอเปลี่ยนตาราง|ตารางออกกำลังกาย|ท่าออกกำลังกาย)/i.test(userMessage);
+
+    let adjustment = { plan: weeklyPlan, changed: false };
+    if (!isFoodQuery || isExplicitPlanRequest) {
+      adjustment = applyPlanAdjustment(
+        weeklyPlan,
+        planProfile || {},
+        planExercises,
+        userMessage
+      );
+    }
+
+    if (isStartingPlanChange) {
+      adjustment = {
+        plan: weeklyPlan,
+        changed: false,
+      };
+    }
+
+    // =====================================
+    // AI Plan Request Detection
+    // =====================================
+
+    const asksForAiPlan =
+      /(à¹à¸™à¸°à¸™à¸³.*(à¸—à¹ˆà¸²|à¹à¸œà¸™|à¸­à¸­à¸à¸à¸³à¸¥à¸±à¸‡)|à¹€à¸¥à¸·à¸­à¸.*à¸—à¹ˆà¸²|à¸ˆà¸±à¸”.*à¹à¸œà¸™|suggest.*exercise|recommend.*exercise|à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™|à¸›à¸£à¸±à¸š|à¹à¸à¹‰à¹„à¸‚|à¸à¸´à¸ˆà¸à¸£à¸£à¸¡|à¹à¸—à¸™|à¸ªà¸¥à¸±à¸š|à¸‚à¸­à¸¥à¸”|à¸‚à¸­à¹€à¸‹à¹‡à¸•)/i.test(
+        userMessage
+      );
+
+    // =====================================
+    // Ollama Plan Adjustment
+    // =====================================
+
+    if (
+      adjustment.changed ||
+      asksForAiPlan
+    ) {
+      try {
+        const planResponse =
+          await api.post(
+            "/ai/plan-adjustment",
+            {
+              plan: weeklyPlan,
+              message: userMessage,
+              todayKey,
+            },
+            { timeout: 6000 }
+          );
+
+        const aiAdjustment =
+          planResponse.data?.data;
+
+        if (
+          aiAdjustment?.changed &&
+          Array.isArray(
+            aiAdjustment.plan
+          )
+        ) {
+          adjustment =
+            aiAdjustment;
+        }
+      } catch (error) {
+        console.warn(
+          "Ollama plan adjustment unavailable; using safe local adjustment.",
+          error
+        );
+      }
+    }
+
+    const activePlanForMessage =
+      adjustment.changed
+        ? adjustment.plan.find(
+            (day) =>
+              day.key === todayKey
+          )
+        : todayPlan;
+
+    // =====================================
+    // Save Updated Plan
+    // =====================================
+
+    if (adjustment.changed) {
+      setWeeklyPlan(
+        adjustment.plan
+      );
+
+      localStorage.setItem(
+        "fitai-weekly-plan",
+        JSON.stringify(
+          adjustment.plan
+        )
+      );
+
+      setJustUpdatedPlan(true);
+      setTimeout(() => setJustUpdatedPlan(false), 8000);
+    }
+
+    // =====================================
+    // Add User Message
+    // =====================================
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: userMessage,
+      },
+    ]);
+
+    setMessage("");
+
+    setLoading(true);
+
+    try {
+      let currentSessionId =
+        sessionIdRef.current;
+
+      // Create session if needed
+      if (!currentSessionId) {
+        currentSessionId =
+          await createSession(
+            userMessage
+          );
+      }
+
+      // =====================================
+      // Send Message To Backend
+      // =====================================
+
+      const response =
+        await api.post(
+          "/chat/messages",
+          {
+            sessionId:
+              currentSessionId,
+
+            message:
+              userMessage,
+
+            activePlan:
+              activePlanForMessage,
+
+            planUpdated:
+              adjustment.changed,
+          }
+        );
+
+      console.log(
+        "Chat Response:",
+        response.data
+      );
+
+      const data =
+        response.data;
+
+      // =====================================
+      // Extract AI Response
+      // =====================================
+
+      let aiResponse =
+        data.data
+          ?.assistantMessage
+          ?.content ||
+        data.data
+          ?.aiMessage
+          ?.content ||
+        data.data?.message ||
+        data.message ||
+        "";
+
+      if (!aiResponse) {
+        aiResponse = adjustment.changed
+          ? adjustment.message
+          : "à¸‚à¸­à¸­à¸ à¸±à¸¢à¸„à¸£à¸±à¸š à¹„à¸¡à¹ˆà¸žà¸šà¸„à¸³à¸•à¸­à¸šà¸ˆà¸²à¸ AI";
+      }
+
+      // =====================================
+      // Add AI Message
+      // =====================================
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            aiResponse,
+        },
+      ]);
+
+      // =====================================
+      // Update Session Messages
+      // =====================================
+
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id ===
+          currentSessionId
+            ? {
+                ...session,
+
+                messages: [
+                  ...(session.messages ||
+                    []),
+
+                  {
+                    role: "user",
+                    content:
+                      userMessage,
+                  },
+
+                  {
+                    role: "assistant",
+                    content:
+                      aiResponse,
+                  },
+                ],
+              }
+            : session
+        )
+      );
+
+      // =====================================
+      // Text To Speech
+      // =====================================
+
+      speakAIResponse(
+        aiResponse
+      );
+    } catch (error) {
+      console.error(
+        "Chat Error:",
+        error
+      );
+
+      const isTimeout =
+        error.code === "ECONNABORTED" ||
+        /timeout/i.test(error.message || "");
+
+      let fallbackText = "";
+      if (isTimeout) {
+        fallbackText =
+          "à¸‚à¸­à¸­à¸ à¸±à¸¢à¸„à¸£à¸±à¸š à¸‚à¸“à¸°à¸™à¸µà¹‰à¸£à¸°à¸šà¸šà¸›à¸£à¸°à¸¡à¸§à¸¥à¸œà¸¥à¸™à¸²à¸™à¸à¸§à¹ˆà¸²à¸›à¸à¸•à¸´ FitAI à¸‚à¸­à¹à¸™à¸°à¸™à¸³à¸—à¹ˆà¸²à¸­à¸­à¸à¸à¸³à¸¥à¸±à¸‡à¸à¸²à¸¢à¸žà¸·à¹‰à¸™à¸à¸²à¸™à¸—à¸µà¹ˆà¸„à¸¸à¸“à¸ªà¸²à¸¡à¸²à¸£à¸–à¸—à¸³à¹„à¸”à¹‰à¸—à¸±à¸™à¸—à¸µà¸„à¸£à¸±à¸š:\n\n" +
+          "- Squat (3 à¹€à¸‹à¹‡à¸•, 10â€“12 à¸„à¸£à¸±à¹‰à¸‡)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Squat](https://youtu.be/fKrzVBsUIv4)\n" +
+          "- Push-up (3 à¹€à¸‹à¹‡à¸•, 8â€“10 à¸„à¸£à¸±à¹‰à¸‡)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Push-up](https://youtu.be/s3z0w-82Y00)\n" +
+          "- Plank (3 à¹€à¸‹à¹‡à¸•, 20â€“30 à¸§à¸´à¸™à¸²à¸—à¸µ)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Plank](https://youtu.be/jDZsXIkwWQ4)\n" +
+          "- Glute Bridge (3 à¹€à¸‹à¹‡à¸•, 12â€“15 à¸„à¸£à¸±à¹‰à¸‡)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Glute Bridge](https://youtu.be/tBSaB_cnVeE)\n\n" +
+          "à¸„à¸¸à¸“à¸ªà¸²à¸¡à¸²à¸£à¸–à¸ªà¹ˆà¸‡à¸„à¸³à¸–à¸²à¸¡à¹ƒà¸«à¸¡à¹ˆà¹€à¸žà¸·à¹ˆà¸­à¸ªà¸­à¸šà¸–à¸²à¸¡à¸—à¹ˆà¸²à¸­à¸·à¹ˆà¸™ à¹† à¸«à¸£à¸·à¸­à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸¸à¸‚à¸ à¸²à¸žà¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡à¹„à¸”à¹‰à¹€à¸¥à¸¢à¸„à¸£à¸±à¸š";
+      } else {
+        const errorMsg =
+          error.response?.data?.message ||
+          "à¸‚à¸“à¸°à¸™à¸µà¹‰à¸£à¸°à¸šà¸šà¸à¸²à¸£à¸ªà¸·à¹ˆà¸­à¸ªà¸²à¸£à¸‚à¸±à¸”à¸‚à¹‰à¸­à¸‡à¸Šà¸±à¹ˆà¸§à¸„à¸£à¸²à¸§ à¸à¸£à¸¸à¸“à¸²à¸¥à¸­à¸‡à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¹ƒà¸«à¸¡à¹ˆà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡à¸„à¸£à¸±à¸š";
+        fallbackText = `âš ï¸ ${errorMsg}`;
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: fallbackText,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =====================================
+  // Handle Input Key Down
+  // =====================================
+
+  const handleInputKeyDown = (
+    event
+  ) => {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+
+      sendMessage();
+    }
+  };
+
+  // =====================================
+  // Submit
+  // =====================================
+
+  const handleSubmit = (
+    event
+  ) => {
+    event.preventDefault();
+
+    sendMessage();
+  };
+
+  // =====================================
+  // Stop Speaking
+  // =====================================
+
+  const handleCopyMessage = (content, index) => {
+    if (!content) return;
+    const clean = content.replace(/\[LOG_FOOD_ACTION:[\s\S]*?\]/g, "").trim();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(clean);
+    }
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const stopSpeaking = () => {
+    stopSpeech();
+    setIsSpeaking(false);
+    setSpeakingMsgIndex(null);
+  };
+
+  // =====================================
+  // Text To Speech (HD Bilingual Voice Engine)
+  // =====================================
+
+  const speakAIResponse = (text, index = null) => {
+    if (localStorage.getItem("fitai-ai-voice-enabled") === "false") {
+      return;
+    }
+
+    if (index !== null) {
+      setSpeakingMsgIndex(index);
+    }
+
+    speakText(text, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => {
+        setIsSpeaking(false);
+        setSpeakingMsgIndex(null);
+      },
+      onError: () => {
+        setIsSpeaking(false);
+        setSpeakingMsgIndex(null);
+      },
+    });
   };
 
   // =====================================

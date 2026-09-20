@@ -16,6 +16,7 @@ import Onboarding from "../Onboarding";
 import WorkoutPlan from "../WorkoutPlan";
 import Settings from "../Settings";
 import Dashboard from "../Dashboard";
+import FoodTracker from "../FoodTracker";
 
 export function AppRoutes({
   profile,
@@ -77,8 +78,12 @@ export function AppRoutes({
               onProfile={() => navigate(PATHS.PROFILE)}
               onSettings={() => navigate(PATHS.SETTINGS)}
               onWorkout={() => navigate(PATHS.WORKOUT)}
+              onFood={() => navigate(PATHS.FOOD)}
               onBack={() => navigate(PATHS.DASHBOARD)}
-              onLogout={logout}
+              onLogout={() => {
+                logout();
+                navigate(PATHS.LOGIN);
+              }}
             />
           </ProtectedRoute>
         }
@@ -151,6 +156,15 @@ export function AppRoutes({
       />
 
       {/* Fallback */}
+            <Route
+        path={PATHS.FOOD}
+        element={
+          <ProtectedRoute profile={profile} loadingProfile={loadingProfile}>
+            <FoodTracker onBack={() => navigate(PATHS.AI)} />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<Navigate to={PATHS.ROOT} replace />} />
     </Routes>
   );

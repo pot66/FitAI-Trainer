@@ -176,6 +176,61 @@ function generateFallbackResponse(message, context = {}) {
     const lowerText = text.toLowerCase();
 
     // =====================================
+    // Food & Calorie Tracking Answers (Database Backed)
+    // =====================================
+    const isFoodQuery =
+      lowerText.includes("แคล") ||
+      lowerText.includes("calorie") ||
+      lowerText.includes("กิน") ||
+      lowerText.includes("อาหาร") ||
+      lowerText.includes("โปรตีน") ||
+      lowerText.includes("คาร์บ") ||
+      lowerText.includes("มื้อ");
+
+    if (isFoodQuery && Array.isArray(context.foodLogs)) {
+      const foodLogs = context.foodLogs;
+      const totalCal = foodLogs.reduce((sum, l) => sum + (Number(l.totalCalories) || 0), 0);
+      const totalPro = foodLogs.reduce((sum, l) => sum + (Number(l.totalProtein) || 0), 0);
+      const totalCarb = foodLogs.reduce((sum, l) => sum + (Number(l.totalCarbs) || 0), 0);
+      const totalFat = foodLogs.reduce((sum, l) => sum + (Number(l.totalFat) || 0), 0);
+
+      let targetCal = 2100;
+      if (profile?.weight && profile?.height && profile?.age) {
+        const w = Number(profile.weight);
+        const h = Number(profile.height);
+        const a = Number(profile.age);
+        const isMale = String(profile.gender || "").toLowerCase().includes("male") || String(profile.gender || "").includes("ชาย");
+        const bmr = isMale ? (10 * w + 6.25 * h - 5 * a + 5) : (10 * w + 6.25 * h - 5 * a - 161);
+        targetCal = Math.round(bmr * 1.35);
+      }
+      const remaining = Math.max(0, Math.round(targetCal - totalCal));
+
+      if (
+        lowerText.includes("กี่แคล") ||
+        lowerText.includes("เท่าไร") ||
+        lowerText.includes("เท่าไหร่") ||
+        lowerText.includes("เหลือ") ||
+        lowerText.includes("กินไป") ||
+        lowerText.includes("วันนี้") ||
+        lowerText.includes("โปรตีน")
+      ) {
+        let msg = `วันนี้คุณรับประทานไปแล้วประมาณ **${Math.round(totalCal)} kcal** จากเป้าหมาย **${targetCal} kcal** (คงเหลือประมาณ **${remaining} kcal**) ครับ 🍽️\n\n`;
+        msg += `**สรุปสารอาหารที่ได้รับ:**\n- โปรตีน: **${Math.round(totalPro * 10) / 10} g**\n- คาร์โบไฮเดรต: **${Math.round(totalCarb * 10) / 10} g**\n- ไขมัน: **${Math.round(totalFat * 10) / 10} g**\n\n`;
+        if (foodLogs.length > 0) {
+          msg += `**มื้ออาหารวันนี้:**\n`;
+          foodLogs.forEach((l, idx) => {
+            const itemNames = (l.items || []).map((i) => `${i.name} (${i.quantity} ${i.unit})`).join(", ");
+            msg += `${idx + 1}. [${l.mealType}] ${itemNames} — **${Math.round(l.totalCalories)} kcal**\n`;
+          });
+        } else {
+          msg += `*(ยังไม่มีการบันทึกอาหารสำหรับวันนี้ สามารถถ่ายรูปหรือบันทึกได้ที่เมนู Food Tracker ได้เลยครับ)*`;
+        }
+        return msg;
+      }
+    }
+
+
+    // =====================================
     // Greeting
     // =====================================
 
@@ -468,8 +523,199 @@ function formatActivePlanRecommendation(plan, profile = null) {
     ].filter(Boolean).join("\n");
 }
 
+
+// =====================================
+// Food & Calorie Tracking Intelligence
+// =====================================
+function isFoodOrNutritionQuery(text = "") {
+  const t = String(text || "").toLowerCase();
+  const hasFoodKeywords =
+    /(อาหาร|เมนู|กิน|ทาน|แดก|แคล|แคลอรี่|กี่แคล|calorie|calories|nutrition|โภชนาการ|โปรตีน|คาร์บ|ไขมัน|ข้าว|อกไก่|สลัด|กะเพรา|ก๋วยเตี๋ยว|ส้มตำ|มื้อ|diet|food|bmr|tdee|น้ำหนักเกิน|ลดความอ้วน|เพิ่มกล้าม|สร้างกล้าม|คลีน)/i.test(t);
+  const isExplicitWorkoutChange =
+    /(เปลี่ยนท่า|เปลี่ยนตาราง|ขอเปลี่ยนท่า|สลับท่า|แก้ตาราง|ตารางออกกำลังกาย)/i.test(t);
+  return hasFoodKeywords && !isExplicitWorkoutChange;
+}
+
+function handleFoodAndNutritionQuery(message, context = {}) {
+  if (!isFoodOrNutritionQuery(message)) return null;
+
+  const text = String(message || "").trim();
+  const lower = text.toLowerCase();
+  const profile = context.profile || null;
+  const foodLogs = Array.isArray(context.foodLogs) ? context.foodLogs : [];
+
+  // 1. Calculate user BMR & TDEE
+  let weight = Number(profile?.weight) || 70;
+  let height = Number(profile?.height) || 170;
+  let age = Number(profile?.age) || 25;
+  const isMale = String(profile?.gender || "").toLowerCase().includes("male") || String(profile?.gender || "").includes("ชาย");
+  let bmr = isMale ? (10 * weight + 6.25 * height - 5 * age + 5) : (10 * weight + 6.25 * height - 5 * age - 161);
+  let targetCal = Math.round(bmr * 1.375); // standard activity level
+
+  // Consumed today
+  const totalCal = foodLogs.reduce((sum, l) => sum + (Number(l.totalCalories) || 0), 0);
+  const totalPro = foodLogs.reduce((sum, l) => sum + (Number(l.totalProtein) || 0), 0);
+  const totalCarb = foodLogs.reduce((sum, l) => sum + (Number(l.totalCarbs) || 0), 0);
+  const totalFat = foodLogs.reduce((sum, l) => sum + (Number(l.totalFat) || 0), 0);
+  const remainingCal = Math.max(0, Math.round(targetCal - totalCal));
+
+  // --- SUB-CASE A: Recommend Muscle-Building Food Menu (แนะนำเมนูอาหารเสริมกล้ามเนื้อ / เพิ่มกล้าม) ---
+  if (/(เสริมกล้าม|สร้างกล้าม|เพิ่มกล้าม|กล้ามเนื้อ|protein|โปรตีนสูง)/i.test(lower) && /(เมนู|อาหาร|แนะนำ|กินอะไร|ควรทาน)/i.test(lower)) {
+    const targetProteinMin = Math.round(weight * 1.6);
+    const targetProteinMax = Math.round(weight * 2.0);
+    const surplusCal = targetCal + 250;
+
+    return [
+      `FitAI ขอแนะนำ **เมนูอาหารเสริมสร้างกล้ามเนื้อ (High Protein Muscle Building Plan)** สำหรับคุณโดยเฉพาะครับ 💪🥗`,
+      "",
+      `📊 **เป้าหมายโภชนาการของคุณ (น้ำหนัก ${weight} กก.):**`,
+      `- ⚡ แคลอรี่เป้าหมาย: **${surplusCal} kcal/วัน** (TDEE + 250 kcal เพื่อการเจริญเติบโตของกล้ามเนื้อ)`,
+      `- 🍗 โปรตีนเป้าหมาย: **${targetProteinMin} - ${targetProteinMax} g/วัน** (1.6 - 2.0 g ต่อน้ำหนักตัว 1 กก.)`,
+      "",
+      `🍽️ **ตัวอย่างแผนเมนูอาหารประจำวัน:**`,
+      `1. **🍳 มื้อเช้า: ไข่ต้ม 2 ฟอง + ขนมปังโฮลวีต 2 แผ่น + อกไก่ฉีก (หรือนมถั่วเหลืองไม่หวาน)**`,
+      `   - พลังงาน: ~360 kcal | โปรตีน: ~28 g | คาร์บ: ~34 g`,
+      "",
+      `2. **🍛 มื้อกลางวัน: ข้าวผัดกะเพราอกไก่ (ใช้น้ำมันน้อย/ผัดน้ำ) + ไข่ดาวน้ำ**`,
+      `   - พลังงาน: ~480 kcal | โปรตีน: ~38 g | คาร์บ: ~52 g`,
+      "",
+      `3. **🍌 ของว่าง / ก่อนหรือหลังออกกำลังกาย: กล้วยหอม 1 ลูก + ไข่ต้ม 1 ฟอง หรือ เวย์โปรตีน 1 สกู๊ป**`,
+      `   - พลังงาน: ~190 kcal | โปรตีน: ~15 - 24 g`,
+      "",
+      `4. **🥗 มื้อเย็น: สเต็กปลากะพงย่าง หรือ ลาบอกไก่ + ข้าวกล้อง 1 ทัพพี + ผักเคียง**`,
+      `   - พลังงาน: ~410 kcal | โปรตีน: ~35 g | คาร์บ: ~38 g`,
+      "",
+      `✅ **รวมสารอาหารทั้งวันโดยประมาณ:** พลังงาน ~**1,440 - 1,800 kcal** | โปรตีน **~115 - 125 g** (ครบถ้วนตามเป้าหมายสร้างกล้ามเนื้อ)`,
+      "",
+      `💡 **เคล็ดลับจาก FitAI:**`,
+      `- ควรดื่มน้ำให้ได้อย่างน้อย 2.5 - 3 ลิตรต่อวัน เพื่อช่วยในการสังเคราะห์โปรตีนและการฟื้นฟูกล้ามเนื้อ`,
+      `- ทานคาร์โบไฮเดรตเชิงซ้อน (เช่น ข้าวกล้อง, มันหวาน, ข้าวโอ๊ต) เพื่อให้มีพลังงานฝึกได้อย่างเต็มที่`,
+      `- คุณสามารถกดบันทึกหรือถ่ายรูปอาหารเพื่อเช็กแคลอรี่และสารอาหารได้ที่แถบ **🥗 คำนวณแคลอรี่** ด้านขวาได้ตลอดเวลาครับ!`,
+    ].join("\n");
+  }
+
+  // --- SUB-CASE B: Recommend Weight Loss / Low-Calorie Menu (แนะนำเมนูลดน้ำหนัก / คุมแคลอรี่ / อาหารคลีน) ---
+  if (/(ลดน้ำหนัก|ลดไขมัน|คุมแคล|คุมน้ำหนัก|อาหารคลีน|ผอม)/i.test(lower) && /(เมนู|อาหาร|แนะนำ|กินอะไร|ควรทาน)/i.test(lower)) {
+    const deficitCal = Math.max(1200, targetCal - 400);
+
+    return [
+      `FitAI ขอแนะนำ **เมนูอาหารควบคุมแคลอรี่และลดไขมัน (Calorie Deficit & High Satiety Plan)** ครับ 🥗🔥`,
+      "",
+      `📊 **เป้าหมายโภชนาการของคุณ:**`,
+      `- ⚡ แคลอรี่เป้าหมาย: **${deficitCal} kcal/วัน** (สร้าง Calorie Deficit อย่างปลอดภัย -400 kcal)`,
+      `- 🍗 โปรตีน: **${Math.round(weight * 1.4)} g/วัน** (เพื่อรักษาความกระชับและมวลกล้ามเนื้อ)`,
+      "",
+      `🍽️ **เมนูอาหารไทยแคลอรี่ต่ำที่แนะนำ:**`,
+      `1. **🍲 แกงจืดเต้าหู้หมูสับสาหร่าย / ต้มเลือดหมูใบตำลึง** (~140 - 160 kcal) — อิ่มท้อง แคลอรี่ต่ำมาก`,
+      `2. **🥗 ส้มตำไทย (ไม่หวานจัด) + ไก่ย่างไม่ติดหนัง 1 ชิ้น** (~260 kcal) — โปรตีนแน่น แคลอรี่เบา`,
+      `3. **🐟 ปลานึ่งมะนาว หรือ ต้มยำกุ้งน้ำใส + ข้าวสวย 1 ทัพพี** (~280 - 320 kcal) — ไขมันต่ำมาก`,
+      `4. **🌶️ ลาบอกไก่ + ผักสดเคียงไม่อั้น** (~180 kcal) — รสชาติแซ่บ โปรตีนสูงกว่า 28 กรัม`,
+      "",
+      `💡 **ข้อแนะนำ:** หลีกเลี่ยงอาหารทอด ผัดน้ำมันเยิ้ม แกงกะทิ และน้ำหวานชง เพราะมักมีแคลอรี่แฝงสูงครับ`,
+    ].join("\n");
+  }
+
+  // --- SUB-CASE C: Specific Food Calorie Query (ข้าวมันไก่กี่แคล / คำนวณแคล ...) ---
+  const extractResults = [];
+  try {
+    const db = require("../data/nutritionDatabase.json");
+    for (const item of db) {
+      for (const alias of [item.name, ...(item.aliases || [])]) {
+        if (alias && alias.length >= 2 && lower.includes(alias.toLowerCase())) {
+          if (!extractResults.some((f) => f.id === item.id)) {
+            extractResults.push(item);
+          }
+          break;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load nutritionDatabase in aiService:", err);
+  }
+
+  if (extractResults.length > 0 && (lower.includes("แคล") || lower.includes("กี่") || lower.includes("คำนวณ") || lower.includes("กิน") || lower.includes("เท่าไหร่") || lower.includes("เท่าไร") || lower.includes("จาน"))) {
+    let responseText = `FitAI คำนวณข้อมูลโภชนาการและแคลอรี่ให้เรียบร้อยครับ 🍽️\n\n`;
+    let totalFoundCal = 0;
+    let totalFoundPro = 0;
+    let totalFoundCarb = 0;
+    let totalFoundFat = 0;
+
+    extractResults.forEach((item, idx) => {
+      const s = item.serving || { calories: item.per100g?.calories || 0, protein: 0, carbs: 0, fat: 0, unit: "จาน" };
+      totalFoundCal += Number(s.calories) || 0;
+      totalFoundPro += Number(s.protein) || 0;
+      totalFoundCarb += Number(s.carbs) || 0;
+      totalFoundFat += Number(s.fat) || 0;
+
+      responseText += `### ${idx + 1}. **${item.name}** (${item.nameEn || ""})\n`;
+      responseText += `- ⚡ พลังงาน: **${s.calories} kcal** (ต่อ 1 ${s.unit || "จาน"})\n`;
+      responseText += `- 🍗 โปรตีน: **${s.protein} g** | 🍚 คาร์บ: **${s.carbs} g** | 🥑 ไขมัน: **${s.fat} g**\n\n`;
+    });
+
+    if (extractResults.length > 1) {
+      responseText += `📊 **รวมทั้งหมด:** **${Math.round(totalFoundCal)} kcal** (โปรตีน ${Math.round(totalFoundPro * 10) / 10}g, คาร์บ ${Math.round(totalFoundCarb * 10) / 10}g, ไขมัน ${Math.round(totalFoundFat * 10) / 10}g)\n\n`;
+    }
+
+    const first = extractResults[0];
+    const logActionData = {
+      name: extractResults.map(i => i.name).join(" + "),
+      calories: Math.round(totalFoundCal),
+      protein: Math.round(totalFoundPro * 10) / 10,
+      carbs: Math.round(totalFoundCarb * 10) / 10,
+      fat: Math.round(totalFoundFat * 10) / 10,
+      unit: first.serving?.unit || "จาน",
+    };
+
+    responseText += `[LOG_FOOD_ACTION:${JSON.stringify(logActionData)}]\n\n`;
+    responseText += `💡 *คุณสามารถกดปุ่ม "บันทึกลงมื้ออาหาร" ด้านบนเพื่อบันทึกเข้าตารางแคลอรี่ประจำวันได้ทันทีครับ!*`;
+    return responseText;
+  }
+
+  // --- SUB-CASE D: Today's Summary & Remaining Calories (วันนี้กินไปกี่แคล / สรุปแคลอรี่ / เหลืออีกกี่แคล) ---
+  if (lower.includes("วันนี้") || lower.includes("กินไป") || lower.includes("เหลือ") || lower.includes("สรุป")) {
+    let msg = `วันนี้คุณรับประทานไปแล้วประมาณ **${Math.round(totalCal)} kcal** จากเป้าหมาย **${targetCal} kcal** (คงเหลือประมาณ **${remainingCal} kcal**) ครับ 🍽️\n\n`;
+    msg += `**สรุปสารอาหารที่ได้รับ:**\n- 🍗 โปรตีน: **${Math.round(totalPro * 10) / 10} g**\n- 🍚 คาร์โบไฮเดรต: **${Math.round(totalCarb * 10) / 10} g**\n- 🥑 ไขมัน: **${Math.round(totalFat * 10) / 10} g**\n\n`;
+
+    if (foodLogs.length > 0) {
+      msg += `**รายการมื้ออาหารวันนี้:**\n`;
+      foodLogs.forEach((l, idx) => {
+        const itemNames = (l.items || []).map((i) => `${i.name} (${i.quantity} ${i.unit})`).join(", ");
+        msg += `${idx + 1}. [${l.mealType}] ${itemNames || "มื้ออาหาร"} — **${Math.round(l.totalCalories)} kcal**\n`;
+      });
+    } else {
+      msg += `*(ยังไม่มีการบันทึกอาหารสำหรับวันนี้ สามารถพิมพ์ชื่ออาหาร หรือกดรูปกล้อง 📷 เพื่อสแกนและบันทึกได้ทันทีครับ)*`;
+    }
+    return msg;
+  }
+
+  // --- SUB-CASE E: BMR & TDEE Calculation ---
+  if (lower.includes("bmr") || lower.includes("tdee") || lower.includes("ควรทานกี่แคล") || lower.includes("วันละกี่แคล")) {
+    return [
+      `FitAI คำนวณอัตราการเผาผลาญพลังงาน (BMR & TDEE) ให้คุณเรียบร้อยครับ 📊`,
+      "",
+      `👤 **ข้อมูลสรีระ:** ส่วนสูง ${height} ซม. | น้ำหนัก ${weight} กก. | อายุ ${age} ปี`,
+      "",
+      `- **BMR (Basal Metabolic Rate):** **${Math.round(bmr)} kcal/วัน** (พลังงานขั้นต่ำที่ร่างกายใช้เพื่อดำรงชีพขณะพักผ่อน)`,
+      `- **TDEE (Total Daily Energy Expenditure):** **${targetCal} kcal/วัน** (พลังงานรวมทั้งหมดที่ร่างกายเผาผลาญใน 1 วันตามกิจกรรม)`,
+      "",
+      `🎯 **คำแนะนำในการตั้งเป้าหมายแคลอรี่:**`,
+      `- 🔥 **เพื่อลดไขมัน / ลดน้ำหนัก:** ทานวันละ **${Math.round(targetCal - 400)} kcal** (ขาดดุลอย่างปลอดภัย)`,
+      `- ⚖️ **เพื่อรักษาน้ำหนักและสุขภาพ:** ทานวันละ **${targetCal} kcal**`,
+      `- 💪 **เพื่อสร้างกล้ามเนื้อ:** ทานวันละ **${Math.round(targetCal + 250)} kcal** ควบคู่กับการเวทเทรนนิ่ง`,
+    ].join("\n");
+  }
+
+  return null;
+}
+
 async function generateAIResponse(message, context = {}) {
     let answer = "";
+
+    // 0. Food & Calorie Tracking Handler
+    const foodResponse = handleFoodAndNutritionQuery(message, context);
+    if (foodResponse) {
+        return foodResponse;
+    }
 
     // 1. If plan was updated, return the authoritative synchronized plan response
     if (context.planUpdated && context.activePlan) {

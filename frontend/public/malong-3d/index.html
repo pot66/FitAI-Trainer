@@ -219,57 +219,66 @@
       }
     });
 
-    // Check if Unity loader script exists
-    const candidateLoaders = [
-      "Build/malong.loader.js",
-      "Build/malong-3d.loader.js",
-      "Build/Build.loader.js"
-    ];
+    // Only attempt to load Unity if a build flag or loader is explicitly declared
+    // This prevents 404 console errors when the project is in placeholder/preview mode
+    function checkAndLoadUnity() {
+      if (!window.HAS_UNITY_BUILD) {
+        // Keep placeholder view active
+        return;
+      }
 
-    function tryLoadUnity(index) {
-      if (index >= candidateLoaders.length) return;
-      const loaderUrl = candidateLoaders[index];
+      const candidateLoaders = [
+        "Build/malong.loader.js",
+        "Build/malong-3d.loader.js",
+        "Build/Build.loader.js"
+      ];
 
-      const script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        // Find matching data files
-        const buildPrefix = loaderUrl.replace(".loader.js", "");
-        const config = {
-          dataUrl: buildPrefix + ".data",
-          frameworkUrl: buildPrefix + ".framework.js",
-          codeUrl: buildPrefix + ".wasm",
-          streamingAssetsUrl: "StreamingAssets",
-          companyName: "FitAI",
-          productName: "malong",
-          productVersion: "1.0",
+      function tryLoadUnity(index) {
+        if (index >= candidateLoaders.length) return;
+        const loaderUrl = candidateLoaders[index];
+
+        const script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+          const buildPrefix = loaderUrl.replace(".loader.js", "");
+          const config = {
+            dataUrl: buildPrefix + ".data",
+            frameworkUrl: buildPrefix + ".framework.js",
+            codeUrl: buildPrefix + ".wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "FitAI",
+            productName: "malong",
+            productVersion: "1.0",
+          };
+
+          if (placeholderBox) placeholderBox.style.display = "none";
+          if (canvas) canvas.style.display = "block";
+          if (loadingBar) loadingBar.style.display = "block";
+
+          createUnityInstance(canvas, config, (progress) => {
+            if (progressBarFull) progressBarFull.style.width = 100 * progress + "%";
+          }).then((instance) => {
+            unityInstance = instance;
+            window.unityInstance = instance;
+            if (loadingBar) loadingBar.style.display = "none";
+            console.log("🎮 Malong 3D WebGL successfully loaded!");
+          }).catch((err) => {
+            console.warn("Failed to initialize Unity instance:", err);
+            if (canvas) canvas.style.display = "none";
+            if (loadingBar) loadingBar.style.display = "none";
+            if (placeholderBox) placeholderBox.style.display = "flex";
+          });
         };
+        script.onerror = () => {
+          tryLoadUnity(index + 1);
+        };
+        document.body.appendChild(script);
+      }
 
-        if (placeholderBox) placeholderBox.style.display = "none";
-        if (canvas) canvas.style.display = "block";
-        if (loadingBar) loadingBar.style.display = "block";
-
-        createUnityInstance(canvas, config, (progress) => {
-          if (progressBarFull) progressBarFull.style.width = 100 * progress + "%";
-        }).then((instance) => {
-          unityInstance = instance;
-          window.unityInstance = instance;
-          if (loadingBar) loadingBar.style.display = "none";
-          console.log("🎮 Malong 3D WebGL successfully loaded!");
-        }).catch((err) => {
-          console.warn("Failed to initialize Unity instance:", err);
-          if (canvas) canvas.style.display = "none";
-          if (loadingBar) loadingBar.style.display = "none";
-          if (placeholderBox) placeholderBox.style.display = "flex";
-        });
-      };
-      script.onerror = () => {
-        tryLoadUnity(index + 1);
-      };
-      document.body.appendChild(script);
+      tryLoadUnity(0);
     }
 
-    tryLoadUnity(0);
+    checkAndLoadUnity();
   </script>
 </body>
 </html>

@@ -1,5 +1,8 @@
 require("./env");
 
+const rawAiUrl = process.env.AI_SERVICE_URL || "http://127.0.0.1:8000";
+const cleanAiUrl = rawAiUrl.replace("://ai-service:", "://127.0.0.1:").replace(/\/$/, "");
+
 const aiConfig = {
   ollama: {
     enabled: String(process.env.OLLAMA_ENABLED || "true").toLowerCase() !== "false",
@@ -11,7 +14,7 @@ const aiConfig = {
   },
 
   aiService: {
-    url: process.env.AI_SERVICE_URL || "http://ai-service:8000",
+    url: cleanAiUrl,
   },
 
   email: {

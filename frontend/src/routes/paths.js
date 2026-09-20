@@ -11,6 +11,7 @@ export const PATHS = {
   PROGRESS: "/progress",
   PROFILE: "/profile",
   SETTINGS: "/settings",
+  FOOD: "/food",
 };
 
 export default PATHS;

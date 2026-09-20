@@ -116,6 +116,9 @@ async function sendMessage(req, res) {
       take: 10,
     });
 
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0); const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const todayFoodLogs = await prisma.foodLog.findMany({ where: { userId: req.user.userId, loggedAt: { gte: todayStart, lte: todayEnd } }, include: { items: true }, orderBy: { loggedAt: 'asc' } });
+
     // ส่งข้อมูลให้ Local AI
     const history = await prisma.chatMessage.findMany({
       where: { sessionId: session.id },
@@ -126,6 +129,7 @@ async function sendMessage(req, res) {
     const aiResponse = await generateAIResponse(message, {
       profile,
       workout,
+      foodLogs: todayFoodLogs,
       history: history.reverse().slice(0, -1),
       activePlan,
       planUpdated: Boolean(planUpdated),

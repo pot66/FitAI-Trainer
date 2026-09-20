@@ -10,6 +10,11 @@ function parseDatabaseConfig() {
   let password = process.env.DB_PASSWORD;
   let database = process.env.DB_NAME;
 
+  let allowPublicKeyRetrieval = true;
+  if (process.env.DB_ALLOW_PUBLIC_KEY_RETRIEVAL !== undefined) {
+    allowPublicKeyRetrieval = process.env.DB_ALLOW_PUBLIC_KEY_RETRIEVAL !== "false";
+  }
+
   if (process.env.DATABASE_URL) {
     try {
       const parsed = new URL(process.env.DATABASE_URL);
@@ -21,6 +26,9 @@ function parseDatabaseConfig() {
       }
       if (!database && parsed.pathname) {
         database = parsed.pathname.replace(/^\//, "");
+      }
+      if (parsed.searchParams.has("allowPublicKeyRetrieval")) {
+        allowPublicKeyRetrieval = parsed.searchParams.get("allowPublicKeyRetrieval") === "true";
       }
     } catch (err) {
       warnings.push(`Invalid DATABASE_URL format: ${err.message}. Falling back to DB_* variables.`);
@@ -40,6 +48,7 @@ function parseDatabaseConfig() {
     password: password !== undefined ? password : "",
     database: database || "fitai_trainer",
     connectionLimit: Number(process.env.DB_POOL_SIZE || 10),
+    allowPublicKeyRetrieval,
     missing,
     warnings,
   };

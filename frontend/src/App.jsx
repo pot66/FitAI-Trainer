@@ -1,5 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
-import "./App.css";
+﻿import { useEffect, useState, useCallback } from "react";
 
 import { useAuth } from "./contexts/AuthProvider";
 import api from "./services/api";
@@ -41,7 +40,7 @@ function App() {
         setError(
           err.response?.data?.message ||
           err.message ||
-          "ไม่สามารถโหลด Profile ได้"
+          "ไม่สามารถโหลดข้อมูล Profile ได้"
         );
       }
     } finally {

@@ -8,6 +8,7 @@ const workoutRoutes = require("./routes/workoutRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const foodRoutes = require("./routes/foodRoutes");
 
 const { appConfig } = require("./config");
 
@@ -18,7 +19,6 @@ const allowedOrigins = appConfig.cors.allowedOrigins;
 app.use(
   cors({
     origin(origin, callback) {
-      // อนุญาต request จาก Postman/curl/server-side
       if (!origin) {
         return callback(null, true);
       }
@@ -74,6 +74,7 @@ app.use("/api/workouts", workoutRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/food", foodRoutes);
 
 /*
 |--------------------------------------------------------------------------

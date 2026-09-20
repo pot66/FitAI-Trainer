@@ -22,6 +22,39 @@ function compactActivePlan(plan) {
   return `${plan.focus || "การออกกำลังกาย"}: ${exercises.map((item) => `${item.name} (${item.sets || "-"} เซ็ต, ${item.repetitions || "-"})`).join(", ") || "วันพัก"}`;
 }
 
+function compactFoodNutrition(foodLogs = [], profile = null) {
+  if (!Array.isArray(foodLogs) || !foodLogs.length) {
+    return "วันนี้ยังไม่มีการบันทึกอาหาร (0 kcal)";
+  }
+  const total = foodLogs.reduce(
+    (acc, log) => ({
+      calories: Math.round(acc.calories + (Number(log.totalCalories) || 0)),
+      protein: Math.round(acc.protein + (Number(log.totalProtein) || 0)),
+      carbs: Math.round(acc.carbs + (Number(log.totalCarbs) || 0)),
+      fat: Math.round(acc.fat + (Number(log.totalFat) || 0)),
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+
+  let targetCal = 2100;
+  if (profile?.weight && profile?.height && profile?.age) {
+    const w = Number(profile.weight);
+    const h = Number(profile.height);
+    const a = Number(profile.age);
+    const isMale = String(profile.gender || "").toLowerCase().includes("male") || String(profile.gender || "").includes("ชาย");
+    const bmr = isMale ? (10 * w + 6.25 * h - 5 * a + 5) : (10 * w + 6.25 * h - 5 * a - 161);
+    targetCal = Math.round(bmr * 1.35);
+  }
+  const remaining = Math.max(0, targetCal - total.calories);
+
+  const meals = foodLogs.map((l) => {
+    const itemNames = (l.items || []).map((i) => i.name).join(", ");
+    return `${l.mealType}: ${itemNames} (${Math.round(l.totalCalories)} kcal)`;
+  }).join("; ");
+
+  return `วันนี้กินไปแล้ว ${total.calories} kcal จากเป้าหมาย ${targetCal} kcal (คงเหลือ ${remaining} kcal) [โปรตีน ${total.protein}g, คาร์บ ${total.carbs}g, ไขมัน ${total.fat}g]. รายการมื้อที่กิน: ${meals}`;
+}
+
 function createSystemPrompt(context, videoCatalog = "") {
   const lines = [
     "คุณคือ FitAI Trainer ผู้ช่วยฟิตเนสภาษาไทยที่เป็นมิตร กระชับ และใช้งานได้จริง",
@@ -43,7 +76,8 @@ function createSystemPrompt(context, videoCatalog = "") {
   lines.push(
     `ข้อมูล Profile: ${compactProfile(context.profile)}`,
     `ประวัติการฝึกล่าสุด: ${compactWorkouts(context.workout)}`,
-    `แผนวันนี้: ${compactActivePlan(context.activePlan)}`
+    `แผนวันนี้: ${compactActivePlan(context.activePlan)}`,
+    `ข้อมูลอาหารและแคลอรีวันนี้: ${compactFoodNutrition(context.foodLogs, context.profile)}`
   );
 
   return lines.join("\n");
@@ -125,7 +159,6 @@ async function askOllama(message, context = {}) {
       return null;
     }
 
-    // Only try fallback model if error was immediate (e.g. 404 model not found)
     try {
       return await callOllamaChat(baseUrl, fallbackModel, messages, null, 0.45, 6000);
     } catch (fallbackError) {

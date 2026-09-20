@@ -288,6 +288,13 @@ export function extractTargetExercise(text, exercises = []) {
 
 export function applyPlanAdjustment(plan, profile, exercises = [], request) {
   const text = String(request || "").toLowerCase();
+
+  // Food & Nutrition query guard: Do not hijack food inquiries as workout plan modifications
+  const isFoodQuery = /(อาหาร|เมนู|กิน|ทาน|แดก|แคล|แคลอรี่|กี่แคล|calorie|calories|nutrition|โภชนาการ|โปรตีน|คาร์บ|ไขมัน|ข้าว|อกไก่|สลัด|กะเพรา|ก๋วยเตี๋ยว|ส้มตำ|มื้อ|diet|food|bmr|tdee)/i.test(text);
+  const isExplicitPlanRequest = /(เปลี่ยนท่า|เปลี่ยนตาราง|ปรับตาราง|แก้ตาราง|ขอเปลี่ยนตาราง|ตารางออกกำลังกาย|ท่าออกกำลังกาย)/i.test(text);
+  if (isFoodQuery && !isExplicitPlanRequest) {
+    return { plan, changed: false, message: "" };
+  }
   const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
   const targetIndex = Math.max(0, plan.findIndex((day) => day.key === todayKey));
   const current = plan[targetIndex] || { key: todayKey, focus: "ช่วงล่าง", exercises: [] };

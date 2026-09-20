@@ -1,11 +1,19 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthProvider";
 
-function Register({
-  onBackToLogin,
-}) {
+function Register({ onBackToLogin }) {
   const navigate = useNavigate();
+  const { register, login } = useAuth();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const handleBack = () => {
     if (onBackToLogin) {
       onBackToLogin();
@@ -14,400 +22,195 @@ function Register({
     }
   };
 
-  const {
-    register,
-    login,
-  } = useAuth();
-
-  const [name, setName] =
-    useState("");
-
-  const [email, setEmail] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [
-    confirmPassword,
-    setConfirmPassword,
-  ] = useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [success, setSuccess] =
-    useState("");
-
-  // ============================================
-  // Submit
-  // ============================================
-
-  const handleRegister = async (
-    event
-  ) => {
+  const handleRegister = async (event) => {
     event.preventDefault();
-
     setError("");
     setSuccess("");
 
-    const cleanName =
-      name.trim();
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
 
-    const cleanEmail =
-      email
-        .trim()
-        .toLowerCase();
-
-    // ----------------------------------------
-    // Validate Name
-    // ----------------------------------------
-
-    if (
-      cleanName.length < 2
-    ) {
-      setError(
-        "กรุณากรอกชื่ออย่างน้อย 2 ตัวอักษร"
-      );
-
+    if (!cleanName) {
+      setError("กรุณากรอกชื่อของคุณ");
       return;
     }
 
-    // ----------------------------------------
-    // Validate Email
-    // ----------------------------------------
-
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (
-      !emailRegex.test(
-        cleanEmail
-      )
-    ) {
-      setError(
-        "กรุณากรอก Email ให้ถูกต้อง"
-      );
-
+    if (!cleanEmail.includes("@")) {
+      setError("กรุณากรอก Email ให้ถูกต้อง");
       return;
     }
 
-    // ----------------------------------------
-    // Validate Password
-    // ----------------------------------------
-
-    if (
-      password.length < 8
-    ) {
-      setError(
-        "Password ต้องมีอย่างน้อย 8 ตัวอักษร"
-      );
-
+    if (password.length < 8) {
+      setError("Password ต้องมีความยาวอย่างน้อย 8 ตัวอักษร");
       return;
     }
 
-    // ----------------------------------------
-    // Confirm Password
-    // ----------------------------------------
-
-    if (
-      password !==
-      confirmPassword
-    ) {
-      setError(
-        "Password และ Confirm Password ไม่ตรงกัน"
-      );
-
+    if (password !== confirmPassword) {
+      setError("Password และ Confirm Password ไม่ตรงกัน");
       return;
     }
 
     setLoading(true);
 
     try {
-      // --------------------------------------
-      // Register API
-      // --------------------------------------
-
-      const result =
-        await register(
-          cleanName,
-          cleanEmail,
-          password
-        );
+      const result = await register(cleanName, cleanEmail, password);
 
       if (!result.success) {
-        setError(
-          result.message ||
-            "สมัครสมาชิกไม่สำเร็จ"
-        );
-
+        setError(result.message || "การสมัครสมาชิกล้มเหลว");
         return;
       }
 
-      // --------------------------------------
-      // สมัครสำเร็จ
-      // --------------------------------------
+      setSuccess("สมัครสมาชิกสำเร็จ กำลังเข้าสู่ระบบ...");
 
-      setSuccess(
-        "สมัครสมาชิกสำเร็จ กำลังเข้าสู่ระบบ..."
-      );
-
-      // --------------------------------------
-      // Login ทันที
-      // --------------------------------------
-
-      const loginResult =
-        await login(
-          cleanEmail,
-          password
-        );
-
-      if (
-        !loginResult.success
-      ) {
-        setSuccess(
-          "สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ"
-        );
-
+      const loginResult = await login(cleanEmail, password);
+      if (!loginResult.success) {
+        setSuccess("สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ");
         setTimeout(() => {
           handleBack();
         }, 1200);
-
-        return;
       }
-    } catch (error) {
-      console.error(
-        "Register Error:",
-        error
-      );
-
-      setError(
-        error.message ||
-          "เกิดข้อผิดพลาดในการสมัครสมาชิก"
-      );
+    } catch (err) {
+      console.error("Register Error:", err);
+      setError(err.message || "เกิดข้อผิดพลาดในการสมัครสมาชิก");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-
-        {/* =====================================
-            Header
-        ====================================== */}
-
-        <div className="badge">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-zinc-900/90 border border-zinc-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm flex flex-col items-center">
+        {/* Badge */}
+        <div className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wider text-zinc-400 bg-zinc-800/80 border border-zinc-700/60 rounded-full mb-4 uppercase">
           AI FITNESS ASSISTANT
         </div>
 
-        <h1>
-          FitAI
-          <span> Trainer</span>
+        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight text-center">
+          FitAI <span className="text-red-500 font-extrabold">Trainer</span>
         </h1>
 
-        <p className="login-description">
-          สร้างบัญชีเพื่อเริ่มใช้งาน
-          FitAI Trainer
+        <p className="text-zinc-400 text-sm mb-6 text-center">
+          สร้างบัญชีใหม่เพื่อเริ่มต้นใช้งาน FitAI Trainer
         </p>
 
-        {/* =====================================
-            Register Form
-        ====================================== */}
-
-        <form
-          className="login-form"
-          onSubmit={
-            handleRegister
-          }
-        >
-
+        {/* Register Form */}
+        <form className="w-full flex flex-col gap-4" onSubmit={handleRegister}>
           {/* Name */}
-
-          <div className="form-group">
-            <label>
-              ชื่อ
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+              ชื่อ - นามสกุล
             </label>
-
             <input
               type="text"
               value={name}
-              onChange={(
-                event
-              ) =>
-                setName(
-                  event.target.value
-                )
-              }
+              onChange={(e) => setName(e.target.value)}
               placeholder="ชื่อของคุณ"
               autoComplete="name"
               disabled={loading}
               required
+              className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all disabled:opacity-50"
             />
           </div>
 
           {/* Email */}
-
-          <div className="form-group">
-            <label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
               Email
             </label>
-
             <input
               type="email"
               value={email}
-              onChange={(
-                event
-              ) =>
-                setEmail(
-                  event.target.value
-                )
-              }
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="example@gmail.com"
               autoComplete="email"
               disabled={loading}
               required
+              className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all disabled:opacity-50"
             />
-
-            <small
-              style={{
-                opacity: 0.7,
-                marginTop:
-                  "6px",
-                display:
-                  "block",
-              }}
-            >
-              ใช้ Email ที่คุณสามารถ
-              เข้าถึงได้
-            </small>
           </div>
 
           {/* Password */}
-
-          <div className="form-group">
-            <label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
               Password
             </label>
-
             <input
               type="password"
               value={password}
-              onChange={(
-                event
-              ) =>
-                setPassword(
-                  event.target.value
-                )
-              }
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="อย่างน้อย 8 ตัวอักษร"
               autoComplete="new-password"
               disabled={loading}
               required
+              className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all disabled:opacity-50"
             />
           </div>
 
           {/* Confirm Password */}
-
-          <div className="form-group">
-            <label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
               ยืนยัน Password
             </label>
-
             <input
               type="password"
-              value={
-                confirmPassword
-              }
-              onChange={(
-                event
-              ) =>
-                setConfirmPassword(
-                  event.target.value
-                )
-              }
-              placeholder="กรอก Password อีกครั้ง"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="กรอกรหัสผ่านอีกครั้ง"
               autoComplete="new-password"
               disabled={loading}
               required
+              className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all disabled:opacity-50"
             />
           </div>
 
-          {/* Error */}
-
+          {/* Error Banner */}
           {error && (
-            <div className="login-error">
-              ❌ {error}
+            <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 text-xs font-medium flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
-          {/* Success */}
-
+          {/* Success Banner */}
           {success && (
-            <div
-              className="login-success"
-            >
-              ✅ {success}
+            <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-800/50 text-emerald-400 text-xs font-medium flex items-center gap-2">
+              <span>✅</span>
+              <span>{success}</span>
             </div>
           )}
 
-          {/* Register */}
-
+          {/* Submit Button */}
           <button
             type="submit"
-            className="primary-button login-button"
             disabled={loading}
+            className="w-full mt-2 py-3 bg-red-600 hover:bg-red-500 active:scale-[0.99] disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-red-600/20 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading
-              ? "กำลังสมัครสมาชิก..."
-              : "สมัครสมาชิก"}
+            {loading ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>กำลังสมัครสมาชิก...</span>
+              </>
+            ) : (
+              "สมัครสมาชิก"
+            )}
           </button>
-
         </form>
 
-        {/* =====================================
-            Back Login
-        ====================================== */}
-
-        <div
-          style={{
-            marginTop:
-              "20px",
-            textAlign:
-              "center",
-          }}
-        >
-          <span>
-            มีบัญชีอยู่แล้ว?
-          </span>
-
+        {/* Back to Login */}
+        <div className="w-full mt-6 pt-5 border-t border-zinc-800/80 text-center text-sm text-zinc-400">
+          <span>มีบัญชีอยู่แล้วใช่หรือไม่?</span>
           <button
             type="button"
-            onClick={
-              handleBack
-            }
+            onClick={handleBack}
             disabled={loading}
-            style={{
-              marginLeft:
-                "8px",
-              border:
-                "none",
-              background:
-                "none",
-              cursor:
-                "pointer",
-              fontWeight:
-                "700",
-            }}
+            className="ml-2 font-bold text-red-400 hover:text-red-300 hover:underline bg-transparent border-0 cursor-pointer disabled:opacity-50 transition-colors"
           >
             เข้าสู่ระบบ
           </button>
         </div>
-
       </div>
     </div>
   );

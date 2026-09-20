@@ -1,71 +1,37 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import api from "./services/api";
 import PoseDetector from "./PoseDetector";
 import PoseAnalyzer from "./PoseAnalyzer";
 import UnityWorkout3D from "./UnityWorkout3D";
-import {
-  createExerciseEngine,
-} from "./ai/exerciseEngine";
+import { createExerciseEngine } from "./ai/exerciseEngine";
+import { speakText, stopSpeech } from "./utils/speechUtils";
 
 function Workout({ onBack }) {
+  const exerciseEngineRef = useRef(null);
+  const [aiResult, setAiResult] = useState(null);
 
-  const exerciseEngineRef =
-  useRef(null);
-
-const [
-  aiResult,
-  setAiResult,
-] = useState(null);
-  // =====================================
   // Exercise
-  // =====================================
-
   const [exercises, setExercises] = useState([]);
-  const [selectedExercise, setSelectedExercise] =
-    useState(null);
+  const [selectedExercise, setSelectedExercise] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
   const [viewMode, setViewMode] = useState("split"); // "split" | "camera" | "3d"
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // =====================================
   // Camera
-  // =====================================
-
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [poseLandmarks, setPoseLandmarks] = useState(null);
+  const [poseDetected, setPoseDetected] = useState(false);
+  const [poseAnalysis, setPoseAnalysis] = useState(null);
 
-  const [cameraActive, setCameraActive] =
-    useState(false);
-
-  const [cameraLoading, setCameraLoading] =
-    useState(false);
-
-  const [cameraError, setCameraError] =
-    useState("");
-
-    const [poseLandmarks, setPoseLandmarks] =
-  useState(null);
-
-const [poseDetected, setPoseDetected] =
-  useState(false);
-
-  const [poseAnalysis, setPoseAnalysis] =
-    useState(null);
-
-  // =====================================
   // Workout
-  // =====================================
-
-  const [isWorkoutStarted, setIsWorkoutStarted] =
-    useState(false);
-
-  const [duration, setDuration] =
-    useState(0);
-
-  const [startedAt, setStartedAt] =
-    useState(null);
+  const [isWorkoutStarted, setIsWorkoutStarted] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [startedAt, setStartedAt] = useState(null);
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -73,53 +39,65 @@ const [poseDetected, setPoseDetected] =
   const voiceRecognitionRef = useRef(null);
   const voiceSessionRef = useRef(null);
 
-  // =====================================
-  // Load Exercises
-  // =====================================
+  // Live Encouragement & Voice Cheer
+  const [cheerSoundEnabled, setCheerSoundEnabled] = useState(() => localStorage.getItem("fitai-cheer-sound") !== "false");
+  const [encouragement, setEncouragement] = useState({
+    message: "พร้อมลุย! ยืนประจำตำแหน่งแล้วเริ่มออกกำลังกายได้เลยครับ 💪",
+    emoji: "🔥",
+    showBanner: false,
+    rep: 0,
+  });
+  const lastRepCountRef = useRef(0);
+  const lastCheerTimeRef = useRef(0);
+  const cheerTimerRef = useRef(null);
 
   const loadExercises = async () => {
     try {
       setLoading(true);
       setError("");
+      const response = await api.get("/exercises");
+      const items = response.data?.data || [];
+      setExercises(items);
 
-      const response =
-        await api.get("/exercises");
+      let assignedExercise = null;
+      let assignedPlan = null;
 
-      console.log(
-        "Exercises:",
-        response.data
-      );
-
-        const items = response.data?.data || [];
-        setExercises(items);
-        const savedPlan = sessionStorage.getItem("fitai-active-plan");
-        if (savedPlan) {
-          try {
-            const plan = JSON.parse(savedPlan);
-            const targetClean = String(plan.exerciseName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-            const recommendedExercise = items.find((exercise) => {
-              const itemClean = exercise.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-              return itemClean === targetClean || itemClean.includes(targetClean) || targetClean.includes(itemClean);
-            });
-            if (recommendedExercise) {
-              setSelectedExercise(recommendedExercise);
-              setActivePlan(plan);
-            }
-          } catch (e) {
-            console.warn("Could not parse fitai-active-plan:", e);
+      const savedPlan = sessionStorage.getItem("fitai-active-plan");
+      if (savedPlan) {
+        try {
+          const plan = JSON.parse(savedPlan);
+          const targetClean = String(plan.exerciseName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          assignedExercise = items.find((exercise) => {
+            const itemClean = exercise.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+            return itemClean === targetClean || itemClean.includes(targetClean) || targetClean.includes(itemClean);
+          });
+          if (assignedExercise) {
+            assignedPlan = plan;
           }
+        } catch (e) {
+          console.warn("Could not parse fitai-active-plan:", e);
         }
-    } catch (error) {
-      console.error(
-        "Load Exercises Error:",
-        error
-      );
+      }
 
-      setError(
-        error.response?.data?.message ||
-          error.message ||
-          "ไม่สามารถโหลดรายการท่าออกกำลังกายได้"
-      );
+      if (!assignedExercise && items.length > 0) {
+        assignedExercise = items.find((e) => e.name.toLowerCase().includes("squat")) || items[0];
+      }
+
+      if (assignedExercise) {
+        setSelectedExercise(assignedExercise);
+        setActivePlan(
+          assignedPlan || {
+            exerciseName: assignedExercise.name,
+            sets: 3,
+            repetitions: "10-12 ครั้ง",
+            focus: assignedExercise.category || "Full Body",
+          }
+        );
+        exerciseEngineRef.current = createExerciseEngine(assignedExercise);
+      }
+    } catch (err) {
+      console.error("Load Exercises Error:", err);
+      setError(err.response?.data?.message || err.message || "ไม่สามารถโหลดข้อมูลท่าออกกำลังกายได้");
     } finally {
       setLoading(false);
     }
@@ -129,319 +107,259 @@ const [poseDetected, setPoseDetected] =
     loadExercises();
   }, []);
 
-  // =====================================
-  // Timer
-  // =====================================
-
   useEffect(() => {
-    if (!isWorkoutStarted) {
-      return;
-    }
-
-    const timer =
-      setInterval(() => {
-        setDuration(
-          (previous) =>
-            previous + 1
-        );
-      }, 1000);
-
-    return () => {
-      clearInterval(timer);
-    };
+    if (!isWorkoutStarted) return;
+    const timer = setInterval(() => {
+      setDuration((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
   }, [isWorkoutStarted]);
 
-  // =====================================
-  // Format Duration
-  // =====================================
+  // Periodic Encouragement while working out (every ~16 seconds if user is holding or resting)
+  useEffect(() => {
+    if (!isWorkoutStarted) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now - lastCheerTimeRef.current > 16000) {
+        lastCheerTimeRef.current = now;
+        const idleCheers = [
+          "หายใจเข้าลึกๆ นะครับ ค่อยๆ ทำตามจังหวะ คุณทำได้แน่นอน!",
+          "ฮึบไว้ครับ! ความพยายามในตอนนี้จะสร้างความแข็งแกร่งให้คุณ!",
+          "โฟกัสที่กล้ามเนื้อและฟอร์ม แล้วดันตัวขึ้นมาอีกครั้งครับ สู้ๆ!",
+          "อย่าเพิ่งยอมแพ้ครับ อีกนิดเดียวจะบรรลุเป้าหมายแล้ว!",
+        ];
+        const randomCheer = idleCheers[Math.floor(Math.random() * idleCheers.length)];
+        setEncouragement({
+          message: randomCheer,
+          emoji: "💪",
+          showBanner: true,
+          rep: lastRepCountRef.current,
+        });
+        speakCheer(randomCheer);
+        if (cheerTimerRef.current) clearTimeout(cheerTimerRef.current);
+        cheerTimerRef.current = setTimeout(() => {
+          setEncouragement((prev) => ({ ...prev, showBanner: false }));
+        }, 3500);
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isWorkoutStarted]);
 
-  const formatDuration = (seconds) => {
-    const minutes =
-      Math.floor(seconds / 60);
-
-    const remainingSeconds =
-      seconds % 60;
-
-    return `${String(minutes).padStart(
-      2,
-      "0"
-    )}:${String(
-      remainingSeconds
-    ).padStart(2, "0")}`;
+  const speakCheer = (text) => {
+    if (!cheerSoundEnabled) return;
+    try {
+      speakText(text, {
+        rate: 1.05,
+        pitch: 1.1,
+        force: true,
+      });
+    } catch (e) {
+      console.warn("TTS cheer error:", e);
+    }
   };
 
-  const handlePoseDetected = (
-  landmarks
-) => {
-  setPoseLandmarks(
-    landmarks
-  );
+  const triggerEncouragement = (currentReps, isFormCorrect = true) => {
+    const now = Date.now();
+    const canSpeak = now - lastCheerTimeRef.current > 2200;
 
-  const detected =
-    Boolean(
-      landmarks &&
-        landmarks.length >= 33
-    );
+    const targetRepsMatch = String(activePlan?.repetitions || "10-12").match(/\d+/);
+    const targetReps = targetRepsMatch ? Number(targetRepsMatch[0]) : 10;
 
-  setPoseDetected(
-    detected
-  );
+    let cheerMsg = "";
+    let emoji = "🔥";
 
-  if (
-    !detected ||
-    !selectedExercise
-  ) {
-    return;
-  }
+    if (currentReps === 1) {
+      cheerMsg = "ยอดเยี่ยมมาก! เริ่มต้น Rep แรกได้สวยงาม ลุยต่อเลยครับ!";
+      emoji = "🚀";
+    } else if (currentReps === Math.floor(targetReps / 2)) {
+      cheerMsg = `ครึ่งทางแล้วครับ! ทำได้ ${currentReps} ครั้งแล้ว สู้ๆ!`;
+      emoji = "⚡";
+    } else if (currentReps === targetReps - 2) {
+      cheerMsg = "อีกแค่ 2 ครั้งจะครบเป้าหมายแล้ว ฮึบไว้ครับ!";
+      emoji = "💪";
+    } else if (currentReps === targetReps - 1) {
+      cheerMsg = "ครั้งสุดท้ายแล้วครับ! ใส่ให้สุดพลังเลย!";
+      emoji = "🔥";
+    } else if (currentReps >= targetReps) {
+      cheerMsg = `สุดยอดมาก! คุณทำครบเป้าหมาย ${targetReps} ครั้งแล้ว ยอดเยี่ยมที่สุด 🎉`;
+      emoji = "🏆";
+    } else {
+      const repCheers = [
+        "ดีมากครับ รักษาจังหวะไว้!",
+        "ฟอร์มสวยมาก ดันตัวขึ้นมาเลย!",
+        "เก่งมาก ฮึบไว้ครับ!",
+        "สู้ต่อไป ทำได้ดีมากครับ!",
+        "กล้ามเนื้อกำลังทำงานได้ยอดเยี่ยม!",
+        "คุมลมหายใจแล้วไปต่อครับ!",
+      ];
+      cheerMsg = repCheers[currentReps % repCheers.length];
+      emoji = "🔥";
+    }
 
-  if (
-    !exerciseEngineRef.current
-  ) {
-    exerciseEngineRef.current =
-      createExerciseEngine(
-        selectedExercise
-      );
-  }
+    setEncouragement({
+      message: cheerMsg,
+      emoji,
+      showBanner: true,
+      rep: currentReps,
+    });
 
-  const result =
-    exerciseEngineRef.current.process(
-      landmarks
-    );
+    if (canSpeak) {
+      lastCheerTimeRef.current = now;
+      speakCheer(cheerMsg);
+    }
 
-  setAiResult(
-    result
-  );
-};
+    if (cheerTimerRef.current) clearTimeout(cheerTimerRef.current);
+    cheerTimerRef.current = setTimeout(() => {
+      setEncouragement((prev) => ({ ...prev, showBanner: false }));
+    }, 3500);
+  };
 
-  // =====================================
-  // Pose Analysis
-  // =====================================
+  const formatDuration = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+  };
+
+  const handlePoseDetected = (landmarks) => {
+    setPoseLandmarks(landmarks);
+    const detected = Boolean(landmarks && landmarks.length >= 33);
+    setPoseDetected(detected);
+    if (!detected || !selectedExercise) return;
+
+    if (!exerciseEngineRef.current) {
+      exerciseEngineRef.current = createExerciseEngine(selectedExercise);
+    }
+    const result = exerciseEngineRef.current.process(landmarks);
+    setAiResult(result);
+
+    // Trigger AI encouragement whenever a new repetition is completed
+    if (result?.reps !== undefined && result.reps > lastRepCountRef.current) {
+      lastRepCountRef.current = result.reps;
+      if (isWorkoutStarted) {
+        triggerEncouragement(result.reps, result.form === "correct");
+      }
+    }
+  };
 
   const handlePoseAnalysis = (result) => {
     setPoseAnalysis(result);
   };
 
-  // =====================================
-  // Select Exercise
-  // =====================================
-
-  const handleSelectExercise = (
-  exercise
-) => {
-  if (isWorkoutStarted) {
-    return;
-  }
-
-  setSelectedExercise(
-    exercise
-  );
-
-  setCameraError("");
-  setError("");
-
-  setAiResult(null);
-
-  exerciseEngineRef.current =
-    createExerciseEngine(
-      exercise
-    );
-};
-
-  // =====================================
-  // Start Camera
-  // =====================================
+  const handleSelectExercise = (exercise) => {
+    if (isWorkoutStarted) return;
+    setSelectedExercise(exercise);
+    setCameraError("");
+    setError("");
+    setAiResult(null);
+    exerciseEngineRef.current = createExerciseEngine(exercise);
+  };
 
   const startCamera = async () => {
     try {
       setCameraLoading(true);
       setCameraError("");
-
-      // ตรวจสอบ Browser
-      if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-      ) {
-        throw new Error(
-          "Browser นี้ไม่รองรับการใช้งานกล้อง"
-        );
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Browser นี้ไม่รองรับการเข้าถึงกล้อง");
       }
-
-      // ถ้ามี Stream เดิม
       if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) => {
-            track.stop();
-          });
-
+        streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
-
-      const stream =
-        await navigator.mediaDevices.getUserMedia(
-          {
-            video: {
-              facingMode: "user",
-              width: {
-                ideal: 1280,
-              },
-              height: {
-                ideal: 720,
-              },
-            },
-            audio: false,
-          }
-        );
-
-      streamRef.current =
-        stream;
-
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
       if (videoRef.current) {
-        videoRef.current.srcObject =
-          stream;
-
+        videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-
       setCameraActive(true);
-
-      console.log(
-        "📷 Camera started"
-      );
-    } catch (error) {
-      console.error(
-        "Camera Error:",
-        error
-      );
-
-      let message =
-        "ไม่สามารถเปิดกล้องได้";
-
-      if (
-        error.name ===
-        "NotAllowedError"
-      ) {
-        message =
-          "ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาต Camera ใน Browser";
-      } else if (
-        error.name ===
-        "NotFoundError"
-      ) {
-        message =
-          "ไม่พบกล้องในอุปกรณ์";
-      } else if (
-        error.name ===
-        "NotReadableError"
-      ) {
-        message =
-          "ไม่สามารถใช้งานกล้องได้ อาจมีโปรแกรมอื่นกำลังใช้กล้องอยู่";
-      } else if (
-        error.message
-      ) {
-        message =
-          error.message;
+    } catch (err) {
+      console.error("Camera Error:", err);
+      let message = "ไม่สามารถเปิดกล้องได้";
+      if (err.name === "NotAllowedError") {
+        message = "ไม่ได้รับอนุญาตให้เข้าถึงกล้อง กรุณาให้สิทธิ์ Camera ในเบราว์เซอร์";
+      } else if (err.name === "NotFoundError") {
+        message = "ไม่พบอุปกรณ์กล้องบนอุปกรณ์นี้";
+      } else if (err.message) {
+        message = err.message;
       }
-
-      setCameraError(
-        message
-      );
-
+      setCameraError(message);
       setCameraActive(false);
     } finally {
       setCameraLoading(false);
     }
   };
 
-  // =====================================
-  // Stop Camera
-  // =====================================
-
   const stopCamera = () => {
-    console.log(
-      "📷 Stopping camera"
-    );
-
     if (streamRef.current) {
-      streamRef.current
-        .getTracks()
-        .forEach((track) => {
-          track.stop();
-        });
-
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-
     if (videoRef.current) {
-      videoRef.current.srcObject =
-        null;
+      videoRef.current.srcObject = null;
     }
-
     setCameraActive(false);
-
     setPoseLandmarks(null);
     setPoseDetected(false);
     setPoseAnalysis(null);
   };
 
-  // =====================================
-  // Start Workout
-  // =====================================
-
   const startWorkout = async () => {
-    if (!selectedExercise) {
-      setError(
-        "กรุณาเลือกท่าออกกำลังกายก่อน"
-      );
-
-      return;
+    if (!selectedExercise && exercises.length > 0) {
+      setSelectedExercise(exercises[0]);
     }
-
     setError("");
     setCameraError("");
-
-    // เปิดกล้องก่อน
     if (!cameraActive) {
       await startCamera();
     }
-
     setDuration(0);
-
-    setStartedAt(
-      new Date().toISOString()
-    );
-
+    setStartedAt(new Date().toISOString());
     setIsWorkoutStarted(true);
-  };
-
-  // =====================================
-  // Stop Workout
-  // =====================================
-
-  const stopWorkout = () => {
-    const confirmed =
-      window.confirm(
-        "ต้องการหยุด Workout หรือไม่?"
-      );
-
-    if (!confirmed) {
-      return;
+    lastRepCountRef.current = 0;
+    lastCheerTimeRef.current = Date.now();
+    if (exerciseEngineRef.current) {
+      exerciseEngineRef.current.reset();
     }
 
+    const startCheer = "พร้อมแล้วครับ! หายใจเข้าลึกๆ ยืนประจำตำแหน่ง แล้วเริ่มฝึกได้เลยครับ สู้ๆ!";
+    setEncouragement({
+      message: startCheer,
+      emoji: "🔥",
+      showBanner: true,
+      rep: 0,
+    });
+    speakCheer("พร้อมแล้วครับ ยืนประจำตำแหน่งแล้วเริ่มฝึกได้เลย สู้ๆ ครับ!");
+    setTimeout(() => {
+      setEncouragement((prev) => ({ ...prev, showBanner: false }));
+    }, 4000);
+  };
+
+  const stopWorkout = () => {
+    const confirmed = window.confirm("ต้องการสิ้นสุดการออกกำลังกายใช่หรือไม่?");
+    if (!confirmed) return;
     setIsWorkoutStarted(false);
-
     setDuration(0);
-
     setStartedAt(null);
-
     stopCamera();
+
+    const finishCheer = `ยอดเยี่ยมมากครับ! คุณออกกำลังกายไปทั้งหมด ${aiResult?.reps || 0} ครั้ง พักผ่อนและดื่มน้ำให้เพียงพอนะครับ 🎉`;
+    speakCheer(finishCheer);
+    setEncouragement({
+      message: finishCheer,
+      emoji: "🏆",
+      showBanner: true,
+      rep: aiResult?.reps || 0,
+    });
   };
 
   const speakCoachReply = (text) => {
-    if (localStorage.getItem("fitai-ai-voice-enabled") === "false" || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "th-TH";
-    window.speechSynthesis.speak(utterance);
+    speakText(text, {
+      rate: 1.0,
+      pitch: 1.0,
+    });
   };
 
   const sendVoiceMessage = async (text) => {
@@ -458,11 +376,11 @@ const [poseDetected, setPoseDetected] =
         message: text,
         activePlan,
       });
-      const reply = response.data?.data?.assistantMessage?.content || "ขออภัยครับ ยังตอบไม่ได้ในขณะนี้";
+      const reply = response.data?.data?.assistantMessage?.content || "ยอดเยี่ยมมาก ออกกำลังกายอย่างต่อเนื่องต่อไปครับ";
       setVoiceReply(reply);
       speakCoachReply(reply);
     } catch (voiceError) {
-      setVoiceReply(voiceError.response?.data?.message || "ไม่สามารถเชื่อมต่อ Voice Coach ได้");
+      setVoiceReply(voiceError.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ Voice Coach");
     } finally {
       setVoiceLoading(false);
     }
@@ -475,7 +393,7 @@ const [poseDetected, setPoseDetected] =
     }
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) {
-      setVoiceReply("เบราว์เซอร์นี้ไม่รองรับการรับเสียง กรุณาใช้ Chrome หรือ Edge");
+      setVoiceReply("เบราว์เซอร์นี้ไม่รองรับการสั่งงานด้วยเสียง กรุณาใช้ Chrome หรือ Edge");
       return;
     }
     const recognition = new Recognition();
@@ -484,340 +402,238 @@ const [poseDetected, setPoseDetected] =
     recognition.continuous = false;
     recognition.onstart = () => setVoiceListening(true);
     recognition.onend = () => setVoiceListening(false);
-    recognition.onerror = () => { setVoiceListening(false); setVoiceReply("ไม่สามารถรับเสียงได้ โปรดอนุญาตการใช้ไมโครโฟน"); };
+    recognition.onerror = () => {
+      setVoiceListening(false);
+      setVoiceReply("เกิดข้อผิดพลาดในการฟังเสียง กรุณากดลองใหม่อีกครั้ง");
+    };
     recognition.onresult = (event) => sendVoiceMessage(event.results[0][0].transcript.trim());
     voiceRecognitionRef.current = recognition;
     recognition.start();
   };
 
-  // =====================================
-  // Cleanup
-  // =====================================
-
   useEffect(() => {
     return () => {
       voiceRecognitionRef.current?.stop();
-      window.speechSynthesis?.cancel();
+      stopSpeech();
       if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) => {
-            track.stop();
-          });
-
-        streamRef.current =
-          null;
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
     };
   }, []);
 
-  // =====================================
-  // Loading
-  // =====================================
-
   if (loading) {
     return (
-      <div className="workout-page">
-
-        <div className="workout-loading">
-
-          <div className="workout-loading-icon">
-            🏋️
-          </div>
-
-          <h2>
-            กำลังโหลด Workout...
-          </h2>
-
-          <p>
-            กรุณารอสักครู่
-          </p>
-
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <svg className="animate-spin h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span className="text-sm text-zinc-400">กำลังโหลดระบบ Workout...</span>
         </div>
-
       </div>
     );
   }
 
-  // =====================================
-  // UI
-  // =====================================
-
   return (
-    <div className="workout-page">
-
-      {/* =====================================
-          Header
-      ===================================== */}
-
-      <header className="workout-header">
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onBack}
-        >
-          ← กลับ Dashboard
-        </button>
-
-        <div className="workout-header-title">
-
-          <div className="badge">
-            AI FITNESS ASSISTANT
-          </div>
-
-          <h1>
-            🏋️ AI Workout
-          </h1>
-
-          <p>
-            AI ช่วยวิเคราะห์ท่าออกกำลังกาย
-          </p>
-
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+      {/* Header */}
+      <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>←</span>
+            <span>กลับ Dashboard</span>
+          </button>
+          <span className="text-sm font-semibold text-zinc-300">AI Workout Room</span>
+          <div className="w-16" />
         </div>
-
       </header>
 
-      <main className="workout-container">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+        <div>
+          <div className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wider text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-full mb-2 uppercase">
+            AI FITNESS ASSISTANT
+          </div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <span>🏋️‍♂️</span>
+            <span>AI Workout Room</span>
+          </h1>
+          <p className="text-sm text-zinc-400 mt-1">
+            ฝึกออกกำลังกายแบบเรียลไทม์ พร้อมการนับ Rep และตรวจฟอร์มด้วยระบบ AI Vision & 3D Coach
+          </p>
+        </div>
 
-        {/* =====================================
-            Error
-        ===================================== */}
-
+        {/* Alerts */}
         {error && (
-          <div className="workout-message error">
-            ❌ {error}
+          <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
-
         {cameraError && (
-          <div className="workout-message error">
-            📷 {cameraError}
+          <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
+            <span>📹</span>
+            <span>{cameraError}</span>
           </div>
         )}
 
-        {/* =====================================
-            Exercise Selection
-        ===================================== */}
-
-        {activePlan && <section className="workout-plan-summary">
-          <span>AI แนะนำสำหรับวันนี้</span>
-          <strong>{activePlan.exerciseName}</strong>
-          <ol className="workout-plan-exercise-list">
-            {(activePlan.exercises || [{ name: activePlan.exerciseName, sets: activePlan.sets, repetitions: activePlan.repetitions }]).map((exercise, index) => (
-              <li
-                className={exercise.name === selectedExercise?.name ? "active" : ""}
-                key={`${exercise.name}-${index}`}
-              >
-                <span>{index + 1}</span>
-                <div>
-                  <strong>{exercise.name}</strong>
-                  <small>{exercise.sets ? `${exercise.sets} เซ็ต · ${exercise.repetitions}` : exercise.repetitions}</small>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <p>{activePlan.sets} เซ็ต · {activePlan.repetitions} · {activePlan.focus}</p>
-        </section>}
-
-        <section className={activePlan ? "workout-card exercise-selection is-guided" : "workout-card exercise-selection"}>
-
-          <div className="workout-card-header">
-
-            <div className="workout-card-icon">
-              💪
-            </div>
-
+        {/* Active Plan Recommendation Banner (AI Assigned) */}
+        {(activePlan || selectedExercise) && (
+          <section className="bg-gradient-to-r from-red-950/40 via-zinc-900/80 to-zinc-900 border border-red-500/30 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg shadow-red-950/20">
             <div>
-              <h2>
-                เลือกท่าออกกำลังกาย
-              </h2>
-
-              <p>
-                เลือกท่าที่ต้องการให้ AI วิเคราะห์
+              <span className="text-[11px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🤖</span>
+                <span>ท่าออกกำลังกายที่ AI กำหนดให้</span>
+              </span>
+              <h2 className="text-lg font-bold text-white mt-0.5">{selectedExercise?.name || activePlan?.exerciseName}</h2>
+              <p className="text-xs text-zinc-400">
+                {activePlan ? `เป้าหมาย: ${activePlan.sets} เซ็ต • ${activePlan.repetitions} • โฟกัส ${activePlan.focus}` : `โฟกัส: ${selectedExercise?.category || "Bodyweight"}`}
               </p>
             </div>
+            <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-red-600/20 text-red-400 border border-red-500/30 self-start sm:self-auto flex items-center gap-1.5">
+              <span>✨</span>
+              <span>AI จัดตารางให้</span>
+            </span>
+          </section>
+        )}
 
+        
+
+        {/* View Switcher Controls */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setViewMode("split")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "split" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              📱 แยกหน้าจอ (Split)
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("camera")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "camera" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              📹 กล้อง AI
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("3d")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "3d" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              🏋️ Malong 3D Coach
+            </button>
           </div>
 
-          {exercises.length === 0 ? (
-            <div className="workout-empty">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCheerSoundEnabled((prev) => {
+                  const next = !prev;
+                  localStorage.setItem("fitai-cheer-sound", String(next));
+                  return next;
+                });
+              }}
+              className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                cheerSoundEnabled
+                  ? "bg-red-600/20 text-red-300 border-red-500/40 shadow-sm"
+                  : "bg-zinc-900 text-zinc-500 border-zinc-800"
+              }`}
+              title={cheerSoundEnabled ? "ปิดเสียงโค้ชให้กำลังใจ" : "เปิดเสียงโค้ชให้กำลังใจ"}
+            >
+              <span>{cheerSoundEnabled ? "🔊" : "🔇"}</span>
+              <span className="hidden sm:inline">{cheerSoundEnabled ? "เสียงโค้ช: เปิด" : "เสียงโค้ช: ปิด"}</span>
+            </button>
 
-              <div>
-                🏋️
+            {!cameraActive ? (
+              <button
+                type="button"
+                onClick={startCamera}
+                disabled={cameraLoading}
+                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <span>📹</span>
+                <span>{cameraLoading ? "กำลังเปิดกล้อง..." : "เปิดกล้อง"}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={stopCamera}
+                disabled={isWorkoutStarted}
+                className="px-4 py-2 bg-red-950/40 hover:bg-red-900/50 text-red-400 border border-red-800/40 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                ปิดกล้อง
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Main Display: Camera & 3D Coach */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Left / Camera View */}
+          {(viewMode === "split" || viewMode === "camera") && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                  <span>📹</span>
+                  <span>AI Camera View</span>
+                </span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    cameraActive
+                      ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/60"
+                      : "bg-zinc-800 text-zinc-500"
+                  }`}
+                >
+                  {cameraActive ? "● ONLINE" : "○ OFFLINE"}
+                </span>
               </div>
 
-              <h3>
-                ยังไม่มี Exercise
-              </h3>
+              <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black flex items-center justify-center border border-zinc-800">
+                {/* Floating Real-time Encouragement Banner */}
+                {isWorkoutStarted && encouragement.showBanner && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 animate-bounce">
+                    <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white font-extrabold px-5 py-2.5 rounded-full shadow-2xl shadow-red-950/90 border border-white/25 flex items-center gap-2.5 backdrop-blur-md">
+                      <span className="text-xl animate-pulse drop-shadow">{encouragement.emoji}</span>
+                      <span className="text-xs sm:text-sm tracking-wide drop-shadow whitespace-nowrap">
+                        {encouragement.message}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
-              <p>
-                กรุณาเพิ่มข้อมูล Exercise
-                ใน Database
-              </p>
-
-            </div>
-          ) : (
-            <div className="exercise-list">
-
-              {exercises.map(
-                (exercise) => {
-
-                  const active =
-                    selectedExercise?.id ===
-                    exercise.id;
-
-                  return (
-                    <button
-                      type="button"
-                      key={exercise.id}
-                      className={
-                        active
-                          ? "exercise-item active"
-                          : "exercise-item"
-                      }
-                      onClick={() =>
-                        handleSelectExercise(
-                          exercise
-                        )
-                      }
-                      disabled={
-                        isWorkoutStarted
-                      }
-                    >
-
-                      <div className="exercise-icon">
-                        💪
-                      </div>
-
-                      <div className="exercise-info">
-
-                        <strong>
-                          {exercise.name ||
-                            `Exercise #${exercise.id}`}
-                        </strong>
-
-                        {exercise.description && (
-                          <small>
-                            {
-                              exercise.description
-                            }
-                          </small>
-                        )}
-
-                      </div>
-
-                      {active && (
-                        <div className="exercise-check">
-                          ✓
-                        </div>
-                      )}
-
-                    </button>
-                  );
-                }
-              )}
-
-            </div>
-          )}
-
-        </section>
-
-        {/* =====================================
-            Camera
-        ===================================== */}
-
-        <section className="workout-card camera-card">
-
-          <div className="workout-card-header">
-
-            <div className="workout-card-icon">
-              📷
-            </div>
-
-            <div>
-
-              <h2>
-                AI Camera
-              </h2>
-
-              <p>
-                กล้องสำหรับตรวจจับท่าทาง
-              </p>
-
-            </div>
-
-            <div className="camera-status">
-
-              <span
-                className={
-                  cameraActive
-                    ? "status-dot active"
-                    : "status-dot"
-                }
-              />
-
-              {cameraActive
-                ? "Camera Active"
-                : "Camera Off"}
-
-            </div>
-
-          </div>
-
-          {/* =====================================
-              View Mode Switcher
-          ===================================== */}
-
-          <div className="workout-view-toggle">
-            <button
-              type="button"
-              className={`workout-view-btn ${viewMode === "split" ? "active" : ""}`}
-              onClick={() => setViewMode("split")}
-            >
-              🔲 มุมมองคู่ (Split)
-            </button>
-            <button
-              type="button"
-              className={`workout-view-btn ${viewMode === "camera" ? "active" : ""}`}
-              onClick={() => setViewMode("camera")}
-            >
-              📷 กล้อง AI
-            </button>
-            <button
-              type="button"
-              className={`workout-view-btn ${viewMode === "3d" ? "active" : ""}`}
-              onClick={() => setViewMode("3d")}
-            >
-              🧍 Malong 3D Coach
-            </button>
-          </div>
-
-          {/* =====================================
-              Camera & Malong 3D View
-          ===================================== */}
-
-          {viewMode === "split" ? (
-            <div className="workout-split-grid">
-              <div className="camera-wrapper">
                 <video
                   ref={videoRef}
-                  className="camera-video"
+                  className="w-full h-full object-cover transform -scale-x-100"
                   autoPlay
                   playsInline
                   muted
                 />
 
                 {!cameraActive && (
-                  <div className="camera-placeholder">
-                    <div className="camera-placeholder-icon">📷</div>
-                    <h3>กล้องยังไม่เปิด</h3>
-                    <p>เลือกท่าออกกำลังกาย แล้วกด Start Workout</p>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 text-center p-4">
+                    <span className="text-4xl mb-2">📹</span>
+                    <h3 className="text-base font-bold text-white">กล้องยังไม่เปิดใช้งาน</h3>
+                    <p className="text-xs text-zinc-400 mt-1 max-w-xs">
+                      กดปุ่ม "เปิดกล้อง" ด้านบน หรือกด "Start AI Workout" เพื่อเริ่มให้ AI ตรวจจับท่าทาง
+                    </p>
                   </div>
                 )}
 
                 {cameraActive && (
-                  <div className="camera-overlay">
+                  <>
                     <PoseDetector
                       videoRef={videoRef}
                       active={cameraActive}
@@ -828,419 +644,203 @@ const [poseDetected, setPoseDetected] =
                       exercise={selectedExercise?.name?.toLowerCase() || "squat"}
                       onAnalysis={handlePoseAnalysis}
                     />
-                    <div className="camera-ai-label">🤖 AI READY</div>
-                    <div className="camera-guide">
-                      <div className="guide-corner top-left" />
-                      <div className="guide-corner top-right" />
-                      <div className="guide-corner bottom-left" />
-                      <div className="guide-corner bottom-right" />
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
-
-              <UnityWorkout3D
-                exercise={selectedExercise?.name || "Squat"}
-                isWorkoutStarted={isWorkoutStarted}
-                repetitions={aiResult?.repetitions || 0}
-                score={aiResult?.score || 0}
-                feedback={aiResult?.feedback || ""}
-              />
-            </div>
-          ) : viewMode === "3d" ? (
-            <UnityWorkout3D
-              exercise={selectedExercise?.name || "Squat"}
-              isWorkoutStarted={isWorkoutStarted}
-              repetitions={aiResult?.repetitions || 0}
-              score={aiResult?.score || 0}
-              feedback={aiResult?.feedback || ""}
-            />
-          ) : (
-            <div className="camera-wrapper">
-              <video
-                ref={videoRef}
-                className="camera-video"
-                autoPlay
-                playsInline
-                muted
-              />
-
-              {!cameraActive && (
-                <div className="camera-placeholder">
-                  <div className="camera-placeholder-icon">📷</div>
-                  <h3>กล้องยังไม่เปิด</h3>
-                  <p>เลือกท่าออกกำลังกาย แล้วกด Start Workout</p>
-                </div>
-              )}
-
-              {cameraActive && (
-                <div className="camera-overlay">
-                  <PoseDetector
-                    videoRef={videoRef}
-                    active={cameraActive}
-                    onPoseDetected={handlePoseDetected}
-                  />
-                  <PoseAnalyzer
-                    landmarks={poseLandmarks}
-                    exercise={selectedExercise?.name?.toLowerCase() || "squat"}
-                    onAnalysis={handlePoseAnalysis}
-                  />
-                  <div className="camera-ai-label">🤖 AI READY</div>
-                  <div className="camera-guide">
-                    <div className="guide-corner top-left" />
-                    <div className="guide-corner top-right" />
-                    <div className="guide-corner bottom-left" />
-                    <div className="guide-corner bottom-right" />
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* =====================================
-              Camera Controls
-          ===================================== */}
+          {/* Right / 3D Coach View */}
+          {(viewMode === "split" || viewMode === "3d") && (
+            <UnityWorkout3D
+              exercise={selectedExercise?.name || "Squat"}
+              isWorkoutStarted={isWorkoutStarted}
+              repetitions={aiResult?.reps || 0}
+              className={viewMode === "3d" ? "lg:col-span-2" : ""}
+            />
+          )}
+        </div>
 
-          <div className="camera-controls">
-
-            {!cameraActive ? (
-              <button
-                type="button"
-                className="camera-start-button"
-                onClick={startCamera}
-                disabled={
-                  cameraLoading
-                }
-              >
-                {cameraLoading
-                  ? "กำลังเปิดกล้อง..."
-                  : "📷 เปิดกล้อง"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="camera-stop-button"
-                onClick={stopCamera}
-                disabled={
-                  isWorkoutStarted
-                }
-              >
-                ⏹️ ปิดกล้อง
-              </button>
-            )}
-
-          </div>
-
-          
-
-        </section>
+        {/* Real-time AI Exercise Engine Result Card */}
         {cameraActive && (
-  <section className="ai-result-card">
+          <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div>
+                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">
+                  AI EXERCISE ENGINE
+                </span>
+                <h2 className="text-lg font-extrabold text-white">
+                  {selectedExercise?.name || "Exercise"}
+                </h2>
+              </div>
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  aiResult?.form === "correct"
+                    ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/60"
+                    : "bg-amber-950/60 text-amber-400 border border-amber-800/60"
+                }`}
+              >
+                {aiResult?.form === "correct" ? "✓ ฟอร์มถูกต้อง" : "⚠️ ปรับฟอร์ม"}
+              </div>
+            </div>
 
-    <div className="ai-result-header">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
+                <span className="text-[11px] text-zinc-500 font-semibold">จำนวนครั้ง (Reps)</span>
+                <strong className="text-2xl font-black text-white">{aiResult?.reps ?? 0}</strong>
+              </div>
+              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
+                <span className="text-[11px] text-zinc-500 font-semibold">คะแนนฟอร์ม (Score)</span>
+                <strong className="text-2xl font-black text-red-500">{aiResult?.score ?? 0}</strong>
+              </div>
+              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
+                <span className="text-[11px] text-zinc-500 font-semibold">มุมข้อต่อ (Angle)</span>
+                <strong className="text-2xl font-black text-white">
+                  {aiResult?.angles?.averageKneeAngle ??
+                    aiResult?.angles?.averageElbowAngle ??
+                    aiResult?.angles?.averageHipAngle ??
+                    0}°
+                </strong>
+              </div>
+              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
+                <span className="text-[11px] text-zinc-500 font-semibold">จังหวะ (Phase)</span>
+                <strong className="text-2xl font-black text-zinc-300">{aiResult?.phase || "ready"}</strong>
+              </div>
+            </div>
 
-      <div>
-        <span>
-          🤖 AI EXERCISE ENGINE
-        </span>
+            {/* Live AI Encouragement & Motivation Card */}
+            <div className="bg-gradient-to-r from-red-950/60 via-zinc-900 to-zinc-900 border border-red-500/40 rounded-xl p-4 flex items-center justify-between gap-3 shadow-xl">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl animate-pulse">{encouragement.emoji}</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-red-400 font-extrabold uppercase tracking-wider">
+                      AI COACH MOTIVATION (เสียงให้กำลังใจ)
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-red-600/20 text-red-300 border border-red-500/30">
+                      LIVE
+                    </span>
+                  </div>
+                  <strong className="text-sm text-white font-bold block mt-0.5">
+                    {encouragement.message}
+                  </strong>
+                </div>
+              </div>
 
-        <h2>
-          {selectedExercise?.name ||
-            "Exercise"}
-        </h2>
-      </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCheerSoundEnabled((prev) => {
+                    const next = !prev;
+                    localStorage.setItem("fitai-cheer-sound", String(next));
+                    return next;
+                  });
+                }}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  cheerSoundEnabled
+                    ? "bg-red-600/20 text-red-300 border-red-500/40"
+                    : "bg-zinc-800 text-zinc-500 border-zinc-700"
+                }`}
+                title={cheerSoundEnabled ? "ปิดเสียงให้กำลังใจ" : "เปิดเสียงให้กำลังใจ"}
+              >
+                <span>{cheerSoundEnabled ? "🔊" : "🔇"}</span>
+                <span className="hidden sm:inline">{cheerSoundEnabled ? "เสียงโค้ช: เปิด" : "เสียงโค้ช: ปิด"}</span>
+              </button>
+            </div>
 
-      <div
-        className={
-          aiResult?.form ===
-          "correct"
-            ? "ai-correct"
-            : "ai-warning"
-        }
-      >
-        {aiResult?.form ===
-        "correct"
-          ? "✓ CORRECT"
-          : "⚠ CHECK FORM"}
-      </div>
+            <div className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-4 flex items-center gap-3">
+              <span className="text-xl">🤖</span>
+              <div>
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">
+                  AI Real-time Feedback
+                </span>
+                <strong className="text-sm text-zinc-200">
+                  {aiResult?.feedback || "พร้อมสำหรับการฝึก ยืนประจำตำแหน่งแล้วเริ่มย่อตัวได้เลย"}
+                </strong>
+              </div>
+            </div>
+          </section>
+        )}
 
-    </div>
-
-    <div className="ai-result-grid">
-
-      <div className="ai-result-stat">
-
-        <span>
-          🔢 Reps
-        </span>
-
-        <strong>
-          {aiResult?.reps ??
-            0}
-        </strong>
-
-      </div>
-
-      <div className="ai-result-stat">
-
-        <span>
-          ⭐ Score
-        </span>
-
-        <strong>
-          {aiResult?.score ??
-            0}
-        </strong>
-
-      </div>
-
-      <div className="ai-result-stat">
-
-        <span>
-          📐 Angle
-        </span>
-
-        <strong>
-          {aiResult
-            ?.angles
-            ?.averageKneeAngle ??
-            aiResult
-              ?.angles
-              ?.averageElbowAngle ??
-            aiResult
-              ?.angles
-              ?.averageHipAngle ??
-            0}
-          °
-        </strong>
-
-      </div>
-
-      <div className="ai-result-stat">
-
-        <span>
-          🔄 Phase
-        </span>
-
-        <strong>
-          {aiResult?.phase ||
-            "waiting"}
-        </strong>
-
-      </div>
-
-    </div>
-
-    <div className="ai-feedback">
-
-      <span>
-        AI Feedback
-      </span>
-
-      <strong>
-        {aiResult?.feedback ||
-          "กำลังวิเคราะห์..."}
-      </strong>
-
-    </div>
-
-  </section>
-)}
-
-        {/* =====================================
-            Workout Control
-        ===================================== */}
-
-        <section className="workout-card voice-coach-card">
+        {/* Voice Coach Section */}
+        <section className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span>VOICE COACH</span>
-            <h2>พูดคุยกับ AI ระหว่างฝึก</h2>
-            <p>{voiceLoading ? "AI กำลังคิดคำตอบ..." : voiceReply || "กดไมโครโฟนแล้วถามเรื่องท่า ฟอร์ม หรือแผนการฝึกได้เลย"}</p>
-            {voiceTranscript && <small>คุณพูด: {voiceTranscript}</small>}
+            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+              VOICE COACH
+            </div>
+            <h2 className="text-base font-bold text-white mt-0.5">คุยกับ AI โค้ชด้วยเสียง</h2>
+            <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
+              {voiceLoading
+                ? "AI กำลังประมวลผลคำถาม..."
+                : voiceReply ||
+                  "กดปุ่มไมโครโฟนเพื่อสอบถามเทคนิค เช่น 'ย่อลึกแค่ไหนดี' หรือ 'ข้อควรระวังของท่านี้'"}
+            </p>
+            {voiceTranscript && (
+              <small className="text-[11px] text-zinc-500 block mt-1">
+                คุณพูด: "{voiceTranscript}"
+              </small>
+            )}
           </div>
-          <button type="button" className={voiceListening ? "voice-coach-button listening" : "voice-coach-button"} onClick={toggleVoiceCoach} disabled={voiceLoading}>
-            {voiceListening ? "หยุดฟัง" : "🎙 พูดกับ AI"}
+          <button
+            type="button"
+            onClick={toggleVoiceCoach}
+            disabled={voiceLoading}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap self-start sm:self-auto ${
+              voiceListening
+                ? "bg-red-600 animate-pulse text-white shadow-lg shadow-red-600/30"
+                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
+            }`}
+          >
+            <span>🎙️</span>
+            <span>{voiceListening ? "กำลังฟังเสียง..." : "พูดกับ AI โค้ช"}</span>
           </button>
         </section>
 
-        <section className="workout-card">
-
-          <div className="current-workout">
-
-            <div className="selected-exercise">
-
-              <div className="selected-exercise-icon">
-                🏋️
-              </div>
-
-              <div>
-
-                <small>
-                  Exercise
-                </small>
-
-                <h3>
-                  {selectedExercise
-                    ? selectedExercise.name ||
-                      `Exercise #${selectedExercise.id}`
-                    : "ยังไม่ได้เลือกท่า"}
-                </h3>
-
-              </div>
-
+        {/* Main Workout Control Panel */}
+        <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-2xl">
+              🏋️‍♂️
             </div>
-
-            {/* Timer */}
-
-            <div className="workout-timer">
-
-              <span>
-                WORKOUT TIME
+            <div>
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                CURRENT WORKOUT
               </span>
-
-              <strong>
-                {formatDuration(
-                  duration
-                )}
-              </strong>
-
+              <h3 className="text-lg font-black text-white">
+                {selectedExercise ? selectedExercise.name : "กำลังโหลดท่าจาก AI..."}
+              </h3>
+              <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
+                <span>⏱️ เวลา: <strong className="text-white font-mono">{formatDuration(duration)}</strong></span>
+                <span>•</span>
+                <span>🔥 Reps: <strong className="text-red-400">{aiResult?.reps ?? 0}</strong></span>
+              </div>
             </div>
+          </div>
 
-            {/* Future AI Status */}
-
-            <div className="ai-workout-status">
-
-  <div className="ai-status-item">
-
-    <span>
-      🤖 AI Pose
-    </span>
-
-    <strong>
-      {!cameraActive
-        ? "Waiting"
-        : poseDetected
-        ? "Detected"
-        : "Searching..."}
-    </strong>
-
-  </div>
-
-  <div className="ai-status-item">
-
-    <span>
-      📐 Knee Angle
-    </span>
-
-    <strong>
-      {poseAnalysis?.averageKneeAngle
-        ? `${poseAnalysis.averageKneeAngle}°`
-        : "--"}
-    </strong>
-
-  </div>
-
-  <div className="ai-status-item">
-
-    <span>
-      ✓ Form
-    </span>
-
-    <strong>
-      {!poseDetected
-        ? "Waiting"
-        : poseAnalysis?.kneeStatus ||
-          "Analyzing..."}
-    </strong>
-
-  </div>
-
-</div>
-
-            {/* Actions */}
-
+          <div className="flex items-center gap-3">
             {!isWorkoutStarted ? (
               <button
                 type="button"
-                className="workout-start-button"
-                onClick={
-                  startWorkout
-                }
-                disabled={
-                  !selectedExercise ||
-                  cameraLoading
-                }
+                onClick={startWorkout}
+                disabled={cameraLoading || loading}
+                className="w-full sm:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-500 active:scale-[0.99] disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-red-600/25 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                ▶️ Start AI Workout
+                <span>▶</span>
+                <span>Start AI Workout</span>
               </button>
             ) : (
               <button
                 type="button"
-                className="workout-finish-button"
-                onClick={
-                  stopWorkout
-                }
+                onClick={stopWorkout}
+                className="w-full sm:w-auto px-8 py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-[0.99] text-white border border-zinc-700 font-bold rounded-xl text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                ⏹️ หยุด Workout
+                <span>⏹</span>
+                <span>จบเซสชัน Workout</span>
               </button>
             )}
-
           </div>
-
         </section>
-
-        {/* =====================================
-            AI Information
-        ===================================== */}
-
-        <section className="workout-card ai-info-card">
-
-          <div className="ai-info-icon">
-            🤖
-          </div>
-
-          <div>
-
-            <h2>
-              AI Trainer
-            </h2>
-
-            <p>
-              ระบบกำลังเตรียมสำหรับ
-              Pose Detection, Rep Counter
-              และ Real-time Form Analysis
-            </p>
-
-            <div className="ai-roadmap">
-
-              <span className="roadmap-active">
-                ✓ Camera
-              </span>
-
-              <span className="roadmap-active">
-                ✓ Pose Detection
-              </span>
-
-              <span>
-                ○ Rep Counter
-              </span>
-
-              <span className="roadmap-active">
-                ✓ Form Analysis
-              </span>
-
-              <span>
-                ○ 3D Avatar
-              </span>
-
-            </div>
-
-          </div>
-
-        </section>
-
       </main>
-
     </div>
   );
 }

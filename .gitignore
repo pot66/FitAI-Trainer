@@ -46,3 +46,8 @@ Thumbs.db
 
 # Docker
 docker-data/
+# Datasets and Large Archives
+*.zip
+*.tar.gz
+ml/datasets/
+ml/runs/

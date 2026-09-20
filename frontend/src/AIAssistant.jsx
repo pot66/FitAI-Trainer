@@ -66,6 +66,20 @@ function AIAssistant({
   const [speakingMsgIndex, setSpeakingMsgIndex] = useState(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
 
+  // Custom Modal Popups for Rename & Delete Chat
+  const [renameModal, setRenameModal] = useState({
+    isOpen: false,
+    session: null,
+    title: "",
+    loading: false,
+    error: "",
+  });
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    session: null,
+    loading: false,
+  });
+
   const [sessions, setSessions] = useState([]);
 
   // Weekly Plan
@@ -741,513 +755,96 @@ function AIAssistant({
 
 
   // =====================================
-  // Rename Chat
+  // Rename Chat Modal Handlers
   // =====================================
 
-  const renameChat = async (
-    session
-  ) => {
-    const currentTitle =
-      session.title ||
-      "FitAI Assistant";
+  const handleOpenRenameModal = (session) => {
+    setOpenSessionMenu(null);
+    setRenameModal({
+      isOpen: true,
+      session,
+      title: session?.title || "FitAI Assistant",
+      loading: false,
+      error: "",
+    });
+  };
 
-    const newTitle =
-      window.prompt(
-        "à¸•à¸±à¹‰à¸‡à¸Šà¸·à¹ˆà¸­ Chat à¹ƒà¸«à¸¡à¹ˆ",
-        currentTitle
-      );
+  const renameChat = (session) => {
+    handleOpenRenameModal(session);
+  };
 
-    if (newTitle === null) {
-      return;
-    }
-
-    const title =
-      newTitle.trim();
-
-    if (!title) {
-      alert(
-        "à¸à¸£à¸¸à¸“à¸²à¸£à¸°à¸šà¸¸à¸Šà¸·à¹ˆà¸­ Chat"
-      );
-
+  const handleConfirmRename = async (e) => {
+    if (e) e.preventDefault();
+    if (!renameModal.session) return;
+    const cleanTitle = (renameModal.title || "").trim();
+    if (!cleanTitle) {
+      setRenameModal((prev) => ({ ...prev, error: "กรุณาระบุชื่อห้องแชท" }));
       return;
     }
 
     try {
-      const response =
-        await api.patch(
-          `/chat/sessions/${session.id}`,
-          {
-            title,
-          }
-        );
-
-      console.log(
-        "Rename response:",
-        response.data
-      );
+      setRenameModal((prev) => ({ ...prev, loading: true, error: "" }));
+      await api.patch(`/chat/sessions/${renameModal.session.id}`, {
+        title: cleanTitle,
+      });
 
       setSessions((prev) =>
         prev.map((item) =>
-          item.id === session.id
-            ? {
-                ...item,
-                title,
-              }
+          item.id === renameModal.session.id
+            ? { ...item, title: cleanTitle }
             : item
         )
       );
+      setRenameModal({ isOpen: false, session: null, title: "", loading: false, error: "" });
     } catch (error) {
-      console.error(
-        "Rename Chat Error:",
-        error
-      );
-
-      alert(
-        error.response?.data
-          ?.message ||
-          "à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸Šà¸·à¹ˆà¸­ Chat à¹„à¸”à¹‰"
-      );
-    }
-  };
-
-  // =====================================
-  // Delete Chat
-  // =====================================
-
-  const deleteChat = async (
-    session
-  ) => {
-    const title =
-      session.title ||
-      "FitAI Assistant";
-
-    const confirmed =
-      window.confirm(
-        `à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸¥à¸š "${title}" à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?\n\nà¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¹ƒà¸™ Chat à¸™à¸µà¹‰à¸ˆà¸°à¸–à¸¹à¸à¸¥à¸šà¸”à¹‰à¸§à¸¢`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await api.delete(
-        `/chat/sessions/${session.id}`
-      );
-
-      console.log(
-        "Deleted Chat:",
-        session.id
-      );
-
-      setSessions((prev) =>
-        prev.filter(
-          (item) =>
-            item.id !== session.id
-        )
-      );
-
-      if (
-        selectedSessionId ===
-        session.id
-      ) {
-        setSelectedSessionId(
-          null
-        );
-
-        setSessionId(null);
-
-        sessionIdRef.current =
-          null;
-
-        setMessages([]);
-
-        setMessage("");
-      }
-
-      setOpenSessionMenu(null);
-    } catch (error) {
-      console.error(
-        "Delete Chat Error:",
-        error
-      );
-
-      alert(
-        error.response?.data
-          ?.message ||
-          "à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸¥à¸š Chat à¹„à¸”à¹‰"
-      );
-    }
-  };
-
-  // =====================================
-  // Send Message
-  // =====================================
-
-  const sendMessage = async () => {
-    if (
-      !message.trim() ||
-      loading
-    ) {
-      return;
-    }
-
-    const userMessage =
-      message.trim();
-
-    // =====================================
-    // Generic Plan Change Request
-    // =====================================
-
-    const isStartingPlanChange =
-      /^(?:à¸•à¹‰à¸­à¸‡à¸à¸²à¸£|à¸­à¸¢à¸²à¸|à¸‚à¸­)?\s*(?:à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™|à¸›à¸£à¸±à¸š)\s*(?:à¹à¸œà¸™|à¸•à¸²à¸£à¸²à¸‡)(?:\s*(?:à¸­à¸­à¸à¸à¸³à¸¥à¸±à¸‡à¸à¸²à¸¢|à¸§à¸±à¸™à¸™à¸µà¹‰))?[.!?]*$/i.test(
-        userMessage
-      );
-
-    // =====================================
-    // Local Plan Adjustment
-    // =====================================
-
-    // Guard: Food & Nutrition queries must not alter workout plans
-    const isFoodQuery = /(อาหาร|เมนู|กิน|ทาน|แดก|แคล|แคลอรี่|กี่แคล|calorie|calories|nutrition|โภชนาการ|โปรตีน|คาร์บ|ไขมัน|ข้าว|อกไก่|สลัด|กะเพรา|ก๋วยเตี๋ยว|ส้มตำ|มื้อ|diet|food|bmr|tdee|น้ำหนักเกิน|ลดความอ้วน|เพิ่มกล้าม|สร้างกล้าม|คลีน)/i.test(userMessage);
-    const isExplicitPlanRequest = /(เปลี่ยนท่า|เปลี่ยนตาราง|ปรับตาราง|แก้ตาราง|ขอเปลี่ยนตาราง|ตารางออกกำลังกาย|ท่าออกกำลังกาย)/i.test(userMessage);
-
-    let adjustment = { plan: weeklyPlan, changed: false };
-    if (!isFoodQuery || isExplicitPlanRequest) {
-      adjustment = applyPlanAdjustment(
-        weeklyPlan,
-        planProfile || {},
-        planExercises,
-        userMessage
-      );
-    }
-
-    if (isStartingPlanChange) {
-      adjustment = {
-        plan: weeklyPlan,
-        changed: false,
-      };
-    }
-
-    // =====================================
-    // AI Plan Request Detection
-    // =====================================
-
-    const asksForAiPlan =
-      /(à¹à¸™à¸°à¸™à¸³.*(à¸—à¹ˆà¸²|à¹à¸œà¸™|à¸­à¸­à¸à¸à¸³à¸¥à¸±à¸‡)|à¹€à¸¥à¸·à¸­à¸.*à¸—à¹ˆà¸²|à¸ˆà¸±à¸”.*à¹à¸œà¸™|suggest.*exercise|recommend.*exercise|à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™|à¸›à¸£à¸±à¸š|à¹à¸à¹‰à¹„à¸‚|à¸à¸´à¸ˆà¸à¸£à¸£à¸¡|à¹à¸—à¸™|à¸ªà¸¥à¸±à¸š|à¸‚à¸­à¸¥à¸”|à¸‚à¸­à¹€à¸‹à¹‡à¸•)/i.test(
-        userMessage
-      );
-
-    // =====================================
-    // Ollama Plan Adjustment
-    // =====================================
-
-    if (
-      adjustment.changed ||
-      asksForAiPlan
-    ) {
-      try {
-        const planResponse =
-          await api.post(
-            "/ai/plan-adjustment",
-            {
-              plan: weeklyPlan,
-              message: userMessage,
-              todayKey,
-            },
-            { timeout: 6000 }
-          );
-
-        const aiAdjustment =
-          planResponse.data?.data;
-
-        if (
-          aiAdjustment?.changed &&
-          Array.isArray(
-            aiAdjustment.plan
-          )
-        ) {
-          adjustment =
-            aiAdjustment;
-        }
-      } catch (error) {
-        console.warn(
-          "Ollama plan adjustment unavailable; using safe local adjustment.",
-          error
-        );
-      }
-    }
-
-    const activePlanForMessage =
-      adjustment.changed
-        ? adjustment.plan.find(
-            (day) =>
-              day.key === todayKey
-          )
-        : todayPlan;
-
-    // =====================================
-    // Save Updated Plan
-    // =====================================
-
-    if (adjustment.changed) {
-      setWeeklyPlan(
-        adjustment.plan
-      );
-
-      localStorage.setItem(
-        "fitai-weekly-plan",
-        JSON.stringify(
-          adjustment.plan
-        )
-      );
-
-      setJustUpdatedPlan(true);
-      setTimeout(() => setJustUpdatedPlan(false), 8000);
-    }
-
-    // =====================================
-    // Add User Message
-    // =====================================
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "user",
-        content: userMessage,
-      },
-    ]);
-
-    setMessage("");
-
-    setLoading(true);
-
-    try {
-      let currentSessionId =
-        sessionIdRef.current;
-
-      // Create session if needed
-      if (!currentSessionId) {
-        currentSessionId =
-          await createSession(
-            userMessage
-          );
-      }
-
-      // =====================================
-      // Send Message To Backend
-      // =====================================
-
-      const response =
-        await api.post(
-          "/chat/messages",
-          {
-            sessionId:
-              currentSessionId,
-
-            message:
-              userMessage,
-
-            activePlan:
-              activePlanForMessage,
-
-            planUpdated:
-              adjustment.changed,
-          }
-        );
-
-      console.log(
-        "Chat Response:",
-        response.data
-      );
-
-      const data =
-        response.data;
-
-      // =====================================
-      // Extract AI Response
-      // =====================================
-
-      let aiResponse =
-        data.data
-          ?.assistantMessage
-          ?.content ||
-        data.data
-          ?.aiMessage
-          ?.content ||
-        data.data?.message ||
-        data.message ||
-        "";
-
-      if (!aiResponse) {
-        aiResponse = adjustment.changed
-          ? adjustment.message
-          : "à¸‚à¸­à¸­à¸ à¸±à¸¢à¸„à¸£à¸±à¸š à¹„à¸¡à¹ˆà¸žà¸šà¸„à¸³à¸•à¸­à¸šà¸ˆà¸²à¸ AI";
-      }
-
-      // =====================================
-      // Add AI Message
-      // =====================================
-
-      setMessages((prev) => [
+      console.error("Rename Chat Error:", error);
+      setRenameModal((prev) => ({
         ...prev,
-        {
-          role: "assistant",
-          content:
-            aiResponse,
-        },
-      ]);
-
-      // =====================================
-      // Update Session Messages
-      // =====================================
-
-      setSessions((prev) =>
-        prev.map((session) =>
-          session.id ===
-          currentSessionId
-            ? {
-                ...session,
-
-                messages: [
-                  ...(session.messages ||
-                    []),
-
-                  {
-                    role: "user",
-                    content:
-                      userMessage,
-                  },
-
-                  {
-                    role: "assistant",
-                    content:
-                      aiResponse,
-                  },
-                ],
-              }
-            : session
-        )
-      );
-
-      // =====================================
-      // Text To Speech
-      // =====================================
-
-      speakAIResponse(
-        aiResponse
-      );
-    } catch (error) {
-      console.error(
-        "Chat Error:",
-        error
-      );
-
-      const isTimeout =
-        error.code === "ECONNABORTED" ||
-        /timeout/i.test(error.message || "");
-
-      let fallbackText = "";
-      if (isTimeout) {
-        fallbackText =
-          "à¸‚à¸­à¸­à¸ à¸±à¸¢à¸„à¸£à¸±à¸š à¸‚à¸“à¸°à¸™à¸µà¹‰à¸£à¸°à¸šà¸šà¸›à¸£à¸°à¸¡à¸§à¸¥à¸œà¸¥à¸™à¸²à¸™à¸à¸§à¹ˆà¸²à¸›à¸à¸•à¸´ FitAI à¸‚à¸­à¹à¸™à¸°à¸™à¸³à¸—à¹ˆà¸²à¸­à¸­à¸à¸à¸³à¸¥à¸±à¸‡à¸à¸²à¸¢à¸žà¸·à¹‰à¸™à¸à¸²à¸™à¸—à¸µà¹ˆà¸„à¸¸à¸“à¸ªà¸²à¸¡à¸²à¸£à¸–à¸—à¸³à¹„à¸”à¹‰à¸—à¸±à¸™à¸—à¸µà¸„à¸£à¸±à¸š:\n\n" +
-          "- Squat (3 à¹€à¸‹à¹‡à¸•, 10â€“12 à¸„à¸£à¸±à¹‰à¸‡)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Squat](https://youtu.be/fKrzVBsUIv4)\n" +
-          "- Push-up (3 à¹€à¸‹à¹‡à¸•, 8â€“10 à¸„à¸£à¸±à¹‰à¸‡)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Push-up](https://youtu.be/s3z0w-82Y00)\n" +
-          "- Plank (3 à¹€à¸‹à¹‡à¸•, 20â€“30 à¸§à¸´à¸™à¸²à¸—à¸µ)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Plank](https://youtu.be/jDZsXIkwWQ4)\n" +
-          "- Glute Bridge (3 à¹€à¸‹à¹‡à¸•, 12â€“15 à¸„à¸£à¸±à¹‰à¸‡)  â–¶ï¸ [à¸§à¸´à¸”à¸µà¹‚à¸­à¸ªà¸­à¸™: Glute Bridge](https://youtu.be/tBSaB_cnVeE)\n\n" +
-          "à¸„à¸¸à¸“à¸ªà¸²à¸¡à¸²à¸£à¸–à¸ªà¹ˆà¸‡à¸„à¸³à¸–à¸²à¸¡à¹ƒà¸«à¸¡à¹ˆà¹€à¸žà¸·à¹ˆà¸­à¸ªà¸­à¸šà¸–à¸²à¸¡à¸—à¹ˆà¸²à¸­à¸·à¹ˆà¸™ à¹† à¸«à¸£à¸·à¸­à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸¸à¸‚à¸ à¸²à¸žà¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡à¹„à¸”à¹‰à¹€à¸¥à¸¢à¸„à¸£à¸±à¸š";
-      } else {
-        const errorMsg =
-          error.response?.data?.message ||
-          "à¸‚à¸“à¸°à¸™à¸µà¹‰à¸£à¸°à¸šà¸šà¸à¸²à¸£à¸ªà¸·à¹ˆà¸­à¸ªà¸²à¸£à¸‚à¸±à¸”à¸‚à¹‰à¸­à¸‡à¸Šà¸±à¹ˆà¸§à¸„à¸£à¸²à¸§ à¸à¸£à¸¸à¸“à¸²à¸¥à¸­à¸‡à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¹ƒà¸«à¸¡à¹ˆà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡à¸„à¸£à¸±à¸š";
-        fallbackText = `âš ï¸ ${errorMsg}`;
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: fallbackText,
-        },
-      ]);
-    } finally {
-      setLoading(false);
+        loading: false,
+        error: error.response?.data?.message || "ไม่สามารถเปลี่ยนชื่อห้องแชทได้",
+      }));
     }
   };
 
   // =====================================
-  // Handle Input Key Down
+  // Delete Chat Modal Handlers
   // =====================================
 
-  const handleInputKeyDown = (
-    event
-  ) => {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-      event.preventDefault();
-
-      sendMessage();
-    }
-  };
-
-  // =====================================
-  // Submit
-  // =====================================
-
-  const handleSubmit = (
-    event
-  ) => {
-    event.preventDefault();
-
-    sendMessage();
-  };
-
-  // =====================================
-  // Stop Speaking
-  // =====================================
-
-  const handleCopyMessage = (content, index) => {
-    if (!content) return;
-    const clean = content.replace(/\[LOG_FOOD_ACTION:[\s\S]*?\]/g, "").trim();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(clean);
-    }
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
-
-  const stopSpeaking = () => {
-    stopSpeech();
-    setIsSpeaking(false);
-    setSpeakingMsgIndex(null);
-  };
-
-  // =====================================
-  // Text To Speech (HD Bilingual Voice Engine)
-  // =====================================
-
-  const speakAIResponse = (text, index = null) => {
-    if (localStorage.getItem("fitai-ai-voice-enabled") === "false") {
-      return;
-    }
-
-    if (index !== null) {
-      setSpeakingMsgIndex(index);
-    }
-
-    speakText(text, {
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => {
-        setIsSpeaking(false);
-        setSpeakingMsgIndex(null);
-      },
-      onError: () => {
-        setIsSpeaking(false);
-        setSpeakingMsgIndex(null);
-      },
+  const handleOpenDeleteModal = (session) => {
+    setOpenSessionMenu(null);
+    setDeleteModal({
+      isOpen: true,
+      session,
+      loading: false,
     });
+  };
+
+  const deleteChat = (session) => {
+    handleOpenDeleteModal(session);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.session) return;
+    try {
+      setDeleteModal((prev) => ({ ...prev, loading: true }));
+      await api.delete(`/chat/sessions/${deleteModal.session.id}`);
+
+      const remaining = sessions.filter((item) => item.id !== deleteModal.session.id);
+      setSessions(remaining);
+
+      if (sessionId === deleteModal.session.id) {
+        if (remaining.length > 0) {
+          selectSession(remaining[0]);
+        } else {
+          startNewChat();
+        }
+      }
+      setDeleteModal({ isOpen: false, session: null, loading: false });
+    } catch (error) {
+      console.error("Delete Chat Error:", error);
+      setDeleteModal((prev) => ({ ...prev, loading: false }));
+      alert(error.response?.data?.message || "ไม่สามารถลบห้องแชทได้");
+    }
   };
 
   // =====================================
@@ -2328,6 +1925,140 @@ function AIAssistant({
             onClose={() => setCameraModalOpen(false)}
             onCapture={handleAnalyzeFoodImage}
           />
+
+      {/* =====================================
+          Rename Chat Modal Popup
+          ===================================== */}
+      {renameModal.isOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => !renameModal.loading && setRenameModal((prev) => ({ ...prev, isOpen: false }))}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 relative animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center">
+                  <Pencil size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-tight">เปลี่ยนชื่อห้องแชท</h3>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">กำหนดชื่อที่คุณต้องการสำหรับห้องแชทนี้</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !renameModal.loading && setRenameModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-7 h-7 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmRename} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+                  ชื่อห้องแชทใหม่
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={renameModal.title}
+                  onChange={(e) =>
+                    setRenameModal((prev) => ({ ...prev, title: e.target.value, error: "" }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setRenameModal((prev) => ({ ...prev, isOpen: false }));
+                    }
+                  }}
+                  placeholder="เช่น ท่า Squat วันนี้, เมนูลดน้ำหนัก..."
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-red-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors"
+                  disabled={renameModal.loading}
+                />
+                {renameModal.error && (
+                  <span className="text-[11px] text-red-400 mt-1 block">
+                    {renameModal.error}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setRenameModal((prev) => ({ ...prev, isOpen: false }))}
+                  disabled={renameModal.loading}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800 transition-colors cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={renameModal.loading}
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 transition-colors cursor-pointer shadow-lg shadow-red-600/20 flex items-center gap-1.5"
+                >
+                  {renameModal.loading ? <span>กำลังบันทึก...</span> : <span>บันทึกชื่อใหม่</span>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================
+          Delete Chat Confirm Modal Popup
+          ===================================== */}
+      {deleteModal.isOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => !deleteModal.loading && setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 relative animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-950/70 border border-red-800/60 text-red-400 flex items-center justify-center shrink-0">
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">ยืนยันการลบห้องแชท</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3.5 text-xs text-zinc-300 leading-relaxed">
+              คุณต้องการลบห้องแชท{" "}
+              <strong className="text-white font-semibold">
+                "{deleteModal.session?.title || "FitAI Assistant"}"
+              </strong>{" "}
+              ใช่หรือไม่? ข้อความทั้งหมดในห้องนี้จะถูกลบถาวร
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
+                disabled={deleteModal.loading}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800 transition-colors cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteModal.loading}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 transition-colors cursor-pointer shadow-lg shadow-red-600/20 flex items-center gap-1.5"
+              >
+                {deleteModal.loading ? <span>กำลังลบ...</span> : <span>ลบห้องแชท</span>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
         </div>
       </div>
     </div>

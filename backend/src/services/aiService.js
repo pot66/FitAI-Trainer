@@ -172,277 +172,118 @@ function generateFallbackResponse(message, context = {}) {
     const profile = context.profile || null;
     const workout = context.workout || [];
 
-    const text = message.trim();
+    const text = String(message || "").trim();
     const lowerText = text.toLowerCase();
 
-    // =====================================
-    // Food & Calorie Tracking Answers (Database Backed)
-    // =====================================
-    const isFoodQuery =
-      lowerText.includes("แคล") ||
-      lowerText.includes("calorie") ||
-      lowerText.includes("กิน") ||
-      lowerText.includes("อาหาร") ||
-      lowerText.includes("โปรตีน") ||
-      lowerText.includes("คาร์บ") ||
-      lowerText.includes("มื้อ");
-
-    if (isFoodQuery && Array.isArray(context.foodLogs)) {
-      const foodLogs = context.foodLogs;
-      const totalCal = foodLogs.reduce((sum, l) => sum + (Number(l.totalCalories) || 0), 0);
-      const totalPro = foodLogs.reduce((sum, l) => sum + (Number(l.totalProtein) || 0), 0);
-      const totalCarb = foodLogs.reduce((sum, l) => sum + (Number(l.totalCarbs) || 0), 0);
-      const totalFat = foodLogs.reduce((sum, l) => sum + (Number(l.totalFat) || 0), 0);
-
-      let targetCal = 2100;
-      if (profile?.weight && profile?.height && profile?.age) {
-        const w = Number(profile.weight);
-        const h = Number(profile.height);
-        const a = Number(profile.age);
-        const isMale = String(profile.gender || "").toLowerCase().includes("male") || String(profile.gender || "").includes("ชาย");
-        const bmr = isMale ? (10 * w + 6.25 * h - 5 * a + 5) : (10 * w + 6.25 * h - 5 * a - 161);
-        targetCal = Math.round(bmr * 1.35);
-      }
-      const remaining = Math.max(0, Math.round(targetCal - totalCal));
-
-      if (
-        lowerText.includes("กี่แคล") ||
-        lowerText.includes("เท่าไร") ||
-        lowerText.includes("เท่าไหร่") ||
-        lowerText.includes("เหลือ") ||
-        lowerText.includes("กินไป") ||
-        lowerText.includes("วันนี้") ||
-        lowerText.includes("โปรตีน")
-      ) {
-        let msg = `วันนี้คุณรับประทานไปแล้วประมาณ **${Math.round(totalCal)} kcal** จากเป้าหมาย **${targetCal} kcal** (คงเหลือประมาณ **${remaining} kcal**) ครับ 🍽️\n\n`;
-        msg += `**สรุปสารอาหารที่ได้รับ:**\n- โปรตีน: **${Math.round(totalPro * 10) / 10} g**\n- คาร์โบไฮเดรต: **${Math.round(totalCarb * 10) / 10} g**\n- ไขมัน: **${Math.round(totalFat * 10) / 10} g**\n\n`;
-        if (foodLogs.length > 0) {
-          msg += `**มื้ออาหารวันนี้:**\n`;
-          foodLogs.forEach((l, idx) => {
-            const itemNames = (l.items || []).map((i) => `${i.name} (${i.quantity} ${i.unit})`).join(", ");
-            msg += `${idx + 1}. [${l.mealType}] ${itemNames} — **${Math.round(l.totalCalories)} kcal**\n`;
-          });
-        } else {
-          msg += `*(ยังไม่มีการบันทึกอาหารสำหรับวันนี้ สามารถถ่ายรูปหรือบันทึกได้ที่เมนู Food Tracker ได้เลยครับ)*`;
-        }
-        return msg;
-      }
+    // 1. Off-topic Guardrail (อยู่นอกเหนือฟิตเนส/สุขภาพ)
+    const isOffTopic = /(เขียนโค้ด|python|javascript|java|php|การเมือง|หุ้น|คริปโต|หวย|ดูดวง|ซ่อมรถ|ข่าวบันเทิง|ดารา)/i.test(lowerText);
+    if (isOffTopic) {
+        return "เรื่องนี้อยู่นอกเหนือสายงานโค้ชฟิตเนสของผมเลยครับ 😅 แต่ถ้าเป็นเรื่องการออกกำลังกาย วางแผนตารางฝึก ท่าฝึก หรือเมนูอาหารสุขภาพ สอบถาม FitAI ได้เต็มที่เลยครับ! วันนี้มีเป้าหมายอยากฟิตส่วนไหนเป็นพิเศษไหมครับ? 💪";
     }
 
-
-    // =====================================
-    // Greeting
-    // =====================================
-
-    if (
-        lowerText.includes("สวัสดี") ||
-        lowerText.includes("hello") ||
-        lowerText.includes("hi")
-    ) {
-        if (profile) {
-            return (
-                `สวัสดีครับ  ` +
-                `ผมคือ FitAI Trainer ` +
-                `ตอนนี้ผมมีข้อมูลของคุณแล้ว ` +
-                `BMI ของคุณคือ ${profile.bmi || "-"} ` +
-                `(${profile.bmiStatus || "-"}) ` +
-                `มีอะไรให้ผมช่วยเกี่ยวกับการออกกำลังกายไหมครับ`
-            );
-        }
-
-        return (
-            "สวัสดีครับ  " +
-            "ผมคือ FitAI Trainer " +
-            "มีอะไรให้ผมช่วยเกี่ยวกับการออกกำลังกายไหมครับ"
-        );
-    }
-
-    // =====================================
-    // Profile information
-    // =====================================
-
-    if (
-        lowerText.includes("ข้อมูลของฉัน") ||
-        lowerText.includes("profile") ||
-        lowerText.includes("ข้อมูลส่วนตัว")
-    ) {
-        if (!profile) {
-            return (
-                "ตอนนี้ยังไม่มีข้อมูล Profile ของคุณครับ " +
-                "กรุณาไปที่หน้า Profile เพื่อเพิ่มข้อมูลก่อนครับ"
-            );
-        }
-
-        return (
-            "ข้อมูลของคุณครับ 👤\n\n" +
-            `อายุ: ${profile.age || "-"} ปี\n` +
-            `ส่วนสูง: ${profile.height || "-"} cm\n` +
-            `น้ำหนัก: ${profile.weight || "-"} kg\n` +
-            `BMI: ${profile.bmi || "-"}\n` +
-            `สถานะ BMI: ${profile.bmiStatus || "-"}`
-        );
-    }
-
-    // =====================================
-    // BMI
-    // =====================================
-
-    if (
-        lowerText.includes("bmi") ||
-        lowerText.includes("ดัชนีมวลกาย")
-    ) {
-        if (!profile) {
-            return (
-                "ผมยังไม่มีข้อมูลส่วนสูงและน้ำหนักของคุณครับ " +
-                "กรุณาเพิ่มข้อมูลในหน้า Profile ก่อนครับ"
-            );
-        }
-
-        return (
-            `BMI ของคุณคือ ${profile.bmi || "-"} ` +
-            `ซึ่งอยู่ในระดับ ${profile.bmiStatus || "-"} ครับ\n\n` +
-            `${getBMIAdvice(profile)}`
-        );
-    }
-
-    // =====================================
-    // Weight
-    // =====================================
-
-    if (
-        lowerText.includes("น้ำหนัก") ||
-        lowerText.includes("weight")
-    ) {
-        if (!profile) {
-            return (
-                "ผมยังไม่มีข้อมูลน้ำหนักของคุณครับ " +
-                "สามารถเพิ่มได้ที่หน้า Profile"
-            );
-        }
-
-        return (
-            `ตอนนี้น้ำหนักของคุณคือ ${profile.weight} kg ครับ ` +
-            `และ BMI อยู่ที่ ${profile.bmi || "-"}`
-        );
-    }
-
-    // =====================================
-    // Height
-    // =====================================
-
-    if (
-        lowerText.includes("ส่วนสูง") ||
-        lowerText.includes("height")
-    ) {
-        if (!profile) {
-            return (
-                "ผมยังไม่มีข้อมูลส่วนสูงของคุณครับ"
-            );
-        }
-
-        return (
-            `ส่วนสูงของคุณคือ ${profile.height} cm ครับ`
-        );
-    }
-
-    // =====================================
-    // Workout advice
-    // =====================================
-
-    const workoutAdvice =
-        getWorkoutAdvice(message);
-
-    if (workoutAdvice) {
-        let response = workoutAdvice;
-
-        if (profile) {
-            response +=
-                `\n\nสำหรับคุณโดยเฉพาะ ` +
-                `BMI ปัจจุบันคือ ${profile.bmi || "-"}` +
-                ` (${profile.bmiStatus || "-"})`;
-
-            response +=
-                `\n${getBMIAdvice(profile)}`;
-        }
-
+    // 2. Food / Menu Recommendation Queries ("มีเมนูอื่นไหม", "กินอะไรดี", "เบื่ออกไก่", "อาหาร")
+    const isMenuRecommendation =
+      /(มีเมนูอื่น|เมนูอื่น|มีอาหารอื่น|อาหารอื่น|กินไรดี|กินอะไรดี|เบื่ออกไก่|แนะนำเมนู|แนะนำอาหาร|เมนูแนะนำ|อาหารคลีน|ของกิน)/i.test(lowerText);
+    if (isMenuRecommendation) {
+        const picked = getRandomMenus(3);
+        const intros = [
+            "FitAI มีไอเดียเมนูอาหารสุขภาพทางเลือกที่ทั้งอร่อย ได้โปรตีนเน้นๆ และดีต่อการฟิตหุ่นมาแนะนำครับ 🍽️✨",
+            "เบื่อเมนูเดิมๆ ใช่ไหมครับ? ลองเปลี่ยนบรรยากาศด้วยเมนูสุขภาพรสเด็ดเหล่านี้ดูครับ ได้ทั้งสารอาหารและช่วยฟื้นฟูกล้ามเนื้อแน่นอน 💪🥗",
+            "จัดให้เลยครับ! รวมไอเดียเมนูสุขภาพรสชาติเยี่ยม ทำง่าย ทานแล้วไม่อึดอัด เหมาะกับคนออกกำลังกายครับ 🥑🍳"
+        ];
+        const randomIntro = intros[Math.floor(Math.random() * intros.length)];
+        
+        let response = randomIntro + "\n\n";
+        picked.forEach((m, idx) => {
+            response += `### ${idx + 1}. **${m.name}**\n`;
+            response += `- ⚡ พลังงานโดยประมาณ: **~${m.cal} kcal** | 🍗 โปรตีน: **~${m.pro} g**\n`;
+            response += `- 💡 *จุดเด่น:* ${m.note}\n\n`;
+        });
+        response += "💡 **ทริคจาก FitAI:** สามารถปรุงรสด้วยเครื่องเทศสมุนไพร พริกไทย หรือซีอิ๊วโซเดียมต่ำได้ตามชอบเลยครับ การทานอาหารที่ดีไม่จำเป็นต้องจืดชืดเสมอไปครับ!";
         return response;
     }
 
-    // =====================================
-    // Workout history
-    // =====================================
-
-    if (
-        lowerText.includes("ประวัติ") ||
-        lowerText.includes("history")
-    ) {
-        if (!workout.length) {
-            return (
-                "ตอนนี้ยังไม่มีประวัติการออกกำลังกายครับ"
-            );
-        }
-
-        return (
-            `ผมพบประวัติการออกกำลังกายล่าสุด ` +
-            `${workout.length} รายการครับ ` +
-            `สามารถนำข้อมูลเหล่านี้ไปใช้วางแผน ` +
-            `การออกกำลังกายครั้งต่อไปได้`
-        );
+    // 3. Tired / Rest / Recovery ("เหนื่อยมาก", "ขอนอนพัก", "เมื่อย", "ปวดกล้ามเนื้อ")
+    const isTiredOrRest = /(เหนื่อย|นอนพัก|ขอพัก|พักผ่อน|เมื่อย|ปวดกล้ามเนื้อ|ระบม|เมื่อยล้า|พักก่อน)/i.test(lowerText);
+    if (isTiredOrRest) {
+        return [
+            "วันนี้เหนื่อยและเมื่อยล้า พักผ่อนได้เต็มที่เลยครับ! ร่างกายและกล้ามเนื้อพัฒนาตอนเราพักผ่อนและการนอนหลับที่มีคุณภาพครับ 🛌💤",
+            "",
+            "💡 **คำแนะนำการฟื้นฟูร่างกาย (Active Recovery):**",
+            "- 💧 **ดื่มน้ำให้เพียงพอ:** ช่วยขับกรดแลกติกและลดอาการตึงของกล้ามเนื้อ",
+            "- 🧘 **ยืดเหยียดเบา ๆ (Stretching):** สัก 5-10 นาทีก่อนนอน ช่วยให้หลับสบายและคลายความตึง",
+            "- 🍗 **เติมโปรตีนและสารอาหาร:** ช่วยซ่อมแซมเส้นใยกล้ามเนื้อที่ถูกใช้งาน",
+            "- 😴 **นอนหลับ 7-8 ชั่วโมง:** ฮอร์โมนเร่งการเจริญเติบโต (Growth Hormone) จะหลั่งเพื่อซ่อมแซมร่างกายอย่างเต็มที่",
+            "",
+            "พักผ่อนให้สดชื่น แล้วค่อยกลับมาลุยด้วยกันใหม่ในวันพรุ่งนี้ครับ FitAI เป็นกำลังใจให้เสมอครับ! 💪"
+        ].join("\n");
     }
 
-    // =====================================
-    // Personalized recommendation
-    // =====================================
+    // 4. Exercise Alternatives / Swap Poses ("เปลี่ยนท่า", "เล่นท่าไหนแทน", "ปวดเข่า", "ไม่มีอุปกรณ์")
+    const isExerciseSwap = /(เปลี่ยนท่า|ท่าไหนแทน|แทนได้|เจ็บเข่า|ปวดเข่า|ปวดหลัง|เจ็บข้อมือ|ไม่มีอุปกรณ์|สลับท่า)/i.test(lowerText);
+    if (isExerciseSwap) {
+        if (lowerText.includes("เข่า") || lowerText.includes("squat") || lowerText.includes("สควอท")) {
+            return [
+                "เข้าใจเลยครับ หากมีอาการตึงหรือเจ็บเข่า ควรหลีกเลี่ยงแรงกดโดยตรงครับ FitAI แนะนำท่าทางเลือกที่เซฟเข่าแต่บริหารกล้ามเนื้อช่วงล่างได้ดีเยี่ยมดังนี้ครับ 🦵🛡️",
+                "",
+                "1. **Glute Bridge (สะพานโค้งก้น):** นอนหงายแล้วยกสะโพกขึ้น โฟกัสก้นและต้นขาด้านหลัง ไม่ลงน้ำหนักที่เข่าเลย (3 เซ็ต, 12-15 ครั้ง)",
+                "2. **Wall Sit (นั่งพิงกำแพง):** พิงหลังกับผนัง ลดตัวลงในมุมที่เข่าไม่เจ็บ เกร็งค้างไว้ เป็นการฝึกแบบคงที่ลดแรงกระแทก (3 เซ็ต, 20-30 วินาที)",
+                "3. **Step-Up (ก้าวขึ้นบันไดหรือกล่องเตี้ย):** ก้าวขึ้นลงช้าๆ เน้นการควบคุมกล้ามเนื้อ (3 เซ็ต, 10 ครั้ง/ข้าง)",
+                "",
+                "💡 ลองปรับทำท่าเหล่านี้ดูนะครับ ถ้าท่าไหนทำแล้วรู้สึกเจ็บแปลบให้หยุดทันที ความปลอดภัยต้องมาก่อนเสมอครับ!"
+            ].join("\n");
+        }
+        return [
+            "ยินดีช่วยปรับท่าทางเลือกให้เหมาะกับคุณครับ! 💪",
+            "",
+            "หากคุณไม่มีอุปกรณ์ หรือมีอาการตึงเฉพาะจุด สามารถเลือกท่าบอดี้เวทที่ปลอดภัยได้ เช่น:",
+            "- **บริหารช่วงบน:** Incline Push-up (วิดพื้นกับโต๊ะ/ผนัง), Chair Dips, หรือ Wall Push-up",
+            "- **บริหารแกนกลางลำตัว:** Plank, Dead Bug, Bird Dog (ปลอดภัยต่อหลังส่วนล่าง)",
+            "- **บริหารช่วงล่าง:** Glute Bridge, Calf Raise, Chair Squat",
+            "",
+            "บอกผมได้เลยครับว่าต้องการเปลี่ยนท่าไหน หรือมีข้อจำกัดตรงจุดใด ผมจะจัดท่าที่เหมาะสมที่สุดให้ครับ!"
+        ].join("\n");
+    }
 
-    if (
-        lowerText.includes("แนะนำ") ||
-        lowerText.includes("ควรทำอะไร") ||
-        lowerText.includes("ควรออก") ||
-        lowerText.includes("ท่า") ||
-        lowerText.includes("วันนี้") ||
-        lowerText.includes("ตาราง") ||
-        lowerText.includes("แผน") ||
-        lowerText.includes("workout") ||
-        lowerText.includes("exercise")
-    ) {
+    // 5. Workout Advice / Routine Recommendations
+    const isWorkoutAdviceQuery = /(แนะนำ|ควรออก|ท่าไหน|ตาราง|แผน|ออกกำลังกาย|ซ้อม|workout|exercise| routine)/i.test(lowerText);
+    if (isWorkoutAdviceQuery) {
         if (context.activePlan) {
             return formatActivePlanRecommendation(context.activePlan, profile);
         }
-
-        const bmiNote = profile
-            ? `(อ้างอิงจากข้อมูล BMI ${profile.bmi || "-"} ของคุณ)`
-            : "";
-        return (
-            `FitAI แนะนำท่าออกกำลังกายพื้นฐานที่ปลอดภัยและเหมาะสม ${bmiNote} ดังนี้ครับ:\n\n` +
-            "- Squat (3 เซ็ต, 10-12 ครั้ง)\n" +
-            "- Push-up (3 เซ็ต, 8-10 ครั้ง)\n" +
-            "- Plank (3 เซ็ต, 20-30 วินาที)\n" +
-            "- Glute Bridge (3 เซ็ต, 12-15 ครั้ง)\n\n" +
-            "คลิกดูคลิปวิดีโอสาธิตแต่ละท่าเพื่อฝึกตามได้อย่างถูกต้องและปลอดภัยครับ"
-        );
+        const bmiStatus = profile?.bmiStatus || "สมส่วน";
+        const bmiVal = profile?.bmi || "22";
+        return [
+            `ยินดีจัดโปรแกรมและแนะนำการฝึกให้ครับ! 🏋️‍♂️ (อ้างอิงสถานะ BMI ${bmiVal} : ${bmiStatus})`,
+            "",
+            "**ตัวอย่างโปรแกรม Full-Body กระชับสัดส่วนและสร้างความแข็งแรง:**",
+            "1. **Chair Squat หรือ Bodyweight Squat** (3 เซ็ต, 10-12 ครั้ง) — สร้างความแข็งแรงให้ต้นขาและสะโพก",
+            "2. **Wall Push-up หรือ Standard Push-up** (3 เซ็ต, 8-10 ครั้ง) — พัฒนาหน้าอก หัวไหล่ และแขน",
+            "3. **Glute Bridge** (3 เซ็ต, 12-15 ครั้ง) — เสริมความแข็งแรงแกนกลางลำตัวและสะโพก",
+            "4. **Plank** (3 เซ็ต, 20-30 วินาที) — สร้างกล้ามเนื้อหน้าท้องที่มั่นคง",
+            "",
+            "🔥 **คำแนะนำ:** อย่าลืมวอร์มอัพ 3-5 นาทีก่อนเริ่ม และคูลดาวน์ยืดเหยียดหลังฝึกเสร็จนะครับ คุณสามารถบอกผมได้ตลอดว่าอยากเน้นส่วนไหนเป็นพิเศษครับ!"
+        ].join("\n");
     }
 
-    // =====================================
-    // Default
-    // =====================================
+    // 6. Natural Trainer Default Response (แทนที่คำตอบหุ่นยนต์แบบเดิม)
+    const coachIntros = [
+        "ยินดีช่วยดูแลสุขภาพและการออกกำลังกายของคุณครับ! 💪",
+        "FitAI พร้อมลุยและให้คำปรึกษาเรื่องฟิตเนสกับคุณเสมอครับ! 🎯",
+        "สวัสดีครับ มีอะไรให้เทรนเนอร์ FitAI ช่วยเหลือเกี่ยวกับสุขภาพและการออกกำลังกายวันนี้ไหมครับ? 😊"
+    ];
+    const pickedIntro = coachIntros[Math.floor(Math.random() * coachIntros.length)];
 
+    let defaultMsg = pickedIntro + "\n\n";
     if (profile) {
-        return (
-            `ผมเข้าใจคำถามของคุณว่า "${text}" ครับ\n\n` +
-            `ผมสามารถช่วยเรื่องการออกกำลังกาย ` +
-            `โดยอ้างอิงข้อมูล Profile ของคุณได้ ` +
-            `เช่น BMI ${profile.bmi || "-"} ` +
-            `(${profile.bmiStatus || "-"})\n\n` +
-            `ลองถามผมเกี่ยวกับ BMI, Workout, Squat, ` +
-            `Push-up หรือแผนการออกกำลังกายได้เลยครับ`
-        );
+        defaultMsg += `ปัจจุบันคุณมีข้อมูล Profile: น้ำหนัก ${profile.weight || "-"} กก., ส่วนสูง ${profile.height || "-"} ซม., และ BMI ${profile.bmi || "-"} (${profile.bmiStatus || "สุขภาพดี"}) ครับ\n\n`;
     }
-
-    return (
-        `ผมเข้าใจคำถามของคุณว่า "${text}" ครับ\n\n` +
-        "ผมสามารถช่วยเรื่องการออกกำลังกายได้ครับ " +
-        "ลองถามเกี่ยวกับ BMI, Workout, Squat หรือ Push-up ได้เลย"
-    );
+    defaultMsg += "คุณสามารถสอบถามหรือให้ผมช่วยได้หลากหลายเรื่องเลยครับ เช่น:\n";
+    defaultMsg += "- 🏋️ **การออกกำลังกาย:** แนะนำท่าฝึก, ปรับเปลี่ยนท่า, แก้ไขฟอร์ม หรือจัดตารางฝึก\n";
+    defaultMsg += "- 🥗 **โภชนาการ:** แนะนำเมนูอาหารสุขภาพ, อาหารโปรตีนสูง, หรือคำนวณแคลอรี่\n";
+    defaultMsg += "- 🧘 **การฟื้นฟู:** วันพักผ่อน (Rest Day), การยืดเหยียดกล้ามเนื้อ หรือการดูแลเมื่อมีอาการเมื่อยล้า\n\n";
+    defaultMsg += "วันนี้คุณอยากโฟกัสที่เรื่องไหน บอกผมได้ทันทีเลยครับ!";
+    return defaultMsg;
 }
 
 const { askOllama, askOllamaStructured } = require("./ollamaService");
@@ -541,6 +382,13 @@ function handleFoodAndNutritionQuery(message, context = {}) {
 
   const text = String(message || "").trim();
   const lower = text.toLowerCase();
+
+  // If user is asking open-ended menu questions (e.g. "มีเมนูอื่นไหม", "กินอะไรดี", "แนะนำอาหาร"),
+  // let it pass to Ollama so the AI answers freely with creative variety!
+  const isGeneralMenuIdea = /(มีเมนูอื่น|เมนูอื่น|กินไรดี|กินอะไรดี|เบื่ออกไก่|แนะนำเมนู|แนะนำอาหาร|เมนูแนะนำ|มีอะไรกินบ้าง)/i.test(lower);
+  if (isGeneralMenuIdea) {
+    return null; // Passes through to askOllama or dynamic fallback!
+  }
   const profile = context.profile || null;
   const foodLogs = Array.isArray(context.foodLogs) ? context.foodLogs : [];
 
@@ -711,6 +559,12 @@ function handleFoodAndNutritionQuery(message, context = {}) {
 async function generateAIResponse(message, context = {}) {
     let answer = "";
 
+    // 0. Strict Fitness Scope Guardrail: Do not answer non-fitness/tech/coding/political topics
+    const isNonFitnessQuery = /(เขียนโค้ด|python|javascript|c\+\+|php|html|css|sql|เขียนโปรแกรม|แจกโค้ด|แก้บั๊ก|การเมือง|หุ้น|คริปโต|หวย|ดูดวง|ซ่อมรถ|ข่าวบันเทิง)/i.test(String(message || ""));
+    if (isNonFitnessQuery) {
+        return "เรื่องนี้อยู่นอกเหนือขอบเขตเทรนเนอร์ฟิตเนสของผมเลยครับ 😅 FitAI ถูกออกแบบมาเพื่อดูแลสุขภาพ แนะนำการออกกำลังกาย และวางแผนโภชนาการฟิตเนสโดยเฉพาะครับ! หากมีข้อสงสัยเรื่องท่าฝึก ตารางออกกำลังกาย หรือเมนูอาหารเพื่อสุขภาพ สอบถามผมได้เต็มที่เลยครับ! 💪";
+    }
+
     // 0. Food & Calorie Tracking Handler
     const foodResponse = handleFoodAndNutritionQuery(message, context);
     if (foodResponse) {
@@ -720,14 +574,14 @@ async function generateAIResponse(message, context = {}) {
     // 1. If plan was updated, return the authoritative synchronized plan response
     if (context.planUpdated && context.activePlan) {
         answer = formatActivePlan(context.activePlan, context.profile);
-        return await enrichResponseWithVideos(answer);
+        return await enrichResponseWithVideos(answer, message);
     }
 
     // 2. If user is asking for exercise recommendation / advice / today's poses, strictly adhere to the table
     const isRecRequest = /(แนะนำ.*(ท่า|ออกกำลัง|การออกกำลัง|ทำอะไร|โปรแกรม)|ควรออก.*ท่า|มีท่า.*แนะนำ|ท่า.*เหมาะกับ|วันนี้.*(ออก|ทำ|ฝึก|ท่า)|(ออก|ทำ|ฝึก).*ท่าไหน|ท่าอะไร(ดี|บ้าง)?|ช่วยเลือกท่า|ขอท่า|ท่าที่ต้องออก|ตาราง|แผน|ออกกำลังกาย.*อะไร|workout|exercise|routine|program|today)/i.test(message);
     if (context.activePlan && isRecRequest) {
         answer = formatActivePlanRecommendation(context.activePlan, context.profile);
-        return await enrichResponseWithVideos(answer);
+        return await enrichResponseWithVideos(answer, message);
     }
 
     // 3. If starting plan change without details
@@ -745,7 +599,7 @@ async function generateAIResponse(message, context = {}) {
         answer = ollamaResponse || generateFallbackResponse(message, context);
     }
 
-    return await enrichResponseWithVideos(answer);
+    return await enrichResponseWithVideos(answer, message);
 }
 
 function uniqueNames(names) {

@@ -186,9 +186,13 @@ async function loadAllVideos() {
     for (const v of dbVideos) {
       const exerciseName = v.exercise?.name || v.title.split('-')[0].trim();
       const key = normalizeKey(exerciseName);
+      let cleanTitle = String(v.title || '').trim();
+      if (cleanTitle.includes('?') || !cleanTitle) {
+        cleanTitle = `${exerciseName} - วิดีโอสอน`;
+      }
       map.set(key, {
         exerciseName,
-        title: v.title,
+        title: cleanTitle,
         url: v.url,
         videoId: v.videoId,
         category: v.exercise?.category || v.goal || 'General',
@@ -278,8 +282,17 @@ async function getPromptCatalog() {
  * Enriches any text response (from Ollama or Fallback) by ensuring every mentioned exercise
  * has its verified YouTube video link attached!
  */
-async function enrichResponseWithVideos(text = '') {
+async function enrichResponseWithVideos(text = '', userQuery = '') {
   if (!text || typeof text !== 'string') return text;
+
+  // Do NOT attach exercise videos if user or response is primarily about food/nutrition, calories, or greetings
+  const combinedContext = (String(userQuery || '') + ' ' + text).toLowerCase();
+  const isFoodOrDiet = /(อาหาร|เมนู|กิน|ทาน|แคล|calorie|โปรตีน|คาร์บ|ไขมัน|ข้าว|มื้อ|diet|food|น้ำหนักเกิน|ลดความอ้วน|nutrition)/i.test(userQuery || '');
+  const hasExerciseIntent = /(ท่า|ออกกำลัง|workout|exercise|ซ้อม|ฝึก|บริหาร|สควอท|วิดพื้น|แพลงก์|squat|push.?up|lunge)/i.test(userQuery || '');
+  
+  if (isFoodOrDiet && !hasExerciseIntent) {
+    return text;
+  }
 
   const map = await loadAllVideos();
   const lines = text.split('\n');
@@ -363,7 +376,10 @@ async function enrichResponseWithVideos(text = '') {
       '',
       '---',
       '🎥 **วิดีโอสาธิตท่าออกกำลังกายจาก YouTube:**',
-      ...unlinked.map((item) => `• **${item.exerciseName}**: [${item.title}](${item.url})`),
+      ...unlinked.map((item) => {
+      const cleanTitle = (item.title || `${item.exerciseName} - วิดีโอสอน`).replace(/\?+/g, '').trim();
+      return `• **${item.exerciseName}**: [${cleanTitle}](${item.url})`;
+    }),
     ].join('\n');
 
     return `${text.trimEnd()}\n${videoSection}`;

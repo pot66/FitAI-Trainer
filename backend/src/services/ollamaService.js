@@ -140,20 +140,25 @@ async function askOllama(message, context = {}) {
   const fallbackModel = primaryModel === "qwen2.5:3b" ? "llama3.2:3b" : "qwen2.5:3b";
 
   let videoCatalog = "";
-  try {
-    videoCatalog = await getPromptCatalog();
-  } catch {
-    // Ignore if not loaded
+  // Only inject video catalog if user is asking about exercise poses or workout routine
+  const hasExerciseQuery = /(ท่า|ออกกำลัง|workout|exercise|ซ้อม|ฝึก|สควอท|วิดพื้น|แพลงก์|squat|push.?up|lunge)/i.test(String(message || ""));
+  if (hasExerciseQuery) {
+    try {
+      videoCatalog = await getPromptCatalog();
+    } catch {
+      // Ignore if not loaded
+    }
   }
 
-  const history = Array.isArray(context.history) ? context.history.slice(-10) : [];
+  // Keep lean history of 4 recent turns to ensure ultra-fast GPU inference (<5s) without timeout
+  const history = Array.isArray(context.history) ? context.history.slice(-4) : [];
   const messages = [
     { role: "system", content: createSystemPrompt(context, videoCatalog) },
     ...history.map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
-      content: String(item.content || "").slice(0, 2000),
+      content: String(item.content || "").slice(0, 500),
     })),
-    { role: "user", content: String(message).slice(0, 3000) },
+    { role: "user", content: String(message).slice(0, 1500) },
   ];
 
   const primaryTimeout = aiConfig.ollama.timeoutMs;

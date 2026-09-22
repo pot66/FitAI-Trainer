@@ -86,6 +86,12 @@ export function getTrainingProfile(profile = {}) {
 }
 
 export const FOCUS_CATEGORIES = {
+  arm: {
+    focusName: "ช่วงแขน",
+    primary: ["Tricep Dips", "Overhead Tricep Extension", "Close Grip Push-Ups", "Biceps Curl", "Triceps Dip", "Diamond Push-up", "Wall Push Up", "Arm Circles"],
+    lowImpact: ["Wall Push Up", "Arm Circles", "Tricep Dips"],
+    femalePriority: ["Tricep Dips", "Wall Push Up", "Arm Circles", "Biceps Curl"],
+  },
   lower: {
     focusName: "ช่วงล่าง",
     primary: ["Squat", "Lunges", "Glute Bridge", "Bulgarian Split Squat", "Calf Raise", "Leg Press", "Chair Squat", "Sumo Squat", "Hip Thrust", "Donkey Kick", "Romanian Deadlift", "Forward Lunge", "Reverse Lunge", "Step Up"],
@@ -286,7 +292,41 @@ export function extractTargetExercise(text, exercises = []) {
   return null;
 }
 
-export function applyPlanAdjustment(plan, profile, exercises = [], request) {
+
+export function extractExercisesFromAssistantText(text) {
+  if (!text) return null;
+  const lines = String(text).split('\n');
+  const exercises = [];
+  let focus = '';
+
+  if (/(ช่วงแขน|แขน|ไทรเซป|ไบเซป|bicep|tricep|arm)/i.test(text)) focus = 'ช่วงแขน';
+  else if (/(ช่วงบน|อก|หลัง|ไหล่|chest|back|shoulder)/i.test(text)) focus = 'ช่วงบน';
+  else if (/(ช่วงล่าง|ขา|ก้น|สะโพก|ต้นขา|leg|quad|glute)/i.test(text)) focus = 'ช่วงล่าง';
+  else if (/(แกนกลาง|หน้าท้อง|พุง|abs|core)/i.test(text)) focus = 'แกนกลางลำตัว';
+  else if (/(คาร์ดิโอ|cardio)/i.test(text)) focus = 'คาร์ดิโอและความทนทาน';
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const exMatch = trimmed.match(/^(?:\d+[\.\)]|\-|\*|•)\s*([A-Za-zก-๙\s\-]+?)(?:\s*\((\d+)\s*เซ็ต\s*[\·,\.]\s*([^\)]+)\))?(?:\s*▶️.*)?$/);
+    if (exMatch && exMatch[1]) {
+      const name = exMatch[1].replace(/^[0-9\.\s]+/, '').trim();
+      if (name.length > 2 && !/^(วิดีโอ|youtube|คลิป|ท่า|คำแนะนำ|ช่วง|ตาราง|ข้อแนะนำ)/i.test(name)) {
+        exercises.push({
+          name,
+          sets: exMatch[2] ? Number(exMatch[2]) : 2,
+          repetitions: exMatch[3] ? exMatch[3].trim() : '10–12 ครั้ง'
+        });
+      }
+    }
+  }
+
+  if (exercises.length > 0) {
+    return { focus: focus || 'ช่วงแขน', exercises };
+  }
+  return null;
+}
+
+export function applyPlanAdjustment(plan, profile, exercises = [], request, lastAssistantMessage = "") {
   const text = String(request || "").toLowerCase();
 
   // Food & Nutrition query guard: Do not hijack food inquiries as workout plan modifications
@@ -300,7 +340,34 @@ export function applyPlanAdjustment(plan, profile, exercises = [], request) {
   const current = plan[targetIndex] || { key: todayKey, focus: "ช่วงล่าง", exercises: [] };
   const next = plan.map((day) => ({ ...day, exercises: Array.isArray(day.exercises) ? [...day.exercises] : [] }));
 
-  const wantsChange = /(เปลี่ยน|ปรับ|แก้ไข|กิจกรรม|แนะนำ|เลือก|จัด|ขอ|สลับ|แทน|อยาก|ช่วย|ท่า|ตาราง|แผน|วันนี้|เหนื่อย|ล้า|เจ็บ|ปวด|เบา|พัก|rest|tired|change|adjust|edit)/i.test(text);
+  // Anaphoric reference: User says "นำท่านี้ไปใช้ในตาราง", "เอาท่านี้ใส่ตาราง", "ตามที่แนะนำ"
+  const isAnaphoric = /(ท่านี้|ท่าเหล่านี้|ท่าพวกนี้|ตามนี้|ที่แนะนำ|ที่บอก|ท่านั้น|ท่าข้างบน|เอาท่านี้|นำท่านี้|ใช้ท่านี้|จัดตามนี้|อัปเดตตามนี้|ใส่ตารางของวันนี้|ใช้ในตาราง)/i.test(text);
+  if (isAnaphoric && lastAssistantMessage) {
+    const extracted = extractExercisesFromAssistantText(lastAssistantMessage);
+    if (extracted && extracted.exercises.length > 0) {
+      next[targetIndex] = {
+        ...current,
+        focus: extracted.focus || "ช่วงแขน",
+        exerciseName: extracted.exercises[0].name,
+        exercises: extracted.exercises,
+        reason: "AI อัปเดตตารางตามท่าที่แนะนำให้ผู้ใช้ล่าสุด",
+        updatedAt: new Date().toISOString(),
+      };
+      const exerciseListStr = extracted.exercises
+        .map((ex, i) => `${i + 1}.${ex.name} (${ex.sets ? `${ex.sets} เซ็ต · ` : ""}${ex.repetitions})`)
+        .join("\n");
+      return {
+        plan: next,
+        changed: true,
+        message: `ตารางการออกกำลังกายสำหรับวันนี้ (${extracted.focus || 'การออกกำลังกาย'}):\n\n` +
+          `ท่าในตารางที่ต้องออกสำหรับวันนี้:\n` +
+          `${exerciseListStr}\n\n` +
+          `ตารางออกกำลังกายทางด้านขวาได้รับการอัปเดตตรงตามรายการนี้เรียบร้อยแล้วครับ 🎯`,
+      };
+    }
+  }
+
+  const wantsChange = /(เปลี่ยน|ปรับ|แก้ไข|กิจกรรม|แนะนำ|เลือก|จัด|ขอ|สลับ|แทน|อยาก|ช่วย|ท่า|ตาราง|แผน|วันนี้|เหนื่อย|ล้า|เจ็บ|ปวด|เบา|พัก|rest|tired|change|adjust|edit|นำท่านี้|เอาท่านี้)/i.test(text);
   if (!wantsChange) {
     return { plan, changed: false, message: "" };
   }
@@ -347,6 +414,7 @@ export function applyPlanAdjustment(plan, profile, exercises = [], request) {
   }
 
   // 4. Determine category focus / activity
+  const isArm = /(แขน|ต้นแขน|ไทรเซป|ไบเซป|bicep|tricep|arm)/i.test(text);
   const isLower = /(ช่วงล่าง|ขา|ก้น|สะโพก|ต้นขา|lower|leg|squat|lunge)/i.test(text);
   const isUpper = /(ช่วงบน|อก|หลัง|แขน|ไหล่|upper|push|pull|chest)/i.test(text);
   const isCore = /(แกนกลาง|หน้าท้อง|พุง|เอว|core|abs|plank|crunch)/i.test(text);
@@ -355,7 +423,7 @@ export function applyPlanAdjustment(plan, profile, exercises = [], request) {
   const isFull = /(ทั้งตัว|ทั้งร่างกาย|full\s*body)/i.test(text);
   const isLowImpact = /(แรงกระแทกต่ำ|เจ็บเข่า|ปวดเข่า|ข้อเข่า|low\s*impact|เข่าไม่ดี|น้ำหนักเยอะ)/i.test(text);
 
-  let categoryKey = isLower ? "lower"
+  let categoryKey = isArm ? "arm" : isLower ? "lower"
     : isUpper ? "upper"
     : isCore ? "core"
     : isCardio ? "cardio"
@@ -372,7 +440,7 @@ export function applyPlanAdjustment(plan, profile, exercises = [], request) {
       else if (cat.includes("cardio")) categoryKey = "cardio";
       else categoryKey = "lower";
     } else {
-      categoryKey = (current.focus || "").includes("บน") ? "upper"
+      categoryKey = (current.focus || "").includes("แขน") ? "arm" : (current.focus || "").includes("บน") ? "upper"
         : (current.focus || "").includes("แกน") ? "core"
         : (current.focus || "").includes("คาร์ดิโอ") ? "cardio"
         : (current.focus || "").includes("ยืด") || (current.focus || "").includes("ฟื้นฟู") ? "mobility"

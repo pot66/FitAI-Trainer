@@ -746,11 +746,74 @@ function extractTargetExercise(text, exercises = []) {
     return null;
 }
 
-async function suggestPlanAdjustment({ profile, exercises = [], plan = [], message, todayKey }) {
+function extractExercisesFromAssistantText(text) {
+    if (!text) return null;
+    const lines = String(text).split('\n');
+    const exercises = [];
+    let focus = '';
+
+    if (/(ช่วงแขน|แขน|ไทรเซป|ไบเซป|bicep|tricep|arm)/i.test(text)) focus = 'ช่วงแขน';
+    else if (/(ช่วงบน|อก|หลัง|ไหล่|chest|back|shoulder)/i.test(text)) focus = 'ช่วงบน';
+    else if (/(ช่วงล่าง|ขา|ก้น|สะโพก|ต้นขา|leg|quad|glute)/i.test(text)) focus = 'ช่วงล่าง';
+    else if (/(แกนกลาง|หน้าท้อง|พุง|abs|core)/i.test(text)) focus = 'แกนกลางลำตัว';
+    else if (/(คาร์ดิโอ|cardio)/i.test(text)) focus = 'คาร์ดิโอและความทนทาน';
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const exMatch = trimmed.match(/^(?:\d+[\.\)]|\-|\*|•)\s*([A-Za-zก-๙\s\-]+?)(?:\s*\((\d+)\s*เซ็ต\s*[\·,\.]\s*([^\)]+)\))?(?:\s*▶️.*)?$/);
+        if (exMatch && exMatch[1]) {
+            const name = exMatch[1].replace(/^[0-9\.\s]+/, '').trim();
+            if (name.length > 2 && !/^(วิดีโอ|youtube|คลิป|ท่า|คำแนะนำ|ช่วง|ตาราง|ข้อแนะนำ)/i.test(name)) {
+                exercises.push({
+                    name,
+                    sets: exMatch[2] ? Number(exMatch[2]) : 2,
+                    repetitions: exMatch[3] ? exMatch[3].trim() : '10–12 ครั้ง'
+                });
+            }
+        }
+    }
+
+    if (exercises.length > 0) {
+        return { focus: focus || 'ช่วงแขน', exercises };
+    }
+    return null;
+}
+
+async function suggestPlanAdjustment({ profile, exercises = [], plan = [], message, todayKey, lastAssistantMessage = "" }) {
     const targetIndex = Math.max(0, plan.findIndex((day) => day.key === todayKey));
     const current = plan[targetIndex] || { key: todayKey, focus: "ช่วงล่าง", exercises: [] };
     const allowed = exercises.map((exercise) => exercise.name).filter(Boolean);
     const lowerMessage = String(message || "").toLowerCase();
+
+        // Check anaphoric references from previous assistant recommendation
+    const isAnaphoric = /(ท่านี้|ท่าเหล่านี้|ท่าพวกนี้|ตามนี้|ที่แนะนำ|ที่บอก|ท่านั้น|ท่าข้างบน|เอาท่านี้|นำท่านี้|ใช้ท่านี้|จัดตามนี้|อัปเดตตามนี้|ใส่ตารางของวันนี้|ใช้ในตาราง|ใส่ตาราง)/i.test(lowerMessage);
+    if (isAnaphoric && lastAssistantMessage) {
+        const extracted = extractExercisesFromAssistantText(lastAssistantMessage);
+        if (extracted && extracted.exercises.length > 0) {
+            const next = plan.map((day, i) => i === targetIndex ? {
+                ...day,
+                focus: extracted.focus || "ช่วงแขน",
+                exerciseName: extracted.exercises[0].name,
+                exercises: extracted.exercises,
+                reason: "AI อัปเดตตารางตามท่าที่แนะนำให้ผู้ใช้ล่าสุด",
+            } : day);
+            const exerciseListStr = extracted.exercises
+                .map((e, i) => `${i + 1}. **${e.name}** (${e.sets ? `${e.sets} เซ็ต · ` : ""}${e.repetitions})`)
+                .join("\n");
+            const dayLabels = {
+                monday: "จันทร์", tuesday: "อังคาร", wednesday: "พุธ",
+                thursday: "พฤหัสบดี", friday: "ศุกร์", saturday: "เสาร์", sunday: "อาทิตย์"
+            };
+            const dayLabel = dayLabels[todayKey] || "วันนี้";
+            const msg = `ตารางการออกกำลังกายสำหรับวัน${dayLabel} (**${extracted.focus || "การออกกำลังกาย"}**):\n\n**ท่าในตารางที่ต้องออกสำหรับวันนี้:**\n${exerciseListStr}\n\nตารางออกกำลังกายทางด้านขวาได้รับการอัปเดตตรงตามรายการนี้เรียบร้อยแล้วครับ สามารถคลิกดูคลิปวิดีโอสาธิตแต่ละท่าจาก YouTube ด้านล่างเพื่อฝึกฟอร์มที่ถูกต้องได้เลยครับ 🎯`;
+            const enriched = await enrichResponseWithVideos(msg);
+            return {
+                plan: next,
+                changed: true,
+                message: enriched
+            };
+        }
+    }
 
     // Check if user requested rest
     const wantsRest = /(พัก|เหนื่อย|ล้า|เจ็บ|ปวด|เมื่อย|ไม่ไหว|rest|tired|sore)/i.test(lowerMessage);
@@ -790,6 +853,7 @@ async function suggestPlanAdjustment({ profile, exercises = [], plan = [], messa
     }
 
     // Determine category focus
+    const isArm = /(แขน|ต้นแขน|ไทรเซป|ไบเซป|bicep|tricep|arm)/i.test(lowerMessage);
     const isLower = /(ช่วงล่าง|ขา|ก้น|สะโพก|ต้นขา|lower|leg|squat|lunge)/i.test(lowerMessage);
     const isUpper = /(ช่วงบน|อก|หลัง|แขน|ไหล่|upper|push|pull|chest)/i.test(lowerMessage);
     const isCore = /(แกนกลาง|หน้าท้อง|พุง|เอว|core|abs|plank|crunch)/i.test(lowerMessage);
@@ -798,7 +862,7 @@ async function suggestPlanAdjustment({ profile, exercises = [], plan = [], messa
     const isFull = /(ทั้งตัว|ทั้งร่างกาย|full\s*body)/i.test(lowerMessage);
     const isLowImpact = /(แรงกระแทกต่ำ|เจ็บเข่า|ปวดเข่า|ข้อเข่า|low\s*impact|เข่าไม่ดี|น้ำหนักเยอะ)/i.test(lowerMessage);
 
-    let categoryKey = isLower ? "lower"
+    let categoryKey = isArm ? "arm" : isLower ? "lower"
         : isUpper ? "upper"
         : isCore ? "core"
         : isCardio ? "cardio"
@@ -816,7 +880,7 @@ async function suggestPlanAdjustment({ profile, exercises = [], plan = [], messa
             else if (cat.includes("cardio")) categoryKey = "cardio";
             else categoryKey = "lower";
         } else {
-            categoryKey = (current.focus || "").includes("บน") ? "upper"
+            categoryKey = (current.focus || "").includes("แขน") ? "arm" : (current.focus || "").includes("บน") ? "upper"
                 : (current.focus || "").includes("แกน") ? "core"
                 : (current.focus || "").includes("คาร์ดิโอ") ? "cardio"
                 : (current.focus || "").includes("ยืด") || (current.focus || "").includes("ฟื้นฟู") ? "mobility"

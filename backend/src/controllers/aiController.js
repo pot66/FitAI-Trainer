@@ -44,7 +44,7 @@ async function detectExercise(req, res) {
 
 async function adjustWeeklyPlan(req, res) {
   try {
-    const { plan, message, todayKey } = req.body || {};
+    const { plan, message, todayKey, lastAssistantMessage } = req.body || {};
     if (!Array.isArray(plan) || !message || !todayKey) {
       return res.status(400).json({ success: false, message: "plan, message and todayKey are required" });
     }
@@ -52,7 +52,7 @@ async function adjustWeeklyPlan(req, res) {
       prisma.profile.findUnique({ where: { userId: req.user.userId } }),
       prisma.exercise.findMany({ orderBy: { name: "asc" } }),
     ]);
-    const result = await suggestPlanAdjustment({ profile, exercises, plan, message, todayKey });
+    const result = await suggestPlanAdjustment({ profile, exercises, plan, message, todayKey, lastAssistantMessage });
     return res.json({ success: true, data: result });
   } catch (error) {
     console.error("AI plan adjustment error:", error);

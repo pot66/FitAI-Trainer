@@ -896,11 +896,13 @@ function AIAssistant({
 
     let adjustment = { plan: weeklyPlan, changed: false };
     if (!isFoodQuery || isExplicitPlanRequest) {
+      const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant")?.content || "";
       adjustment = applyPlanAdjustment(
         weeklyPlan,
         planProfile || {},
         planExercises,
-        userMessage
+        userMessage,
+        lastAssistantMsg
       );
     }
 
@@ -929,6 +931,7 @@ function AIAssistant({
       asksForAiPlan
     ) {
       try {
+        const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant")?.content || "";
         const planResponse =
           await api.post(
             "/ai/plan-adjustment",
@@ -936,6 +939,7 @@ function AIAssistant({
               plan: weeklyPlan,
               message: userMessage,
               todayKey,
+              lastAssistantMessage: lastAssistantMsg,
             },
             { timeout: 6000 }
           );

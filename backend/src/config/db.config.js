@@ -21,7 +21,7 @@ function parseDatabaseConfig() {
       if (!host) host = parsed.hostname;
       if (!port && parsed.port) port = Number(parsed.port);
       if (!user && parsed.username) user = decodeURIComponent(parsed.username);
-      if (password === undefined && parsed.password) {
+      if ((!password || password === "") && parsed.password) {
         password = decodeURIComponent(parsed.password);
       }
       if (!database && parsed.pathname) {
@@ -47,7 +47,11 @@ function parseDatabaseConfig() {
     user: user || "fitai",
     password: password !== undefined ? password : "",
     database: database || "fitai_trainer",
-    connectionLimit: Number(process.env.DB_POOL_SIZE || 10),
+    connectionLimit: Number(process.env.DB_POOL_SIZE || 20),
+    connectTimeout: 10000,
+    acquireTimeout: 10000,
+    idleTimeout: 30000,
+    minDelayValidation: 500,
     allowPublicKeyRetrieval,
     missing,
     warnings,

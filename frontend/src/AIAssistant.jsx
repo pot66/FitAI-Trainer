@@ -65,6 +65,7 @@ function AIAssistant({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingMsgIndex, setSpeakingMsgIndex] = useState(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Custom Modal Popups for Rename & Delete Chat
   const [renameModal, setRenameModal] = useState({
@@ -692,9 +693,17 @@ function AIAssistant({
       setIsAnalyzingFood(true);
       setCameraModalOpen(false);
 
+      const imageSrc = String(base64 || "").startsWith("data:")
+        ? base64
+        : `data:image/jpeg;base64,${base64}`;
+
       setMessages((prev) => [
         ...prev,
-        { role: "user", content: "📷 [ส่งภาพอาหารเพื่อสแกนและคำนวณแคลอรี่]" },
+        {
+          role: "user",
+          content: "📷 ภาพอาหารที่ส่งวิเคราะห์",
+          image: imageSrc,
+        },
       ]);
       setLoading(true);
 
@@ -1706,11 +1715,49 @@ function AIAssistant({
                       {item.role === "user" ? "คุณ" : "FitAI"}
                     </div>
 
-                    {item.role === "user" ? (
-                      <div className="bg-zinc-800 text-zinc-100 px-4 py-3 rounded-2xl rounded-tr-sm text-sm leading-relaxed shadow-sm break-words">
-                        {item.content}
-                      </div>
-                    ) : (
+                    {item.role === "user" ? (() => {
+                      const userImg = item.image || (
+                        typeof item.content === "string" && item.content.startsWith("data:image/")
+                          ? item.content
+                          : null
+                      ) || (
+                        typeof item.content === "string" ? item.content.match(/!\[.*?\]\((data:image\/[^)]+|https?:\/\/[^)]+)\)/)?.[1] : null
+                      );
+                      const showCaption = item.content &&
+                        item.content !== "📷 [ส่งภาพอาหารเพื่อสแกนและคำนวณแคลอรี่]" &&
+                        item.content !== "📷 ภาพอาหารที่ส่งวิเคราะห์" &&
+                        !item.content.startsWith("data:image/") &&
+                        item.content !== userImg;
+
+                      return (
+                        <div className="bg-zinc-800 text-zinc-100 p-2.5 sm:p-3 rounded-2xl rounded-tr-sm text-sm leading-relaxed shadow-sm break-words flex flex-col gap-2 max-w-full sm:max-w-sm">
+                          {userImg && (
+                            <div className="relative rounded-xl overflow-hidden bg-black/60 border border-zinc-700/60 shadow-md group">
+                              <img
+                                src={userImg}
+                                alt="ภาพอาหารที่ส่ง"
+                                className="w-full h-auto max-h-64 sm:max-h-80 object-cover rounded-xl transition-transform duration-200 group-hover:scale-[1.01] cursor-pointer"
+                                onClick={() => setPreviewImage(userImg)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setPreviewImage(userImg)}
+                                className="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[11px] text-zinc-200 border border-white/15 hover:bg-black/90 hover:text-white transition-all flex items-center gap-1 cursor-pointer opacity-90 group-hover:opacity-100"
+                                title="คลิกเพื่อดูภาพขนาดเต็ม"
+                              >
+                                🔍 <span>ดูรูปใหญ่</span>
+                              </button>
+                            </div>
+                          )}
+                          {showCaption && (
+                            <span className="px-1 text-sm">{item.content}</span>
+                          )}
+                          {!userImg && !showCaption && (
+                            <span>{item.content}</span>
+                          )}
+                        </div>
+                      );
+                    })() : (
                       <div className="bg-zinc-900/60 border border-zinc-800/60 text-zinc-100 px-4 py-3.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed shadow-sm w-full">
                         <ChatMessageContent content={item.content} onLogFood={(foodAction) => handleQuickLogFood(foodAction, "LUNCH", 1)} />
 
@@ -2301,6 +2348,39 @@ function AIAssistant({
             onClose={() => setCameraModalOpen(false)}
             onCapture={handleAnalyzeFoodImage}
           />
+
+      {/* Image Preview Lightbox Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between w-full pb-2 text-xs text-zinc-400">
+              <span className="flex items-center gap-1.5 font-semibold text-zinc-200">
+                <span>📸</span>
+                <span>ภาพที่คุณส่งไป (Food Image)</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-xs"
+              >
+                ✕ ปิดหน้าต่าง
+              </button>
+            </div>
+            <img
+              src={previewImage}
+              alt="ภาพอาหารขนาดเต็ม"
+              className="w-auto h-auto max-w-full max-h-[80vh] object-contain rounded-2xl border border-zinc-800 shadow-2xl bg-zinc-950"
+            />
+          </div>
+        </div>
+      )}
+
 
       {/* =====================================
           Rename Chat Modal Popup

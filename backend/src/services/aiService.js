@@ -1,3 +1,4 @@
+const { matchCoachingIntent, generateIntentFallback } = require("./coachKnowledgeService");
 function getBMIAdvice(profile) {
     if (!profile || !profile.bmi) {
         return "";
@@ -200,6 +201,12 @@ function generateFallbackResponse(message, context = {}) {
     const isOffTopic = /(เขียนโค้ด|python|javascript|java|php|การเมือง|หุ้น|คริปโต|หวย|ดูดวง|ซ่อมรถ|ข่าวบันเทิง|ดารา)/i.test(lowerText);
     if (isOffTopic) {
         return "เรื่องนี้อยู่นอกเหนือสายงานโค้ชฟิตเนสของผมเลยครับ 😅 แต่ถ้าเป็นเรื่องการออกกำลังกาย วางแผนตารางฝึก ท่าฝึก หรือเมนูอาหารสุขภาพ สอบถาม FitAI ได้เต็มที่เลยครับ! วันนี้มีเป้าหมายอยากฟิตส่วนไหนเป็นพิเศษไหมครับ? 💪";
+    }
+
+    // 2.5 Coaching Knowledge Base Matching (from 420 Q&A Dataset)
+    const coachingMatch = matchCoachingIntent(text);
+    if (coachingMatch) {
+        return generateIntentFallback(coachingMatch, text, context);
     }
 
     // 2. Food / Menu Recommendation Queries ("มีเมนูอื่นไหม", "กินอะไรดี", "เบื่ออกไก่", "อาหาร")

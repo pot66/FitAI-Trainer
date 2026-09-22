@@ -1,3 +1,4 @@
+const { matchCoachingIntent } = require("./coachKnowledgeService");
 const { getPromptCatalog } = require("./exerciseVideoService");
 const { aiConfig } = require("../config");
 
@@ -55,7 +56,7 @@ function compactFoodNutrition(foodLogs = [], profile = null) {
   return `วันนี้กินไปแล้ว ${total.calories} kcal จากเป้าหมาย ${targetCal} kcal (คงเหลือ ${remaining} kcal) [โปรตีน ${total.protein}g, คาร์บ ${total.carbs}g, ไขมัน ${total.fat}g]. รายการมื้อที่กิน: ${meals}`;
 }
 
-function createSystemPrompt(context, videoCatalog = "") {
+function createSystemPrompt(context, videoCatalog = "", coachingMatch = null) {
   const lines = [
     "คุณคือ 'FitAI Trainer' โค้ชฟิตเนสส่วนตัวและผู้เชี่ยวชาญด้านการออกกำลังกายและโภชนาการกีฬาประจำตัวผู้ใช้",
     "สรรพนาม: แทนตัวเองว่า 'ผม' หรือ 'FitAI' และลงท้ายด้วย 'ครับ' เสมอ บุคลิกภาพ: อบอุ่น กระตือรือร้น สุภาพ ให้กำลังใจ เอาใจใส่ และพูดคุยเป็นธรรมชาติเหมือนเทรนเนอร์มืออาชีพ",
@@ -83,6 +84,15 @@ function createSystemPrompt(context, videoCatalog = "") {
       "",
       "รายการท่าออกกำลังกายและลิงก์ YouTube ที่ถูกต้องในระบบ (เมื่อแนะนำท่าฝึกให้ระบุชื่อท่า วิธีทำสั้นๆ และแนบลิงก์จากรายการนี้ในรูปแบบ [ชื่อวิดีโอ](URL)):",
       videoCatalog
+    );
+  }
+
+    if (coachingMatch) {
+    lines.push(
+      "",
+      `【หลักการและแนวทางของ FitAI สำหรับคำถามเรื่องนี้ (${coachingMatch.category} / ${coachingMatch.intent})】:`,
+      `• ทิศทางความถูกต้อง: ${coachingMatch.expected_response}`,
+      "• คำแนะนำในการตอบ: ให้อิสระแก่คุณในการอธิบายอย่างละเอียด มีชีวิตชีวา ใช้ตัวอย่างและคำพูดที่อบอุ่นเป็นธรรมชาติ โดยยึดหลักการความถูกต้องนี้เป็นแนวทางหลัก"
     );
   }
 
@@ -150,10 +160,13 @@ async function askOllama(message, context = {}) {
     }
   }
 
+  // Match question against 420-item coaching dataset for precise domain guidance
+  const coachingMatch = matchCoachingIntent(message);
+
   // Keep lean history of 4 recent turns to ensure ultra-fast GPU inference (<5s) without timeout
   const history = Array.isArray(context.history) ? context.history.slice(-4) : [];
   const messages = [
-    { role: "system", content: createSystemPrompt(context, videoCatalog) },
+    { role: "system", content: createSystemPrompt(context, videoCatalog, coachingMatch) },
     ...history.map((item) => ({
       role: item.role === "assistant" ? "assistant" : "user",
       content: String(item.content || "").slice(0, 500),

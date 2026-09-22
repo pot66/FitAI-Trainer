@@ -1,0 +1,2942 @@
+[
+  {
+    "id": 1,
+    "intent": "goal_general",
+    "category": "goals",
+    "example_question": "ช่วยบอกหน่อยว่าฉันควรตั้งเป้าหมายออกกำลังกายแบบไหนดี",
+    "expected_response": "สอบถามเป้าหมายหลักก่อน แล้วแนะนำเป้าหมายที่วัดผลได้ตามระดับ เวลา และความต้องการของผู้ใช้"
+  },
+  {
+    "id": 2,
+    "intent": "goal_general",
+    "category": "goals",
+    "example_question": "ฉันควรมีเป้าหมายการออกกำลังกายแบบไหน",
+    "expected_response": "สอบถามเป้าหมายหลักก่อน แล้วแนะนำเป้าหมายที่วัดผลได้ตามระดับ เวลา และความต้องการของผู้ใช้"
+  },
+  {
+    "id": 3,
+    "intent": "goal_general",
+    "category": "goals",
+    "example_question": "ช่วยเลือกเป้าหมายการออกกำลังกายให้ฉันหน่อย",
+    "expected_response": "สอบถามเป้าหมายหลักก่อน แล้วแนะนำเป้าหมายที่วัดผลได้ตามระดับ เวลา และความต้องการของผู้ใช้"
+  },
+  {
+    "id": 4,
+    "intent": "goal_fat_loss",
+    "category": "goals",
+    "example_question": "อยากลดไขมันควรเริ่มยังไง",
+    "expected_response": "แนะนำการผสมเวทและคาร์ดิโอ พร้อมตั้งเป้าหมายที่ทำได้จริง และเน้นความสม่ำเสมอมากกว่าการเร่งผลลัพธ์"
+  },
+  {
+    "id": 5,
+    "intent": "goal_fat_loss",
+    "category": "goals",
+    "example_question": "ช่วยวางเป้าหมายลดไขมันให้หน่อย",
+    "expected_response": "แนะนำการผสมเวทและคาร์ดิโอ พร้อมตั้งเป้าหมายที่ทำได้จริง และเน้นความสม่ำเสมอมากกว่าการเร่งผลลัพธ์"
+  },
+  {
+    "id": 6,
+    "intent": "goal_fat_loss",
+    "category": "goals",
+    "example_question": "ถ้าเป้าหมายคือไขมันลดควรฝึกแบบไหน",
+    "expected_response": "แนะนำการผสมเวทและคาร์ดิโอ พร้อมตั้งเป้าหมายที่ทำได้จริง และเน้นความสม่ำเสมอมากกว่าการเร่งผลลัพธ์"
+  },
+  {
+    "id": 7,
+    "intent": "goal_weight_loss",
+    "category": "goals",
+    "example_question": "อยากลดน้ำหนักควรออกกำลังกายยังไง",
+    "expected_response": "แนะนำการออกกำลังกายร่วมกับการจัดอาหารและการติดตามแนวโน้ม โดยไม่กำหนดเป้าหมายที่เร็วเกินไป"
+  },
+  {
+    "id": 8,
+    "intent": "goal_weight_loss",
+    "category": "goals",
+    "example_question": "ช่วยตั้งเป้าหมายลดน้ำหนักให้หน่อย",
+    "expected_response": "แนะนำการออกกำลังกายร่วมกับการจัดอาหารและการติดตามแนวโน้ม โดยไม่กำหนดเป้าหมายที่เร็วเกินไป"
+  },
+  {
+    "id": 9,
+    "intent": "goal_weight_loss",
+    "category": "goals",
+    "example_question": "ถ้าอยากให้น้ำหนักลดควรเริ่มจากอะไร",
+    "expected_response": "แนะนำการออกกำลังกายร่วมกับการจัดอาหารและการติดตามแนวโน้ม โดยไม่กำหนดเป้าหมายที่เร็วเกินไป"
+  },
+  {
+    "id": 10,
+    "intent": "goal_muscle_gain",
+    "category": "goals",
+    "example_question": "อยากเพิ่มกล้ามต้องตั้งเป้าหมายยังไง",
+    "expected_response": "แนะนำเวทแบบ progressive overload พร้อมโภชนาการและการพักฟื้นที่เหมาะสม"
+  },
+  {
+    "id": 11,
+    "intent": "goal_muscle_gain",
+    "category": "goals",
+    "example_question": "ช่วยวางเป้าหมายสร้างกล้ามเนื้อให้หน่อย",
+    "expected_response": "แนะนำเวทแบบ progressive overload พร้อมโภชนาการและการพักฟื้นที่เหมาะสม"
+  },
+  {
+    "id": 12,
+    "intent": "goal_muscle_gain",
+    "category": "goals",
+    "example_question": "ถ้าอยากตัวแน่นขึ้นควรฝึกแบบไหน",
+    "expected_response": "แนะนำเวทแบบ progressive overload พร้อมโภชนาการและการพักฟื้นที่เหมาะสม"
+  },
+  {
+    "id": 13,
+    "intent": "goal_strength",
+    "category": "goals",
+    "example_question": "อยากยกน้ำหนักได้มากขึ้นต้องทำยังไง",
+    "expected_response": "แนะนำการฝึกท่าหลักอย่างเป็นระบบ ติดตามน้ำหนักและจำนวนครั้ง และเพิ่มโหลดทีละขั้น"
+  },
+  {
+    "id": 14,
+    "intent": "goal_strength",
+    "category": "goals",
+    "example_question": "เป้าหมายเพิ่มแรงควรฝึกแบบไหน",
+    "expected_response": "แนะนำการฝึกท่าหลักอย่างเป็นระบบ ติดตามน้ำหนักและจำนวนครั้ง และเพิ่มโหลดทีละขั้น"
+  },
+  {
+    "id": 15,
+    "intent": "goal_strength",
+    "category": "goals",
+    "example_question": "อยากแข็งแรงขึ้นควรตั้งเป้าหมายอย่างไร",
+    "expected_response": "แนะนำการฝึกท่าหลักอย่างเป็นระบบ ติดตามน้ำหนักและจำนวนครั้ง และเพิ่มโหลดทีละขั้น"
+  },
+  {
+    "id": 16,
+    "intent": "goal_endurance",
+    "category": "goals",
+    "example_question": "อยากอึดขึ้นต้องฝึกอะไร",
+    "expected_response": "แนะนำคาร์ดิโอหลายระดับความหนักอย่างค่อยเป็นค่อยไป พร้อมติดตามเวลา ระยะทาง หรือชีพจร"
+  },
+  {
+    "id": 17,
+    "intent": "goal_endurance",
+    "category": "goals",
+    "example_question": "อยากเพิ่มความฟิตของหัวใจควรทำแบบไหน",
+    "expected_response": "แนะนำคาร์ดิโอหลายระดับความหนักอย่างค่อยเป็นค่อยไป พร้อมติดตามเวลา ระยะทาง หรือชีพจร"
+  },
+  {
+    "id": 18,
+    "intent": "goal_endurance",
+    "category": "goals",
+    "example_question": "ช่วยตั้งเป้าหมายเพิ่มความอึดให้หน่อย",
+    "expected_response": "แนะนำคาร์ดิโอหลายระดับความหนักอย่างค่อยเป็นค่อยไป พร้อมติดตามเวลา ระยะทาง หรือชีพจร"
+  },
+  {
+    "id": 19,
+    "intent": "goal_body_part",
+    "category": "goals",
+    "example_question": "อยากเน้นหน้าอกควรตั้งเป้าหมายยังไง",
+    "expected_response": "สอบถามส่วนที่ต้องการเน้น แล้วจัดท่าหลักและท่าเสริมให้เหมาะกับเป้าหมาย"
+  },
+  {
+    "id": 20,
+    "intent": "goal_body_part",
+    "category": "goals",
+    "example_question": "อยากเน้นขาและก้นควรฝึกอะไร",
+    "expected_response": "สอบถามส่วนที่ต้องการเน้น แล้วจัดท่าหลักและท่าเสริมให้เหมาะกับเป้าหมาย"
+  },
+  {
+    "id": 21,
+    "intent": "goal_body_part",
+    "category": "goals",
+    "example_question": "อยากพัฒนาไหล่ควรตั้งเป้าหมายแบบไหน",
+    "expected_response": "สอบถามส่วนที่ต้องการเน้น แล้วจัดท่าหลักและท่าเสริมให้เหมาะกับเป้าหมาย"
+  },
+  {
+    "id": 22,
+    "intent": "goal_running_5k",
+    "category": "goals",
+    "example_question": "อยากวิ่ง 5K ให้ได้ควรเริ่มยังไง",
+    "expected_response": "แนะนำแผนวิ่งแบบค่อยเป็นค่อยไป เน้นความต่อเนื่อง การพัก และการเพิ่มระยะอย่างเหมาะสม"
+  },
+  {
+    "id": 23,
+    "intent": "goal_running_5k",
+    "category": "goals",
+    "example_question": "ช่วยตั้งเป้าหมายวิ่ง 5 กิโลให้หน่อย",
+    "expected_response": "แนะนำแผนวิ่งแบบค่อยเป็นค่อยไป เน้นความต่อเนื่อง การพัก และการเพิ่มระยะอย่างเหมาะสม"
+  },
+  {
+    "id": 24,
+    "intent": "goal_running_5k",
+    "category": "goals",
+    "example_question": "อยากวิ่ง 5K โดยไม่หยุดต้องฝึกแบบไหน",
+    "expected_response": "แนะนำแผนวิ่งแบบค่อยเป็นค่อยไป เน้นความต่อเนื่อง การพัก และการเพิ่มระยะอย่างเหมาะสม"
+  },
+  {
+    "id": 25,
+    "intent": "goal_running_10k",
+    "category": "goals",
+    "example_question": "อยากเตรียมตัววิ่ง 10K ต้องฝึกยังไง",
+    "expected_response": "แนะนำการสร้างระยะวิ่ง เพิ่ม long run และใส่วันพัก โดยปรับตามระดับปัจจุบัน"
+  },
+  {
+    "id": 26,
+    "intent": "goal_running_10k",
+    "category": "goals",
+    "example_question": "ช่วยตั้งเป้าหมายสำหรับวิ่ง 10 กิโล",
+    "expected_response": "แนะนำการสร้างระยะวิ่ง เพิ่ม long run และใส่วันพัก โดยปรับตามระดับปัจจุบัน"
+  },
+  {
+    "id": 27,
+    "intent": "goal_running_10k",
+    "category": "goals",
+    "example_question": "ถ้าจะซ้อม 10K ควรเริ่มจากอะไร",
+    "expected_response": "แนะนำการสร้างระยะวิ่ง เพิ่ม long run และใส่วันพัก โดยปรับตามระดับปัจจุบัน"
+  },
+  {
+    "id": 28,
+    "intent": "goal_consistency",
+    "category": "goals",
+    "example_question": "อยากออกกำลังกายให้สม่ำเสมอควรตั้งเป้าหมายยังไง",
+    "expected_response": "แนะนำเป้าหมายด้านพฤติกรรม เช่น จำนวนวันต่อสัปดาห์และเวลาที่ทำได้จริง พร้อมติดตามความต่อเนื่อง"
+  },
+  {
+    "id": 29,
+    "intent": "goal_consistency",
+    "category": "goals",
+    "example_question": "ช่วยทำเป้าหมายให้ออกกำลังกายต่อเนื่องหน่อย",
+    "expected_response": "แนะนำเป้าหมายด้านพฤติกรรม เช่น จำนวนวันต่อสัปดาห์และเวลาที่ทำได้จริง พร้อมติดตามความต่อเนื่อง"
+  },
+  {
+    "id": 30,
+    "intent": "goal_consistency",
+    "category": "goals",
+    "example_question": "ฉันหลุดตารางบ่อย ควรตั้งเป้าแบบไหน",
+    "expected_response": "แนะนำเป้าหมายด้านพฤติกรรม เช่น จำนวนวันต่อสัปดาห์และเวลาที่ทำได้จริง พร้อมติดตามความต่อเนื่อง"
+  },
+  {
+    "id": 31,
+    "intent": "plan_create_week",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัดตารางออกกำลังกาย 7 วันให้หน่อย",
+    "expected_response": "ขอข้อมูลเป้าหมาย ระดับ เวลา และอุปกรณ์ แล้วสร้างตารางรายวันพร้อมวันพัก"
+  },
+  {
+    "id": 32,
+    "intent": "plan_create_week",
+    "category": "workout_plan",
+    "example_question": "ขอโปรแกรมออกกำลังกาย 1 สัปดาห์",
+    "expected_response": "ขอข้อมูลเป้าหมาย ระดับ เวลา และอุปกรณ์ แล้วสร้างตารางรายวันพร้อมวันพัก"
+  },
+  {
+    "id": 33,
+    "intent": "plan_create_week",
+    "category": "workout_plan",
+    "example_question": "ช่วยวางตารางซ้อมทั้งสัปดาห์",
+    "expected_response": "ขอข้อมูลเป้าหมาย ระดับ เวลา และอุปกรณ์ แล้วสร้างตารางรายวันพร้อมวันพัก"
+  },
+  {
+    "id": 34,
+    "intent": "plan_create_month",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัดโปรแกรม 30 วันให้หน่อย",
+    "expected_response": "สร้างแผนเป็นช่วง ๆ โดยค่อยเพิ่มความหนักและกำหนดวันพัก พร้อมจุดประเมินผล"
+  },
+  {
+    "id": 35,
+    "intent": "plan_create_month",
+    "category": "workout_plan",
+    "example_question": "ขอแผนออกกำลังกาย 1 เดือน",
+    "expected_response": "สร้างแผนเป็นช่วง ๆ โดยค่อยเพิ่มความหนักและกำหนดวันพัก พร้อมจุดประเมินผล"
+  },
+  {
+    "id": 36,
+    "intent": "plan_create_month",
+    "category": "workout_plan",
+    "example_question": "ช่วยทำตารางซ้อมทั้งเดือน",
+    "expected_response": "สร้างแผนเป็นช่วง ๆ โดยค่อยเพิ่มความหนักและกำหนดวันพัก พร้อมจุดประเมินผล"
+  },
+  {
+    "id": 37,
+    "intent": "plan_full_body",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัด Full Body Workout ให้หน่อย",
+    "expected_response": "จัดท่าที่ครอบคลุมขา ดัน ดึง แกนกลาง และปรับจำนวนเซตตามระดับ"
+  },
+  {
+    "id": 38,
+    "intent": "plan_full_body",
+    "category": "workout_plan",
+    "example_question": "ขอโปรแกรมเล่นทั้งตัว",
+    "expected_response": "จัดท่าที่ครอบคลุมขา ดัน ดึง แกนกลาง และปรับจำนวนเซตตามระดับ"
+  },
+  {
+    "id": 39,
+    "intent": "plan_full_body",
+    "category": "workout_plan",
+    "example_question": "อยากเล่นทุกส่วนในวันเดียวควรจัดยังไง",
+    "expected_response": "จัดท่าที่ครอบคลุมขา ดัน ดึง แกนกลาง และปรับจำนวนเซตตามระดับ"
+  },
+  {
+    "id": 40,
+    "intent": "plan_push_pull_legs",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัด PPL ให้หน่อย",
+    "expected_response": "แบ่งเป็นวัน Push, Pull และ Legs พร้อมกำหนดวันพักและปริมาณฝึกให้เหมาะกับความถี่"
+  },
+  {
+    "id": 41,
+    "intent": "plan_push_pull_legs",
+    "category": "workout_plan",
+    "example_question": "ขอโปรแกรม Push Pull Legs",
+    "expected_response": "แบ่งเป็นวัน Push, Pull และ Legs พร้อมกำหนดวันพักและปริมาณฝึกให้เหมาะกับความถี่"
+  },
+  {
+    "id": 42,
+    "intent": "plan_push_pull_legs",
+    "category": "workout_plan",
+    "example_question": "อยากเล่นแบบ Push Pull Legs ควรแบ่งยังไง",
+    "expected_response": "แบ่งเป็นวัน Push, Pull และ Legs พร้อมกำหนดวันพักและปริมาณฝึกให้เหมาะกับความถี่"
+  },
+  {
+    "id": 43,
+    "intent": "plan_upper_lower",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัด Upper Lower ให้หน่อย",
+    "expected_response": "จัดวัน Upper และ Lower ให้สมดุล พร้อมกำหนดความถี่และการพักฟื้น"
+  },
+  {
+    "id": 44,
+    "intent": "plan_upper_lower",
+    "category": "workout_plan",
+    "example_question": "ขอโปรแกรมแบบบนล่าง",
+    "expected_response": "จัดวัน Upper และ Lower ให้สมดุล พร้อมกำหนดความถี่และการพักฟื้น"
+  },
+  {
+    "id": 45,
+    "intent": "plan_upper_lower",
+    "category": "workout_plan",
+    "example_question": "อยากแบ่งวันเล่นบนกับขาควรจัดยังไง",
+    "expected_response": "จัดวัน Upper และ Lower ให้สมดุล พร้อมกำหนดความถี่และการพักฟื้น"
+  },
+  {
+    "id": 46,
+    "intent": "plan_home_no_equipment",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัด Workout ที่บ้านแบบไม่มีอุปกรณ์",
+    "expected_response": "เลือกท่าบอดี้เวตที่ใช้พื้นที่น้อย และปรับระดับด้วย tempo, range of motion และจำนวนครั้ง"
+  },
+  {
+    "id": 47,
+    "intent": "plan_home_no_equipment",
+    "category": "workout_plan",
+    "example_question": "ไม่มีอุปกรณ์เลยควรเล่นอะไร",
+    "expected_response": "เลือกท่าบอดี้เวตที่ใช้พื้นที่น้อย และปรับระดับด้วย tempo, range of motion และจำนวนครั้ง"
+  },
+  {
+    "id": 48,
+    "intent": "plan_home_no_equipment",
+    "category": "workout_plan",
+    "example_question": "ขอโปรแกรมที่ทำในห้องได้โดยไม่ใช้อุปกรณ์",
+    "expected_response": "เลือกท่าบอดี้เวตที่ใช้พื้นที่น้อย และปรับระดับด้วย tempo, range of motion และจำนวนครั้ง"
+  },
+  {
+    "id": 49,
+    "intent": "plan_dumbbell",
+    "category": "workout_plan",
+    "example_question": "มีดัมเบลคู่เดียวช่วยจัดโปรแกรมให้หน่อย",
+    "expected_response": "จัดโปรแกรมที่ใช้ดัมเบลครอบคลุมกล้ามเนื้อหลัก พร้อมแนะนำช่วงครั้งและการเพิ่มน้ำหนัก"
+  },
+  {
+    "id": 50,
+    "intent": "plan_dumbbell",
+    "category": "workout_plan",
+    "example_question": "อยากเล่นด้วยดัมเบลที่บ้าน",
+    "expected_response": "จัดโปรแกรมที่ใช้ดัมเบลครอบคลุมกล้ามเนื้อหลัก พร้อมแนะนำช่วงครั้งและการเพิ่มน้ำหนัก"
+  },
+  {
+    "id": 51,
+    "intent": "plan_dumbbell",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัดตารางสำหรับดัมเบล",
+    "expected_response": "จัดโปรแกรมที่ใช้ดัมเบลครอบคลุมกล้ามเนื้อหลัก พร้อมแนะนำช่วงครั้งและการเพิ่มน้ำหนัก"
+  },
+  {
+    "id": 52,
+    "intent": "plan_time_15",
+    "category": "workout_plan",
+    "example_question": "มีเวลาแค่ 15 นาทีควรเล่นอะไร",
+    "expected_response": "จัดเซสชันสั้นที่เน้นท่าหลักและลดช่วงพัก โดยคงความปลอดภัยและคุณภาพท่า"
+  },
+  {
+    "id": 53,
+    "intent": "plan_time_15",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัด Workout 15 นาที",
+    "expected_response": "จัดเซสชันสั้นที่เน้นท่าหลักและลดช่วงพัก โดยคงความปลอดภัยและคุณภาพท่า"
+  },
+  {
+    "id": 54,
+    "intent": "plan_time_15",
+    "category": "workout_plan",
+    "example_question": "วันนี้ฉันมีเวลาไม่ถึง 20 นาที",
+    "expected_response": "จัดเซสชันสั้นที่เน้นท่าหลักและลดช่วงพัก โดยคงความปลอดภัยและคุณภาพท่า"
+  },
+  {
+    "id": 55,
+    "intent": "plan_time_30",
+    "category": "workout_plan",
+    "example_question": "ช่วยจัด Workout 30 นาที",
+    "expected_response": "จัดโครงสร้าง warm-up, main workout และ cool-down ให้พอดีกับ 30 นาที"
+  },
+  {
+    "id": 56,
+    "intent": "plan_time_30",
+    "category": "workout_plan",
+    "example_question": "มีเวลา 30 นาทีควรฝึกอะไร",
+    "expected_response": "จัดโครงสร้าง warm-up, main workout และ cool-down ให้พอดีกับ 30 นาที"
+  },
+  {
+    "id": 57,
+    "intent": "plan_time_30",
+    "category": "workout_plan",
+    "example_question": "ขอโปรแกรม 30 นาที",
+    "expected_response": "จัดโครงสร้าง warm-up, main workout และ cool-down ให้พอดีกับ 30 นาที"
+  },
+  {
+    "id": 58,
+    "intent": "plan_beginner",
+    "category": "workout_plan",
+    "example_question": "ฉันเป็นมือใหม่ช่วยจัดโปรแกรมให้หน่อย",
+    "expected_response": "เริ่มจากท่าพื้นฐาน ปริมาณไม่สูง และเน้นเรียนรู้ท่ากับความสม่ำเสมอ"
+  },
+  {
+    "id": 59,
+    "intent": "plan_beginner",
+    "category": "workout_plan",
+    "example_question": "ขอโปรแกรมสำหรับคนเพิ่งเริ่ม",
+    "expected_response": "เริ่มจากท่าพื้นฐาน ปริมาณไม่สูง และเน้นเรียนรู้ท่ากับความสม่ำเสมอ"
+  },
+  {
+    "id": 60,
+    "intent": "plan_beginner",
+    "category": "workout_plan",
+    "example_question": "เริ่มออกกำลังกายใหม่ควรเล่นยังไง",
+    "expected_response": "เริ่มจากท่าพื้นฐาน ปริมาณไม่สูง และเน้นเรียนรู้ท่ากับความสม่ำเสมอ"
+  },
+  {
+    "id": 61,
+    "intent": "exercise_explain",
+    "category": "exercise_library",
+    "example_question": "ท่านี้ทำยังไง",
+    "expected_response": "อธิบายท่าเริ่มต้น ลำดับการเคลื่อนไหว จุดโฟกัส และข้อผิดพลาดที่พบบ่อย"
+  },
+  {
+    "id": 62,
+    "intent": "exercise_explain",
+    "category": "exercise_library",
+    "example_question": "ช่วยอธิบายท่าออกกำลังกายให้หน่อย",
+    "expected_response": "อธิบายท่าเริ่มต้น ลำดับการเคลื่อนไหว จุดโฟกัส และข้อผิดพลาดที่พบบ่อย"
+  },
+  {
+    "id": 63,
+    "intent": "exercise_explain",
+    "category": "exercise_library",
+    "example_question": "ขอวิธีทำท่านี้แบบละเอียด",
+    "expected_response": "อธิบายท่าเริ่มต้น ลำดับการเคลื่อนไหว จุดโฟกัส และข้อผิดพลาดที่พบบ่อย"
+  },
+  {
+    "id": 64,
+    "intent": "exercise_target_muscle",
+    "category": "exercise_library",
+    "example_question": "ท่านี้ใช้กล้ามเนื้อส่วนไหน",
+    "expected_response": "ระบุ primary muscle และกล้ามเนื้อรอง พร้อมอธิบายหน้าที่โดยย่อ"
+  },
+  {
+    "id": 65,
+    "intent": "exercise_target_muscle",
+    "category": "exercise_library",
+    "example_question": "ท่านี้เน้นกล้ามตรงไหน",
+    "expected_response": "ระบุ primary muscle และกล้ามเนื้อรอง พร้อมอธิบายหน้าที่โดยย่อ"
+  },
+  {
+    "id": 66,
+    "intent": "exercise_target_muscle",
+    "category": "exercise_library",
+    "example_question": "อยากรู้ว่าท่านี้ทำงานกับส่วนไหน",
+    "expected_response": "ระบุ primary muscle และกล้ามเนื้อรอง พร้อมอธิบายหน้าที่โดยย่อ"
+  },
+  {
+    "id": 67,
+    "intent": "exercise_sets_reps",
+    "category": "exercise_library",
+    "example_question": "ท่านี้ควรทำกี่เซต",
+    "expected_response": "แนะนำช่วงเซตและครั้งตามเป้าหมาย เช่น กล้ามเนื้อ ความแข็งแรง หรือความทนทาน"
+  },
+  {
+    "id": 68,
+    "intent": "exercise_sets_reps",
+    "category": "exercise_library",
+    "example_question": "ควรทำท่านี้กี่ครั้ง",
+    "expected_response": "แนะนำช่วงเซตและครั้งตามเป้าหมาย เช่น กล้ามเนื้อ ความแข็งแรง หรือความทนทาน"
+  },
+  {
+    "id": 69,
+    "intent": "exercise_sets_reps",
+    "category": "exercise_library",
+    "example_question": "ท่านี้ควรเล่นกี่เซตต่อครั้ง",
+    "expected_response": "แนะนำช่วงเซตและครั้งตามเป้าหมาย เช่น กล้ามเนื้อ ความแข็งแรง หรือความทนทาน"
+  },
+  {
+    "id": 70,
+    "intent": "exercise_rest",
+    "category": "exercise_library",
+    "example_question": "ท่านี้ควรพักกี่วินาที",
+    "expected_response": "แนะนำเวลาพักตามความหนักและเป้าหมาย พร้อมปรับตามความพร้อมของผู้ใช้"
+  },
+  {
+    "id": 71,
+    "intent": "exercise_rest",
+    "category": "exercise_library",
+    "example_question": "ระหว่างเซตควรพักเท่าไหร่",
+    "expected_response": "แนะนำเวลาพักตามความหนักและเป้าหมาย พร้อมปรับตามความพร้อมของผู้ใช้"
+  },
+  {
+    "id": 72,
+    "intent": "exercise_rest",
+    "category": "exercise_library",
+    "example_question": "พักกี่นาทีระหว่างท่านี้",
+    "expected_response": "แนะนำเวลาพักตามความหนักและเป้าหมาย พร้อมปรับตามความพร้อมของผู้ใช้"
+  },
+  {
+    "id": 73,
+    "intent": "exercise_substitute",
+    "category": "exercise_library",
+    "example_question": "มีท่าอะไรแทนท่านี้ได้บ้าง",
+    "expected_response": "เสนอท่าทดแทนที่ใช้กล้ามเนื้อใกล้เคียงและเหมาะกับอุปกรณ์ที่มี"
+  },
+  {
+    "id": 74,
+    "intent": "exercise_substitute",
+    "category": "exercise_library",
+    "example_question": "ถ้าทำท่านี้ไม่ได้ใช้อะไรแทน",
+    "expected_response": "เสนอท่าทดแทนที่ใช้กล้ามเนื้อใกล้เคียงและเหมาะกับอุปกรณ์ที่มี"
+  },
+  {
+    "id": 75,
+    "intent": "exercise_substitute",
+    "category": "exercise_library",
+    "example_question": "ช่วยหาท่าแทนให้หน่อย",
+    "expected_response": "เสนอท่าทดแทนที่ใช้กล้ามเนื้อใกล้เคียงและเหมาะกับอุปกรณ์ที่มี"
+  },
+  {
+    "id": 76,
+    "intent": "exercise_beginner_suitability",
+    "category": "exercise_library",
+    "example_question": "ท่านี้เหมาะกับมือใหม่ไหม",
+    "expected_response": "ประเมินความซับซ้อนของท่าและเสนอเวอร์ชันง่ายกว่าหากจำเป็น"
+  },
+  {
+    "id": 77,
+    "intent": "exercise_beginner_suitability",
+    "category": "exercise_library",
+    "example_question": "มือใหม่ทำท่านี้ได้หรือเปล่า",
+    "expected_response": "ประเมินความซับซ้อนของท่าและเสนอเวอร์ชันง่ายกว่าหากจำเป็น"
+  },
+  {
+    "id": 78,
+    "intent": "exercise_beginner_suitability",
+    "category": "exercise_library",
+    "example_question": "ฉันเพิ่งเริ่มควรทำท่านี้ไหม",
+    "expected_response": "ประเมินความซับซ้อนของท่าและเสนอเวอร์ชันง่ายกว่าหากจำเป็น"
+  },
+  {
+    "id": 79,
+    "intent": "exercise_home_variant",
+    "category": "exercise_library",
+    "example_question": "ท่านี้ทำที่บ้านได้ไหม",
+    "expected_response": "อธิบายเวอร์ชันที่ทำที่บ้านได้ พร้อมข้อจำกัดของพื้นที่และอุปกรณ์"
+  },
+  {
+    "id": 80,
+    "intent": "exercise_home_variant",
+    "category": "exercise_library",
+    "example_question": "มีเวอร์ชันไม่ใช้อุปกรณ์ไหม",
+    "expected_response": "อธิบายเวอร์ชันที่ทำที่บ้านได้ พร้อมข้อจำกัดของพื้นที่และอุปกรณ์"
+  },
+  {
+    "id": 81,
+    "intent": "exercise_home_variant",
+    "category": "exercise_library",
+    "example_question": "อยากทำท่านี้ที่บ้านควรดัดแปลงยังไง",
+    "expected_response": "อธิบายเวอร์ชันที่ทำที่บ้านได้ พร้อมข้อจำกัดของพื้นที่และอุปกรณ์"
+  },
+  {
+    "id": 82,
+    "intent": "exercise_compound_isolation",
+    "category": "exercise_library",
+    "example_question": "ท่านี้เป็น Compound หรือ Isolation",
+    "expected_response": "จำแนกประเภทของท่าและอธิบายว่าควรใช้ในช่วงใดของ Workout"
+  },
+  {
+    "id": 83,
+    "intent": "exercise_compound_isolation",
+    "category": "exercise_library",
+    "example_question": "ช่วยบอกว่าท่านี้เป็นท่าหลักหรือท่าแยก",
+    "expected_response": "จำแนกประเภทของท่าและอธิบายว่าควรใช้ในช่วงใดของ Workout"
+  },
+  {
+    "id": 84,
+    "intent": "exercise_compound_isolation",
+    "category": "exercise_library",
+    "example_question": "ท่านี้จัดอยู่ในประเภทไหน",
+    "expected_response": "จำแนกประเภทของท่าและอธิบายว่าควรใช้ในช่วงใดของ Workout"
+  },
+  {
+    "id": 85,
+    "intent": "exercise_slow_tempo",
+    "category": "exercise_library",
+    "example_question": "ควรทำท่านี้ช้าหรือเร็ว",
+    "expected_response": "แนะนำจังหวะการเคลื่อนไหวโดยเน้นคุมช่วงลงและไม่เร่งจนเสียฟอร์ม"
+  },
+  {
+    "id": 86,
+    "intent": "exercise_slow_tempo",
+    "category": "exercise_library",
+    "example_question": "ควรคุมจังหวะยังไง",
+    "expected_response": "แนะนำจังหวะการเคลื่อนไหวโดยเน้นคุมช่วงลงและไม่เร่งจนเสียฟอร์ม"
+  },
+  {
+    "id": 87,
+    "intent": "exercise_slow_tempo",
+    "category": "exercise_library",
+    "example_question": "tempo ของท่านี้ควรเป็นแบบไหน",
+    "expected_response": "แนะนำจังหวะการเคลื่อนไหวโดยเน้นคุมช่วงลงและไม่เร่งจนเสียฟอร์ม"
+  },
+  {
+    "id": 88,
+    "intent": "exercise_breathing",
+    "category": "exercise_library",
+    "example_question": "ท่านี้ควรหายใจตอนไหน",
+    "expected_response": "แนะนำจังหวะหายใจตามช่วงออกแรงและผ่อนแรง โดยให้ความสำคัญกับการควบคุมการเคลื่อนไหว"
+  },
+  {
+    "id": 89,
+    "intent": "exercise_breathing",
+    "category": "exercise_library",
+    "example_question": "ตอนยกน้ำหนักควรหายใจยังไง",
+    "expected_response": "แนะนำจังหวะหายใจตามช่วงออกแรงและผ่อนแรง โดยให้ความสำคัญกับการควบคุมการเคลื่อนไหว"
+  },
+  {
+    "id": 90,
+    "intent": "exercise_breathing",
+    "category": "exercise_library",
+    "example_question": "ช่วยสอนการหายใจสำหรับท่านี้",
+    "expected_response": "แนะนำจังหวะหายใจตามช่วงออกแรงและผ่อนแรง โดยให้ความสำคัญกับการควบคุมการเคลื่อนไหว"
+  },
+  {
+    "id": 91,
+    "intent": "form_squat",
+    "category": "form_posture",
+    "example_question": "ช่วยตรวจท่า Squat ให้หน่อย",
+    "expected_response": "ตรวจแนวลำตัว สะโพก เข่า และเท้าจากข้อมูลภาพที่มี และบอกจุดที่ควรปรับ"
+  },
+  {
+    "id": 92,
+    "intent": "form_squat",
+    "category": "form_posture",
+    "example_question": "Squat ของฉันถูกไหม",
+    "expected_response": "ตรวจแนวลำตัว สะโพก เข่า และเท้าจากข้อมูลภาพที่มี และบอกจุดที่ควรปรับ"
+  },
+  {
+    "id": 93,
+    "intent": "form_squat",
+    "category": "form_posture",
+    "example_question": "ฉันทำ Squat แล้วอยากรู้ว่าฟอร์มถูกหรือเปล่า",
+    "expected_response": "ตรวจแนวลำตัว สะโพก เข่า และเท้าจากข้อมูลภาพที่มี และบอกจุดที่ควรปรับ"
+  },
+  {
+    "id": 94,
+    "intent": "form_pushup",
+    "category": "form_posture",
+    "example_question": "ช่วยตรวจ Push-up ให้หน่อย",
+    "expected_response": "ตรวจแนวลำตัว ตำแหน่งมือ ศอก และช่วงการเคลื่อนไหว พร้อมบอกข้อผิดพลาด"
+  },
+  {
+    "id": 95,
+    "intent": "form_pushup",
+    "category": "form_posture",
+    "example_question": "ท่า Push-up ของฉันถูกไหม",
+    "expected_response": "ตรวจแนวลำตัว ตำแหน่งมือ ศอก และช่วงการเคลื่อนไหว พร้อมบอกข้อผิดพลาด"
+  },
+  {
+    "id": 96,
+    "intent": "form_pushup",
+    "category": "form_posture",
+    "example_question": "ทำ Push-up แล้วควรแก้อะไร",
+    "expected_response": "ตรวจแนวลำตัว ตำแหน่งมือ ศอก และช่วงการเคลื่อนไหว พร้อมบอกข้อผิดพลาด"
+  },
+  {
+    "id": 97,
+    "intent": "form_deadlift",
+    "category": "form_posture",
+    "example_question": "ช่วยตรวจ Deadlift ให้หน่อย",
+    "expected_response": "ตรวจแนวกระดูกสันหลัง สะโพก เข่า และเส้นทางน้ำหนัก พร้อมชี้จุดเสี่ยงทางเทคนิค"
+  },
+  {
+    "id": 98,
+    "intent": "form_deadlift",
+    "category": "form_posture",
+    "example_question": "Deadlift ของฉันหลังตรงไหม",
+    "expected_response": "ตรวจแนวกระดูกสันหลัง สะโพก เข่า และเส้นทางน้ำหนัก พร้อมชี้จุดเสี่ยงทางเทคนิค"
+  },
+  {
+    "id": 99,
+    "intent": "form_deadlift",
+    "category": "form_posture",
+    "example_question": "ฉันยก Deadlift ถูกท่าหรือเปล่า",
+    "expected_response": "ตรวจแนวกระดูกสันหลัง สะโพก เข่า และเส้นทางน้ำหนัก พร้อมชี้จุดเสี่ยงทางเทคนิค"
+  },
+  {
+    "id": 100,
+    "intent": "form_knee_valgus",
+    "category": "form_posture",
+    "example_question": "เข่าฉันเข้าด้านในตอน Squat ไหม",
+    "expected_response": "ตรวจแนวเข่าเทียบกับเท้าและแนะนำให้ควบคุมเข่าให้อยู่ในแนวการเคลื่อนไหวที่มั่นคง"
+  },
+  {
+    "id": 101,
+    "intent": "form_knee_valgus",
+    "category": "form_posture",
+    "example_question": "ทำไมเข่าฉันชอบหุบเข้า",
+    "expected_response": "ตรวจแนวเข่าเทียบกับเท้าและแนะนำให้ควบคุมเข่าให้อยู่ในแนวการเคลื่อนไหวที่มั่นคง"
+  },
+  {
+    "id": 102,
+    "intent": "form_knee_valgus",
+    "category": "form_posture",
+    "example_question": "ช่วยดูเข่าตอนย่อตัวให้หน่อย",
+    "expected_response": "ตรวจแนวเข่าเทียบกับเท้าและแนะนำให้ควบคุมเข่าให้อยู่ในแนวการเคลื่อนไหวที่มั่นคง"
+  },
+  {
+    "id": 103,
+    "intent": "form_back_rounding",
+    "category": "form_posture",
+    "example_question": "หลังฉันงอไหม",
+    "expected_response": "ตรวจแนวหลังและแนะนำให้ลดโหลดหรือช่วงการเคลื่อนไหวเมื่อควบคุมหลังไม่ได้"
+  },
+  {
+    "id": 104,
+    "intent": "form_back_rounding",
+    "category": "form_posture",
+    "example_question": "ช่วยดูว่าหลังฉันกลมเกินไปหรือเปล่า",
+    "expected_response": "ตรวจแนวหลังและแนะนำให้ลดโหลดหรือช่วงการเคลื่อนไหวเมื่อควบคุมหลังไม่ได้"
+  },
+  {
+    "id": 105,
+    "intent": "form_back_rounding",
+    "category": "form_posture",
+    "example_question": "ตอนยกน้ำหนักหลังฉันเสียฟอร์มไหม",
+    "expected_response": "ตรวจแนวหลังและแนะนำให้ลดโหลดหรือช่วงการเคลื่อนไหวเมื่อควบคุมหลังไม่ได้"
+  },
+  {
+    "id": 106,
+    "intent": "form_hip_depth",
+    "category": "form_posture",
+    "example_question": "ฉันลง Squat ลึกพอไหม",
+    "expected_response": "ประเมินช่วงการเคลื่อนไหวจากภาพและแนะนำความลึกที่ควบคุมได้โดยไม่เสียท่า"
+  },
+  {
+    "id": 107,
+    "intent": "form_hip_depth",
+    "category": "form_posture",
+    "example_question": "ควรลง Squat แค่ไหน",
+    "expected_response": "ประเมินช่วงการเคลื่อนไหวจากภาพและแนะนำความลึกที่ควบคุมได้โดยไม่เสียท่า"
+  },
+  {
+    "id": 108,
+    "intent": "form_hip_depth",
+    "category": "form_posture",
+    "example_question": "ช่วยเช็กความลึกของ Squat",
+    "expected_response": "ประเมินช่วงการเคลื่อนไหวจากภาพและแนะนำความลึกที่ควบคุมได้โดยไม่เสียท่า"
+  },
+  {
+    "id": 109,
+    "intent": "form_balance_left_right",
+    "category": "form_posture",
+    "example_question": "ฉันเอียงซ้ายขวาตอนเล่นไหม",
+    "expected_response": "เปรียบเทียบแนวและการเคลื่อนไหวซ้าย-ขวา แล้วเสนอวิธีแก้ที่เหมาะสม"
+  },
+  {
+    "id": 110,
+    "intent": "form_balance_left_right",
+    "category": "form_posture",
+    "example_question": "ช่วยดูว่าร่างกายฉันสมดุลหรือเปล่า",
+    "expected_response": "เปรียบเทียบแนวและการเคลื่อนไหวซ้าย-ขวา แล้วเสนอวิธีแก้ที่เหมาะสม"
+  },
+  {
+    "id": 111,
+    "intent": "form_balance_left_right",
+    "category": "form_posture",
+    "example_question": "ข้างหนึ่งของฉันเคลื่อนไหวไม่เท่ากันไหม",
+    "expected_response": "เปรียบเทียบแนวและการเคลื่อนไหวซ้าย-ขวา แล้วเสนอวิธีแก้ที่เหมาะสม"
+  },
+  {
+    "id": 112,
+    "intent": "form_range_of_motion",
+    "category": "form_posture",
+    "example_question": "ROM ของฉันเต็มไหม",
+    "expected_response": "ประเมิน range of motion ตามท่าและอุปกรณ์ โดยเน้นช่วงที่ควบคุมได้"
+  },
+  {
+    "id": 113,
+    "intent": "form_range_of_motion",
+    "category": "form_posture",
+    "example_question": "ช่วงการเคลื่อนไหวของฉันถูกหรือยัง",
+    "expected_response": "ประเมิน range of motion ตามท่าและอุปกรณ์ โดยเน้นช่วงที่ควบคุมได้"
+  },
+  {
+    "id": 114,
+    "intent": "form_range_of_motion",
+    "category": "form_posture",
+    "example_question": "ฉันควรเคลื่อนไหวได้ไกลแค่ไหน",
+    "expected_response": "ประเมิน range of motion ตามท่าและอุปกรณ์ โดยเน้นช่วงที่ควบคุมได้"
+  },
+  {
+    "id": 115,
+    "intent": "form_rep_validity",
+    "category": "form_posture",
+    "example_question": "Rep นี้นับว่าถูกไหม",
+    "expected_response": "ใช้เกณฑ์มุมข้อต่อและช่วงการเคลื่อนไหวเพื่อระบุว่า rep ผ่านเกณฑ์หรือควรทำใหม่"
+  },
+  {
+    "id": 116,
+    "intent": "form_rep_validity",
+    "category": "form_posture",
+    "example_question": "ช่วยเช็กว่าครั้งนี้ผ่านหรือเปล่า",
+    "expected_response": "ใช้เกณฑ์มุมข้อต่อและช่วงการเคลื่อนไหวเพื่อระบุว่า rep ผ่านเกณฑ์หรือควรทำใหม่"
+  },
+  {
+    "id": 117,
+    "intent": "form_rep_validity",
+    "category": "form_posture",
+    "example_question": "AI นับครั้งนี้ให้ฉันได้ไหม",
+    "expected_response": "ใช้เกณฑ์มุมข้อต่อและช่วงการเคลื่อนไหวเพื่อระบุว่า rep ผ่านเกณฑ์หรือควรทำใหม่"
+  },
+  {
+    "id": 118,
+    "intent": "form_real_time_feedback",
+    "category": "form_posture",
+    "example_question": "ช่วยบอกทันทีเวลาฉันทำท่าผิด",
+    "expected_response": "ให้ feedback สั้นและทำได้ทันที เช่น ปรับเข่า หลัง ระยะ หรือจังหวะ โดยไม่รบกวนการฝึกมากเกินไป"
+  },
+  {
+    "id": 119,
+    "intent": "form_real_time_feedback",
+    "category": "form_posture",
+    "example_question": "อยากได้คำเตือนแบบเรียลไทม์",
+    "expected_response": "ให้ feedback สั้นและทำได้ทันที เช่น ปรับเข่า หลัง ระยะ หรือจังหวะ โดยไม่รบกวนการฝึกมากเกินไป"
+  },
+  {
+    "id": 120,
+    "intent": "form_real_time_feedback",
+    "category": "form_posture",
+    "example_question": "ช่วยฟีดแบ็กท่าของฉันระหว่างเล่น",
+    "expected_response": "ให้ feedback สั้นและทำได้ทันที เช่น ปรับเข่า หลัง ระยะ หรือจังหวะ โดยไม่รบกวนการฝึกมากเกินไป"
+  },
+  {
+    "id": 121,
+    "intent": "cardio_frequency",
+    "category": "cardio_running",
+    "example_question": "ควรทำคาร์ดิโอกี่วันต่อสัปดาห์",
+    "expected_response": "กำหนดความถี่ตามเป้าหมายและการฝึกเวท พร้อมเผื่อวันพักและการฟื้นตัว"
+  },
+  {
+    "id": 122,
+    "intent": "cardio_frequency",
+    "category": "cardio_running",
+    "example_question": "ฉันควรคาร์ดิโอกี่ครั้ง",
+    "expected_response": "กำหนดความถี่ตามเป้าหมายและการฝึกเวท พร้อมเผื่อวันพักและการฟื้นตัว"
+  },
+  {
+    "id": 123,
+    "intent": "cardio_frequency",
+    "category": "cardio_running",
+    "example_question": "ช่วยวางความถี่ของ Cardio ให้หน่อย",
+    "expected_response": "กำหนดความถี่ตามเป้าหมายและการฝึกเวท พร้อมเผื่อวันพักและการฟื้นตัว"
+  },
+  {
+    "id": 124,
+    "intent": "cardio_duration",
+    "category": "cardio_running",
+    "example_question": "ควรคาร์ดิโอนานกี่นาที",
+    "expected_response": "แนะนำระยะเวลาตามระดับความฟิตและเป้าหมาย พร้อมเริ่มจากช่วงที่ทำได้ต่อเนื่อง"
+  },
+  {
+    "id": 125,
+    "intent": "cardio_duration",
+    "category": "cardio_running",
+    "example_question": "แต่ละครั้งควรทำ Cardio กี่นาที",
+    "expected_response": "แนะนำระยะเวลาตามระดับความฟิตและเป้าหมาย พร้อมเริ่มจากช่วงที่ทำได้ต่อเนื่อง"
+  },
+  {
+    "id": 126,
+    "intent": "cardio_duration",
+    "category": "cardio_running",
+    "example_question": "คาร์ดิโอครั้งละเท่าไหร่ดี",
+    "expected_response": "แนะนำระยะเวลาตามระดับความฟิตและเป้าหมาย พร้อมเริ่มจากช่วงที่ทำได้ต่อเนื่อง"
+  },
+  {
+    "id": 127,
+    "intent": "cardio_before_after_weights",
+    "category": "cardio_running",
+    "example_question": "ควรคาร์ดิโอก่อนหรือหลังเวท",
+    "expected_response": "ให้ลำดับตามเป้าหมายหลัก โดยทั่วไปให้สิ่งที่ต้องการพัฒนามากที่สุดอยู่ก่อน"
+  },
+  {
+    "id": 128,
+    "intent": "cardio_before_after_weights",
+    "category": "cardio_running",
+    "example_question": "วิ่งก่อนเล่นเวทดีไหม",
+    "expected_response": "ให้ลำดับตามเป้าหมายหลัก โดยทั่วไปให้สิ่งที่ต้องการพัฒนามากที่สุดอยู่ก่อน"
+  },
+  {
+    "id": 129,
+    "intent": "cardio_before_after_weights",
+    "category": "cardio_running",
+    "example_question": "ถ้าจะทำทั้งเวทและคาร์ดิโอควรทำอะไรก่อน",
+    "expected_response": "ให้ลำดับตามเป้าหมายหลัก โดยทั่วไปให้สิ่งที่ต้องการพัฒนามากที่สุดอยู่ก่อน"
+  },
+  {
+    "id": 130,
+    "intent": "cardio_hiit",
+    "category": "cardio_running",
+    "example_question": "HIIT คืออะไร",
+    "expected_response": "อธิบายช่วงเร่งและช่วงพัก พร้อมกำหนดเวลาที่เหมาะกับระดับของผู้ใช้"
+  },
+  {
+    "id": 131,
+    "intent": "cardio_hiit",
+    "category": "cardio_running",
+    "example_question": "ช่วยจัด HIIT ให้ฉันหน่อย",
+    "expected_response": "อธิบายช่วงเร่งและช่วงพัก พร้อมกำหนดเวลาที่เหมาะกับระดับของผู้ใช้"
+  },
+  {
+    "id": 132,
+    "intent": "cardio_hiit",
+    "category": "cardio_running",
+    "example_question": "ควรทำ HIIT แบบไหน",
+    "expected_response": "อธิบายช่วงเร่งและช่วงพัก พร้อมกำหนดเวลาที่เหมาะกับระดับของผู้ใช้"
+  },
+  {
+    "id": 133,
+    "intent": "cardio_zone2",
+    "category": "cardio_running",
+    "example_question": "Zone 2 คืออะไร",
+    "expected_response": "อธิบายแนวคิดของความหนักระดับต่ำถึงปานกลางและการควบคุมความหนักด้วยชีพจรหรือความรู้สึก"
+  },
+  {
+    "id": 134,
+    "intent": "cardio_zone2",
+    "category": "cardio_running",
+    "example_question": "ช่วยอธิบายการวิ่ง Zone 2",
+    "expected_response": "อธิบายแนวคิดของความหนักระดับต่ำถึงปานกลางและการควบคุมความหนักด้วยชีพจรหรือความรู้สึก"
+  },
+  {
+    "id": 135,
+    "intent": "cardio_zone2",
+    "category": "cardio_running",
+    "example_question": "ฉันควรฝึก Zone 2 ไหม",
+    "expected_response": "อธิบายแนวคิดของความหนักระดับต่ำถึงปานกลางและการควบคุมความหนักด้วยชีพจรหรือความรู้สึก"
+  },
+  {
+    "id": 136,
+    "intent": "running_pace",
+    "category": "cardio_running",
+    "example_question": "ควรวิ่ง Pace เท่าไหร่",
+    "expected_response": "ประเมินจากความเร็วปัจจุบัน เป้าหมาย และความรู้สึกขณะวิ่ง แล้วกำหนดช่วง Pace ที่เหมาะสม"
+  },
+  {
+    "id": 137,
+    "intent": "running_pace",
+    "category": "cardio_running",
+    "example_question": "ช่วยตั้ง Pace วิ่งให้หน่อย",
+    "expected_response": "ประเมินจากความเร็วปัจจุบัน เป้าหมาย และความรู้สึกขณะวิ่ง แล้วกำหนดช่วง Pace ที่เหมาะสม"
+  },
+  {
+    "id": 138,
+    "intent": "running_pace",
+    "category": "cardio_running",
+    "example_question": "Pace สำหรับฉันควรอยู่ประมาณไหน",
+    "expected_response": "ประเมินจากความเร็วปัจจุบัน เป้าหมาย และความรู้สึกขณะวิ่ง แล้วกำหนดช่วง Pace ที่เหมาะสม"
+  },
+  {
+    "id": 139,
+    "intent": "running_interval",
+    "category": "cardio_running",
+    "example_question": "Interval Run คืออะไร",
+    "expected_response": "จัดช่วงวิ่งเร็วสลับพักแบบค่อยเป็นค่อยไป และกำหนดจำนวนรอบตามระดับ"
+  },
+  {
+    "id": 140,
+    "intent": "running_interval",
+    "category": "cardio_running",
+    "example_question": "ช่วยจัด Interval ให้หน่อย",
+    "expected_response": "จัดช่วงวิ่งเร็วสลับพักแบบค่อยเป็นค่อยไป และกำหนดจำนวนรอบตามระดับ"
+  },
+  {
+    "id": 141,
+    "intent": "running_interval",
+    "category": "cardio_running",
+    "example_question": "ถ้าอยากวิ่งเร็วขึ้นควรทำ Interval แบบไหน",
+    "expected_response": "จัดช่วงวิ่งเร็วสลับพักแบบค่อยเป็นค่อยไป และกำหนดจำนวนรอบตามระดับ"
+  },
+  {
+    "id": 142,
+    "intent": "running_long_run",
+    "category": "cardio_running",
+    "example_question": "Long Run คืออะไร",
+    "expected_response": "กำหนดระยะ long run จากระยะที่ทำอยู่ และเพิ่มอย่างค่อยเป็นค่อยไป"
+  },
+  {
+    "id": 143,
+    "intent": "running_long_run",
+    "category": "cardio_running",
+    "example_question": "ควรทำ Long Run กี่กิโล",
+    "expected_response": "กำหนดระยะ long run จากระยะที่ทำอยู่ และเพิ่มอย่างค่อยเป็นค่อยไป"
+  },
+  {
+    "id": 144,
+    "intent": "running_long_run",
+    "category": "cardio_running",
+    "example_question": "ช่วยจัด Long Run ให้หน่อย",
+    "expected_response": "กำหนดระยะ long run จากระยะที่ทำอยู่ และเพิ่มอย่างค่อยเป็นค่อยไป"
+  },
+  {
+    "id": 145,
+    "intent": "running_walk_run",
+    "category": "cardio_running",
+    "example_question": "มือใหม่ควรวิ่งสลับเดินไหม",
+    "expected_response": "ใช้การวิ่งสลับเดินเพื่อสร้างความต่อเนื่องและค่อย ๆ เพิ่มช่วงวิ่ง"
+  },
+  {
+    "id": 146,
+    "intent": "running_walk_run",
+    "category": "cardio_running",
+    "example_question": "ช่วยจัด Run-Walk ให้หน่อย",
+    "expected_response": "ใช้การวิ่งสลับเดินเพื่อสร้างความต่อเนื่องและค่อย ๆ เพิ่มช่วงวิ่ง"
+  },
+  {
+    "id": 147,
+    "intent": "running_walk_run",
+    "category": "cardio_running",
+    "example_question": "วิ่งไม่ไหวควรสลับเดินยังไง",
+    "expected_response": "ใช้การวิ่งสลับเดินเพื่อสร้างความต่อเนื่องและค่อย ๆ เพิ่มช่วงวิ่ง"
+  },
+  {
+    "id": 148,
+    "intent": "running_5k_training",
+    "category": "cardio_running",
+    "example_question": "ช่วยวางแผนซ้อม 5K",
+    "expected_response": "จัด easy run, quality session และ long run ตามพื้นฐาน พร้อมกำหนดวันพัก"
+  },
+  {
+    "id": 149,
+    "intent": "running_5k_training",
+    "category": "cardio_running",
+    "example_question": "อยากทำเวลา 5K ให้ดีขึ้น",
+    "expected_response": "จัด easy run, quality session และ long run ตามพื้นฐาน พร้อมกำหนดวันพัก"
+  },
+  {
+    "id": 150,
+    "intent": "running_5k_training",
+    "category": "cardio_running",
+    "example_question": "ฉันควรซ้อมวิ่ง 5 กิโลยังไง",
+    "expected_response": "จัด easy run, quality session และ long run ตามพื้นฐาน พร้อมกำหนดวันพัก"
+  },
+  {
+    "id": 151,
+    "intent": "strength_sets_reps",
+    "category": "strength_hypertrophy",
+    "example_question": "เพิ่มแรงควรเล่นกี่ครั้งต่อเซต",
+    "expected_response": "ใช้จำนวนครั้งและเซตที่เหมาะกับการฝึกแรง พร้อมเน้นเทคนิคและการพักที่เพียงพอ"
+  },
+  {
+    "id": 152,
+    "intent": "strength_sets_reps",
+    "category": "strength_hypertrophy",
+    "example_question": "ถ้าเป้าหมายคือแรงควรทำกี่ Rep",
+    "expected_response": "ใช้จำนวนครั้งและเซตที่เหมาะกับการฝึกแรง พร้อมเน้นเทคนิคและการพักที่เพียงพอ"
+  },
+  {
+    "id": 153,
+    "intent": "strength_sets_reps",
+    "category": "strength_hypertrophy",
+    "example_question": "ช่วยกำหนดเซตและครั้งเพื่อเพิ่มแรง",
+    "expected_response": "ใช้จำนวนครั้งและเซตที่เหมาะกับการฝึกแรง พร้อมเน้นเทคนิคและการพักที่เพียงพอ"
+  },
+  {
+    "id": 154,
+    "intent": "hypertrophy_sets_reps",
+    "category": "strength_hypertrophy",
+    "example_question": "สร้างกล้ามควรเล่นกี่ครั้งต่อเซต",
+    "expected_response": "แนะนำช่วงครั้งและ volume ที่เหมาะสม พร้อมเน้น progressive overload และ recovery"
+  },
+  {
+    "id": 155,
+    "intent": "hypertrophy_sets_reps",
+    "category": "strength_hypertrophy",
+    "example_question": "เพิ่มกล้ามควรทำกี่เซต",
+    "expected_response": "แนะนำช่วงครั้งและ volume ที่เหมาะสม พร้อมเน้น progressive overload และ recovery"
+  },
+  {
+    "id": 156,
+    "intent": "hypertrophy_sets_reps",
+    "category": "strength_hypertrophy",
+    "example_question": "ช่วยกำหนด Volume สำหรับสร้างกล้าม",
+    "expected_response": "แนะนำช่วงครั้งและ volume ที่เหมาะสม พร้อมเน้น progressive overload และ recovery"
+  },
+  {
+    "id": 157,
+    "intent": "progressive_overload",
+    "category": "strength_hypertrophy",
+    "example_question": "Progressive Overload คืออะไร",
+    "expected_response": "อธิบายการเพิ่มน้ำหนัก จำนวนครั้ง เซต หรือคุณภาพการเคลื่อนไหวทีละขั้น"
+  },
+  {
+    "id": 158,
+    "intent": "progressive_overload",
+    "category": "strength_hypertrophy",
+    "example_question": "ควรเพิ่มน้ำหนักเมื่อไหร่",
+    "expected_response": "อธิบายการเพิ่มน้ำหนัก จำนวนครั้ง เซต หรือคุณภาพการเคลื่อนไหวทีละขั้น"
+  },
+  {
+    "id": 159,
+    "intent": "progressive_overload",
+    "category": "strength_hypertrophy",
+    "example_question": "จะทำให้กล้ามพัฒนาต่อเนื่องยังไง",
+    "expected_response": "อธิบายการเพิ่มน้ำหนัก จำนวนครั้ง เซต หรือคุณภาพการเคลื่อนไหวทีละขั้น"
+  },
+  {
+    "id": 160,
+    "intent": "failure_training",
+    "category": "strength_hypertrophy",
+    "example_question": "ต้องเล่นจน Failure ไหม",
+    "expected_response": "อธิบายว่าการฝึกใกล้ failure มักเพียงพอ และควรใช้ failure อย่างมีเหตุผลเพื่อควบคุมความล้า"
+  },
+  {
+    "id": 161,
+    "intent": "failure_training",
+    "category": "strength_hypertrophy",
+    "example_question": "ควรฝึกจนยกไม่ไหวหรือเปล่า",
+    "expected_response": "อธิบายว่าการฝึกใกล้ failure มักเพียงพอ และควรใช้ failure อย่างมีเหตุผลเพื่อควบคุมความล้า"
+  },
+  {
+    "id": 162,
+    "intent": "failure_training",
+    "category": "strength_hypertrophy",
+    "example_question": "ทุกเซตต้องเล่นจนหมดแรงไหม",
+    "expected_response": "อธิบายว่าการฝึกใกล้ failure มักเพียงพอ และควรใช้ failure อย่างมีเหตุผลเพื่อควบคุมความล้า"
+  },
+  {
+    "id": 163,
+    "intent": "rir_rpe",
+    "category": "strength_hypertrophy",
+    "example_question": "RIR คืออะไร",
+    "expected_response": "อธิบายการประเมินความเหลือของแรงและความหนัก เพื่อใช้ปรับโหลดในแต่ละเซต"
+  },
+  {
+    "id": 164,
+    "intent": "rir_rpe",
+    "category": "strength_hypertrophy",
+    "example_question": "RPE คืออะไร",
+    "expected_response": "อธิบายการประเมินความเหลือของแรงและความหนัก เพื่อใช้ปรับโหลดในแต่ละเซต"
+  },
+  {
+    "id": 165,
+    "intent": "rir_rpe",
+    "category": "strength_hypertrophy",
+    "example_question": "ช่วยสอนวิธีใช้ RIR หรือ RPE",
+    "expected_response": "อธิบายการประเมินความเหลือของแรงและความหนัก เพื่อใช้ปรับโหลดในแต่ละเซต"
+  },
+  {
+    "id": 166,
+    "intent": "rest_strength",
+    "category": "strength_hypertrophy",
+    "example_question": "เล่นเพิ่มแรงควรพักกี่นาที",
+    "expected_response": "แนะนำให้พักนานพอสำหรับคุณภาพของเซต โดยเฉพาะท่าหลักที่ใช้กล้ามเนื้อหลายส่วน"
+  },
+  {
+    "id": 167,
+    "intent": "rest_strength",
+    "category": "strength_hypertrophy",
+    "example_question": "พักนานแค่ไหนสำหรับท่าหนัก",
+    "expected_response": "แนะนำให้พักนานพอสำหรับคุณภาพของเซต โดยเฉพาะท่าหลักที่ใช้กล้ามเนื้อหลายส่วน"
+  },
+  {
+    "id": 168,
+    "intent": "rest_strength",
+    "category": "strength_hypertrophy",
+    "example_question": "เซตหนักควรพักเท่าไหร่",
+    "expected_response": "แนะนำให้พักนานพอสำหรับคุณภาพของเซต โดยเฉพาะท่าหลักที่ใช้กล้ามเนื้อหลายส่วน"
+  },
+  {
+    "id": 169,
+    "intent": "compound_vs_isolation",
+    "category": "strength_hypertrophy",
+    "example_question": "ควรเน้นท่าหลักหรือท่าแยก",
+    "expected_response": "อธิบายบทบาทของทั้งสองแบบและจัดให้ท่าหลักมาก่อนท่าแยก"
+  },
+  {
+    "id": 170,
+    "intent": "compound_vs_isolation",
+    "category": "strength_hypertrophy",
+    "example_question": "Compound กับ Isolation ต่างกันยังไง",
+    "expected_response": "อธิบายบทบาทของทั้งสองแบบและจัดให้ท่าหลักมาก่อนท่าแยก"
+  },
+  {
+    "id": 171,
+    "intent": "compound_vs_isolation",
+    "category": "strength_hypertrophy",
+    "example_question": "ควรจัด Compound และ Isolation ใน Workout ยังไง",
+    "expected_response": "อธิบายบทบาทของทั้งสองแบบและจัดให้ท่าหลักมาก่อนท่าแยก"
+  },
+  {
+    "id": 172,
+    "intent": "volume_frequency",
+    "category": "strength_hypertrophy",
+    "example_question": "กล้ามเนื้อหนึ่งส่วนควรเล่นกี่ครั้งต่อสัปดาห์",
+    "expected_response": "ปรับความถี่ตาม volume ต่อสัปดาห์ ความพร้อมในการฟื้นตัว และตารางของผู้ใช้"
+  },
+  {
+    "id": 173,
+    "intent": "volume_frequency",
+    "category": "strength_hypertrophy",
+    "example_question": "ควรฝึกอกกี่วัน",
+    "expected_response": "ปรับความถี่ตาม volume ต่อสัปดาห์ ความพร้อมในการฟื้นตัว และตารางของผู้ใช้"
+  },
+  {
+    "id": 174,
+    "intent": "volume_frequency",
+    "category": "strength_hypertrophy",
+    "example_question": "ช่วยกำหนดความถี่ต่อกล้ามเนื้อ",
+    "expected_response": "ปรับความถี่ตาม volume ต่อสัปดาห์ ความพร้อมในการฟื้นตัว และตารางของผู้ใช้"
+  },
+  {
+    "id": 175,
+    "intent": "deload",
+    "category": "strength_hypertrophy",
+    "example_question": "Deload คืออะไร",
+    "expected_response": "อธิบายการลด volume หรือ intensity ชั่วคราวเพื่อจัดการความล้า และใช้เมื่อมีสัญญาณฟื้นตัวไม่ทัน"
+  },
+  {
+    "id": 176,
+    "intent": "deload",
+    "category": "strength_hypertrophy",
+    "example_question": "ต้องมีสัปดาห์ลดความหนักไหม",
+    "expected_response": "อธิบายการลด volume หรือ intensity ชั่วคราวเพื่อจัดการความล้า และใช้เมื่อมีสัญญาณฟื้นตัวไม่ทัน"
+  },
+  {
+    "id": 177,
+    "intent": "deload",
+    "category": "strength_hypertrophy",
+    "example_question": "รู้ได้ยังไงว่าควร Deload",
+    "expected_response": "อธิบายการลด volume หรือ intensity ชั่วคราวเพื่อจัดการความล้า และใช้เมื่อมีสัญญาณฟื้นตัวไม่ทัน"
+  },
+  {
+    "id": 178,
+    "intent": "plateau_strength",
+    "category": "strength_hypertrophy",
+    "example_question": "ทำไมยกน้ำหนักไม่ขึ้น",
+    "expected_response": "ตรวจ volume, เทคนิค, การพัก, อาหาร และการเพิ่มโหลด แล้วปรับโปรแกรมอย่างเป็นขั้นตอน"
+  },
+  {
+    "id": 179,
+    "intent": "plateau_strength",
+    "category": "strength_hypertrophy",
+    "example_question": "ฉันตันที่น้ำหนักเดิมทำยังไง",
+    "expected_response": "ตรวจ volume, เทคนิค, การพัก, อาหาร และการเพิ่มโหลด แล้วปรับโปรแกรมอย่างเป็นขั้นตอน"
+  },
+  {
+    "id": 180,
+    "intent": "plateau_strength",
+    "category": "strength_hypertrophy",
+    "example_question": "อยากแก้ plateau ของการเล่นเวท",
+    "expected_response": "ตรวจ volume, เทคนิค, การพัก, อาหาร และการเพิ่มโหลด แล้วปรับโปรแกรมอย่างเป็นขั้นตอน"
+  },
+  {
+    "id": 181,
+    "intent": "warmup_general",
+    "category": "warmup_mobility",
+    "example_question": "ต้องวอร์มก่อนออกกำลังกายไหม",
+    "expected_response": "แนะนำ warm-up แบบเพิ่มอุณหภูมิร่างกายและเตรียมท่าที่จะฝึก โดยใช้เวลาพอเหมาะ"
+  },
+  {
+    "id": 182,
+    "intent": "warmup_general",
+    "category": "warmup_mobility",
+    "example_question": "ควรวอร์มอัพก่อนเล่นเวทหรือเปล่า",
+    "expected_response": "แนะนำ warm-up แบบเพิ่มอุณหภูมิร่างกายและเตรียมท่าที่จะฝึก โดยใช้เวลาพอเหมาะ"
+  },
+  {
+    "id": 183,
+    "intent": "warmup_general",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยจัด Warm-up ให้หน่อย",
+    "expected_response": "แนะนำ warm-up แบบเพิ่มอุณหภูมิร่างกายและเตรียมท่าที่จะฝึก โดยใช้เวลาพอเหมาะ"
+  },
+  {
+    "id": 184,
+    "intent": "warmup_running",
+    "category": "warmup_mobility",
+    "example_question": "ก่อนวิ่งควรวอร์มยังไง",
+    "expected_response": "แนะนำการเดินเร็วหรือวิ่งเบา ๆ และ dynamic movement ที่เกี่ยวข้องกับการวิ่ง"
+  },
+  {
+    "id": 185,
+    "intent": "warmup_running",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยจัดวอร์มก่อนวิ่ง",
+    "expected_response": "แนะนำการเดินเร็วหรือวิ่งเบา ๆ และ dynamic movement ที่เกี่ยวข้องกับการวิ่ง"
+  },
+  {
+    "id": 186,
+    "intent": "warmup_running",
+    "category": "warmup_mobility",
+    "example_question": "ควรทำอะไรบ้างก่อนออกไปวิ่ง",
+    "expected_response": "แนะนำการเดินเร็วหรือวิ่งเบา ๆ และ dynamic movement ที่เกี่ยวข้องกับการวิ่ง"
+  },
+  {
+    "id": 187,
+    "intent": "warmup_legs",
+    "category": "warmup_mobility",
+    "example_question": "ก่อนเล่นขาควรวอร์มอะไร",
+    "expected_response": "เตรียมข้อสะโพก เข่า ข้อเท้า และทำ warm-up sets ของท่าหลัก"
+  },
+  {
+    "id": 188,
+    "intent": "warmup_legs",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยวอร์มก่อน Squat",
+    "expected_response": "เตรียมข้อสะโพก เข่า ข้อเท้า และทำ warm-up sets ของท่าหลัก"
+  },
+  {
+    "id": 189,
+    "intent": "warmup_legs",
+    "category": "warmup_mobility",
+    "example_question": "ก่อนวันขาควรเตรียมตัวอย่างไร",
+    "expected_response": "เตรียมข้อสะโพก เข่า ข้อเท้า และทำ warm-up sets ของท่าหลัก"
+  },
+  {
+    "id": 190,
+    "intent": "warmup_upper_body",
+    "category": "warmup_mobility",
+    "example_question": "ก่อนเล่นอกควรวอร์มอะไร",
+    "expected_response": "เตรียมหัวไหล่ สะบัก และข้อศอก พร้อมทำเซตน้ำหนักเบาก่อนเซตจริง"
+  },
+  {
+    "id": 191,
+    "intent": "warmup_upper_body",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยวอร์มก่อนเล่นไหล่",
+    "expected_response": "เตรียมหัวไหล่ สะบัก และข้อศอก พร้อมทำเซตน้ำหนักเบาก่อนเซตจริง"
+  },
+  {
+    "id": 192,
+    "intent": "warmup_upper_body",
+    "category": "warmup_mobility",
+    "example_question": "ก่อนเล่นหลังควรเตรียมตัวยังไง",
+    "expected_response": "เตรียมหัวไหล่ สะบัก และข้อศอก พร้อมทำเซตน้ำหนักเบาก่อนเซตจริง"
+  },
+  {
+    "id": 193,
+    "intent": "dynamic_static_stretch",
+    "category": "warmup_mobility",
+    "example_question": "ควรยืดก่อนหรือหลังออกกำลังกาย",
+    "expected_response": "แนะนำ dynamic movement ก่อนการฝึกหลัก และใช้ static stretching หลังฝึกหรือในช่วงแยก"
+  },
+  {
+    "id": 194,
+    "intent": "dynamic_static_stretch",
+    "category": "warmup_mobility",
+    "example_question": "Dynamic กับ Static Stretch ต่างกันยังไง",
+    "expected_response": "แนะนำ dynamic movement ก่อนการฝึกหลัก และใช้ static stretching หลังฝึกหรือในช่วงแยก"
+  },
+  {
+    "id": 195,
+    "intent": "dynamic_static_stretch",
+    "category": "warmup_mobility",
+    "example_question": "ควรทำ Static Stretch ก่อน Workout ไหม",
+    "expected_response": "แนะนำ dynamic movement ก่อนการฝึกหลัก และใช้ static stretching หลังฝึกหรือในช่วงแยก"
+  },
+  {
+    "id": 196,
+    "intent": "mobility_general",
+    "category": "warmup_mobility",
+    "example_question": "Mobility คืออะไร",
+    "expected_response": "อธิบาย mobility และจัด routine ที่เน้นข้อต่อที่ต้องใช้ในการเคลื่อนไหว"
+  },
+  {
+    "id": 197,
+    "intent": "mobility_general",
+    "category": "warmup_mobility",
+    "example_question": "ฉันควรฝึก Mobility ไหม",
+    "expected_response": "อธิบาย mobility และจัด routine ที่เน้นข้อต่อที่ต้องใช้ในการเคลื่อนไหว"
+  },
+  {
+    "id": 198,
+    "intent": "mobility_general",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยจัด Mobility Routine ให้หน่อย",
+    "expected_response": "อธิบาย mobility และจัด routine ที่เน้นข้อต่อที่ต้องใช้ในการเคลื่อนไหว"
+  },
+  {
+    "id": 199,
+    "intent": "ankle_mobility",
+    "category": "warmup_mobility",
+    "example_question": "ข้อเท้าตึงควรฝึกอะไร",
+    "expected_response": "แนะนำการเคลื่อนไหวข้อเท้าแบบควบคุมและค่อยเป็นค่อยไป พร้อมติดตามว่าช่วงการเคลื่อนไหวดีขึ้นหรือไม่"
+  },
+  {
+    "id": 200,
+    "intent": "ankle_mobility",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยแก้ข้อเท้าเคลื่อนไหวได้น้อย",
+    "expected_response": "แนะนำการเคลื่อนไหวข้อเท้าแบบควบคุมและค่อยเป็นค่อยไป พร้อมติดตามว่าช่วงการเคลื่อนไหวดีขึ้นหรือไม่"
+  },
+  {
+    "id": 201,
+    "intent": "ankle_mobility",
+    "category": "warmup_mobility",
+    "example_question": "มีท่าเพิ่ม Ankle Mobility ไหม",
+    "expected_response": "แนะนำการเคลื่อนไหวข้อเท้าแบบควบคุมและค่อยเป็นค่อยไป พร้อมติดตามว่าช่วงการเคลื่อนไหวดีขึ้นหรือไม่"
+  },
+  {
+    "id": 202,
+    "intent": "hip_mobility",
+    "category": "warmup_mobility",
+    "example_question": "สะโพกตึงควรทำอะไร",
+    "expected_response": "แนะนำท่าเคลื่อนไหวสะโพกที่ควบคุมได้ และเชื่อมเข้ากับท่าที่ผู้ใช้ต้องการฝึก"
+  },
+  {
+    "id": 203,
+    "intent": "hip_mobility",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยจัด Hip Mobility",
+    "expected_response": "แนะนำท่าเคลื่อนไหวสะโพกที่ควบคุมได้ และเชื่อมเข้ากับท่าที่ผู้ใช้ต้องการฝึก"
+  },
+  {
+    "id": 204,
+    "intent": "hip_mobility",
+    "category": "warmup_mobility",
+    "example_question": "มีท่าเพิ่มความคล่องสะโพกไหม",
+    "expected_response": "แนะนำท่าเคลื่อนไหวสะโพกที่ควบคุมได้ และเชื่อมเข้ากับท่าที่ผู้ใช้ต้องการฝึก"
+  },
+  {
+    "id": 205,
+    "intent": "shoulder_mobility",
+    "category": "warmup_mobility",
+    "example_question": "ไหล่ตึงควรทำอะไร",
+    "expected_response": "แนะนำการเคลื่อนไหวหัวไหล่และสะบักอย่างควบคุม พร้อมลดช่วงที่ทำให้ไม่สบาย"
+  },
+  {
+    "id": 206,
+    "intent": "shoulder_mobility",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยจัด Shoulder Mobility",
+    "expected_response": "แนะนำการเคลื่อนไหวหัวไหล่และสะบักอย่างควบคุม พร้อมลดช่วงที่ทำให้ไม่สบาย"
+  },
+  {
+    "id": 207,
+    "intent": "shoulder_mobility",
+    "category": "warmup_mobility",
+    "example_question": "อยากเพิ่มการเคลื่อนไหวไหล่",
+    "expected_response": "แนะนำการเคลื่อนไหวหัวไหล่และสะบักอย่างควบคุม พร้อมลดช่วงที่ทำให้ไม่สบาย"
+  },
+  {
+    "id": 208,
+    "intent": "cooldown_general",
+    "category": "warmup_mobility",
+    "example_question": "หลังออกกำลังกายควรทำอะไร",
+    "expected_response": "แนะนำการลดความหนักแบบค่อยเป็นค่อยไปและการยืดเบา ๆ หากรู้สึกตึง"
+  },
+  {
+    "id": 209,
+    "intent": "cooldown_general",
+    "category": "warmup_mobility",
+    "example_question": "ช่วยจัด Cool-down",
+    "expected_response": "แนะนำการลดความหนักแบบค่อยเป็นค่อยไปและการยืดเบา ๆ หากรู้สึกตึง"
+  },
+  {
+    "id": 210,
+    "intent": "cooldown_general",
+    "category": "warmup_mobility",
+    "example_question": "ออกกำลังกายเสร็จแล้วต้องยืดไหม",
+    "expected_response": "แนะนำการลดความหนักแบบค่อยเป็นค่อยไปและการยืดเบา ๆ หากรู้สึกตึง"
+  },
+  {
+    "id": 211,
+    "intent": "recovery_rest_days",
+    "category": "recovery_sleep",
+    "example_question": "ควรพักกี่วันต่อสัปดาห์",
+    "expected_response": "กำหนดวันพักตามปริมาณการฝึกและความล้า โดยให้มีเวลาฟื้นตัวเพียงพอ"
+  },
+  {
+    "id": 212,
+    "intent": "recovery_rest_days",
+    "category": "recovery_sleep",
+    "example_question": "ต้องมีวันพักไหม",
+    "expected_response": "กำหนดวันพักตามปริมาณการฝึกและความล้า โดยให้มีเวลาฟื้นตัวเพียงพอ"
+  },
+  {
+    "id": 213,
+    "intent": "recovery_rest_days",
+    "category": "recovery_sleep",
+    "example_question": "ช่วยจัดวันพักให้หน่อย",
+    "expected_response": "กำหนดวันพักตามปริมาณการฝึกและความล้า โดยให้มีเวลาฟื้นตัวเพียงพอ"
+  },
+  {
+    "id": 214,
+    "intent": "recovery_same_muscle",
+    "category": "recovery_sleep",
+    "example_question": "เล่นกล้ามเดิมทุกวันได้ไหม",
+    "expected_response": "แนะนำให้เว้นช่วงฟื้นตัวตามความหนักและอาการล้า และปรับความถี่ตาม volume"
+  },
+  {
+    "id": 215,
+    "intent": "recovery_same_muscle",
+    "category": "recovery_sleep",
+    "example_question": "กล้ามเนื้อควรพักกี่ชั่วโมง",
+    "expected_response": "แนะนำให้เว้นช่วงฟื้นตัวตามความหนักและอาการล้า และปรับความถี่ตาม volume"
+  },
+  {
+    "id": 216,
+    "intent": "recovery_same_muscle",
+    "category": "recovery_sleep",
+    "example_question": "วันนี้เล่นอกไปแล้วพรุ่งนี้เล่นอกได้ไหม",
+    "expected_response": "แนะนำให้เว้นช่วงฟื้นตัวตามความหนักและอาการล้า และปรับความถี่ตาม volume"
+  },
+  {
+    "id": 217,
+    "intent": "doms",
+    "category": "recovery_sleep",
+    "example_question": "DOMS คืออะไร",
+    "expected_response": "อธิบายอาการปวดกล้ามหลังออกกำลังกายที่เกิดได้ และแนะนำการเคลื่อนไหวเบา ๆ กับการพักตามอาการ"
+  },
+  {
+    "id": 218,
+    "intent": "doms",
+    "category": "recovery_sleep",
+    "example_question": "ทำไมวันรุ่งขึ้นถึงปวดกล้าม",
+    "expected_response": "อธิบายอาการปวดกล้ามหลังออกกำลังกายที่เกิดได้ และแนะนำการเคลื่อนไหวเบา ๆ กับการพักตามอาการ"
+  },
+  {
+    "id": 219,
+    "intent": "doms",
+    "category": "recovery_sleep",
+    "example_question": "ปวดกล้ามหลัง Workout เป็นเรื่องปกติไหม",
+    "expected_response": "อธิบายอาการปวดกล้ามหลังออกกำลังกายที่เกิดได้ และแนะนำการเคลื่อนไหวเบา ๆ กับการพักตามอาการ"
+  },
+  {
+    "id": 220,
+    "intent": "recovery_active",
+    "category": "recovery_sleep",
+    "example_question": "Active Recovery คืออะไร",
+    "expected_response": "แนะนำกิจกรรมเบา ๆ เช่น เดินหรือ mobility เพื่อให้เคลื่อนไหวโดยไม่เพิ่มความล้ามาก"
+  },
+  {
+    "id": 221,
+    "intent": "recovery_active",
+    "category": "recovery_sleep",
+    "example_question": "วันพักควรเดินได้ไหม",
+    "expected_response": "แนะนำกิจกรรมเบา ๆ เช่น เดินหรือ mobility เพื่อให้เคลื่อนไหวโดยไม่เพิ่มความล้ามาก"
+  },
+  {
+    "id": 222,
+    "intent": "recovery_active",
+    "category": "recovery_sleep",
+    "example_question": "อยากฟื้นตัวเร็วควรทำอะไรเบา ๆ",
+    "expected_response": "แนะนำกิจกรรมเบา ๆ เช่น เดินหรือ mobility เพื่อให้เคลื่อนไหวโดยไม่เพิ่มความล้ามาก"
+  },
+  {
+    "id": 223,
+    "intent": "sleep_duration",
+    "category": "recovery_sleep",
+    "example_question": "ควรนอนกี่ชั่วโมงเพื่อฟื้นตัว",
+    "expected_response": "แนะนำให้ให้ความสำคัญกับการนอนให้เพียงพอและสม่ำเสมอ โดยปรับตามวัยและตารางชีวิต"
+  },
+  {
+    "id": 224,
+    "intent": "sleep_duration",
+    "category": "recovery_sleep",
+    "example_question": "นอนเท่าไหร่ถึงจะพอสำหรับการออกกำลังกาย",
+    "expected_response": "แนะนำให้ให้ความสำคัญกับการนอนให้เพียงพอและสม่ำเสมอ โดยปรับตามวัยและตารางชีวิต"
+  },
+  {
+    "id": 225,
+    "intent": "sleep_duration",
+    "category": "recovery_sleep",
+    "example_question": "ถ้าต้องการฟื้นตัวดีควรนอนกี่ชั่วโมง",
+    "expected_response": "แนะนำให้ให้ความสำคัญกับการนอนให้เพียงพอและสม่ำเสมอ โดยปรับตามวัยและตารางชีวิต"
+  },
+  {
+    "id": 226,
+    "intent": "sleep_before_workout",
+    "category": "recovery_sleep",
+    "example_question": "เมื่อคืนฉันนอนน้อยควรออกกำลังกายไหม",
+    "expected_response": "ประเมินความสดชื่นและความหนักของโปรแกรม แล้วลดความหนักหรือเลือกกิจกรรมเบาเมื่อฟื้นตัวไม่พอ"
+  },
+  {
+    "id": 227,
+    "intent": "sleep_before_workout",
+    "category": "recovery_sleep",
+    "example_question": "ถ้านอนน้อยควรลด Workout หรือเปล่า",
+    "expected_response": "ประเมินความสดชื่นและความหนักของโปรแกรม แล้วลดความหนักหรือเลือกกิจกรรมเบาเมื่อฟื้นตัวไม่พอ"
+  },
+  {
+    "id": 228,
+    "intent": "sleep_before_workout",
+    "category": "recovery_sleep",
+    "example_question": "วันนี้พักเพราะนอนไม่พอได้ไหม",
+    "expected_response": "ประเมินความสดชื่นและความหนักของโปรแกรม แล้วลดความหนักหรือเลือกกิจกรรมเบาเมื่อฟื้นตัวไม่พอ"
+  },
+  {
+    "id": 229,
+    "intent": "fatigue_management",
+    "category": "recovery_sleep",
+    "example_question": "วันนี้เหนื่อยมากควรฝึกต่อไหม",
+    "expected_response": "ลด volume หรือ intensity ชั่วคราวและเพิ่มการพัก หากอาการล้าต่อเนื่องควรประเมินปัจจัยอื่นร่วมด้วย"
+  },
+  {
+    "id": 230,
+    "intent": "fatigue_management",
+    "category": "recovery_sleep",
+    "example_question": "ช่วงนี้รู้สึกล้าสะสมควรทำยังไง",
+    "expected_response": "ลด volume หรือ intensity ชั่วคราวและเพิ่มการพัก หากอาการล้าต่อเนื่องควรประเมินปัจจัยอื่นร่วมด้วย"
+  },
+  {
+    "id": 231,
+    "intent": "fatigue_management",
+    "category": "recovery_sleep",
+    "example_question": "ช่วยปรับโปรแกรมตอนรู้สึกล้า",
+    "expected_response": "ลด volume หรือ intensity ชั่วคราวและเพิ่มการพัก หากอาการล้าต่อเนื่องควรประเมินปัจจัยอื่นร่วมด้วย"
+  },
+  {
+    "id": 232,
+    "intent": "recovery_between_sessions",
+    "category": "recovery_sleep",
+    "example_question": "ระหว่างวันควรฟื้นตัวยังไง",
+    "expected_response": "เน้นอาหาร น้ำ การนอน การเคลื่อนไหวเบา ๆ และวันพักที่เพียงพอ"
+  },
+  {
+    "id": 233,
+    "intent": "recovery_between_sessions",
+    "category": "recovery_sleep",
+    "example_question": "หลัง Workout ควรทำอะไรเพื่อฟื้นตัว",
+    "expected_response": "เน้นอาหาร น้ำ การนอน การเคลื่อนไหวเบา ๆ และวันพักที่เพียงพอ"
+  },
+  {
+    "id": 234,
+    "intent": "recovery_between_sessions",
+    "category": "recovery_sleep",
+    "example_question": "ช่วยจัด Recovery Routine",
+    "expected_response": "เน้นอาหาร น้ำ การนอน การเคลื่อนไหวเบา ๆ และวันพักที่เพียงพอ"
+  },
+  {
+    "id": 235,
+    "intent": "return_after_break",
+    "category": "recovery_sleep",
+    "example_question": "หยุดออกกำลังกายไปนานแล้วกลับมายังไง",
+    "expected_response": "กลับมาด้วย volume และโหลดต่ำกว่าที่เคย แล้วค่อยเพิ่มเมื่อร่างกายปรับตัว"
+  },
+  {
+    "id": 236,
+    "intent": "return_after_break",
+    "category": "recovery_sleep",
+    "example_question": "กลับมาเล่นหลังพักหลายสัปดาห์ควรเริ่มแบบไหน",
+    "expected_response": "กลับมาด้วย volume และโหลดต่ำกว่าที่เคย แล้วค่อยเพิ่มเมื่อร่างกายปรับตัว"
+  },
+  {
+    "id": 237,
+    "intent": "return_after_break",
+    "category": "recovery_sleep",
+    "example_question": "หายไปจากยิมนานควรลดน้ำหนักไหม",
+    "expected_response": "กลับมาด้วย volume และโหลดต่ำกว่าที่เคย แล้วค่อยเพิ่มเมื่อร่างกายปรับตัว"
+  },
+  {
+    "id": 238,
+    "intent": "recovery_vs_pain",
+    "category": "recovery_sleep",
+    "example_question": "แยกความล้ากับอาการเจ็บยังไง",
+    "expected_response": "แยกอาการเมื่อยล้าทั่วไปออกจากอาการเจ็บที่รุนแรงหรือผิดปกติ และเน้นหยุดกิจกรรมที่กระตุ้นอาการ"
+  },
+  {
+    "id": 239,
+    "intent": "recovery_vs_pain",
+    "category": "recovery_sleep",
+    "example_question": "เมื่อไหร่ควรพักเพราะเจ็บ",
+    "expected_response": "แยกอาการเมื่อยล้าทั่วไปออกจากอาการเจ็บที่รุนแรงหรือผิดปกติ และเน้นหยุดกิจกรรมที่กระตุ้นอาการ"
+  },
+  {
+    "id": 240,
+    "intent": "recovery_vs_pain",
+    "category": "recovery_sleep",
+    "example_question": "ปวดแบบไหนไม่ควรฝืน",
+    "expected_response": "แยกอาการเมื่อยล้าทั่วไปออกจากอาการเจ็บที่รุนแรงหรือผิดปกติ และเน้นหยุดกิจกรรมที่กระตุ้นอาการ"
+  },
+  {
+    "id": 241,
+    "intent": "nutrition_pre_workout",
+    "category": "nutrition_hydration",
+    "example_question": "ก่อนออกกำลังกายควรกินอะไร",
+    "expected_response": "แนะนำมื้อที่ย่อยง่าย มีคาร์โบไฮเดรตและโปรตีนตามความเหมาะสม โดยดูเวลาที่เหลือก่อนฝึก"
+  },
+  {
+    "id": 242,
+    "intent": "nutrition_pre_workout",
+    "category": "nutrition_hydration",
+    "example_question": "ก่อนเล่นเวทควรกินเมื่อไหร่",
+    "expected_response": "แนะนำมื้อที่ย่อยง่าย มีคาร์โบไฮเดรตและโปรตีนตามความเหมาะสม โดยดูเวลาที่เหลือก่อนฝึก"
+  },
+  {
+    "id": 243,
+    "intent": "nutrition_pre_workout",
+    "category": "nutrition_hydration",
+    "example_question": "มีเมนูก่อน Workout แนะนำไหม",
+    "expected_response": "แนะนำมื้อที่ย่อยง่าย มีคาร์โบไฮเดรตและโปรตีนตามความเหมาะสม โดยดูเวลาที่เหลือก่อนฝึก"
+  },
+  {
+    "id": 244,
+    "intent": "nutrition_post_workout",
+    "category": "nutrition_hydration",
+    "example_question": "หลังออกกำลังกายควรกินอะไร",
+    "expected_response": "แนะนำมื้อที่มีโปรตีนและคาร์โบไฮเดรตเพื่อช่วยการฟื้นตัว และปรับตามเป้าหมายพลังงาน"
+  },
+  {
+    "id": 245,
+    "intent": "nutrition_post_workout",
+    "category": "nutrition_hydration",
+    "example_question": "เล่นเวทเสร็จควรกินอะไร",
+    "expected_response": "แนะนำมื้อที่มีโปรตีนและคาร์โบไฮเดรตเพื่อช่วยการฟื้นตัว และปรับตามเป้าหมายพลังงาน"
+  },
+  {
+    "id": 246,
+    "intent": "nutrition_post_workout",
+    "category": "nutrition_hydration",
+    "example_question": "หลังวิ่งควรกินอะไร",
+    "expected_response": "แนะนำมื้อที่มีโปรตีนและคาร์โบไฮเดรตเพื่อช่วยการฟื้นตัว และปรับตามเป้าหมายพลังงาน"
+  },
+  {
+    "id": 247,
+    "intent": "protein",
+    "category": "nutrition_hydration",
+    "example_question": "ฉันควรกินโปรตีนวันละเท่าไหร่",
+    "expected_response": "คำนวณช่วงโปรตีนโดยอิงน้ำหนัก เป้าหมาย และรูปแบบการฝึก พร้อมแนะนำแหล่งอาหาร"
+  },
+  {
+    "id": 248,
+    "intent": "protein",
+    "category": "nutrition_hydration",
+    "example_question": "สร้างกล้ามต้องกินโปรตีนเท่าไร",
+    "expected_response": "คำนวณช่วงโปรตีนโดยอิงน้ำหนัก เป้าหมาย และรูปแบบการฝึก พร้อมแนะนำแหล่งอาหาร"
+  },
+  {
+    "id": 249,
+    "intent": "protein",
+    "category": "nutrition_hydration",
+    "example_question": "ช่วยประเมินโปรตีนสำหรับการออกกำลังกาย",
+    "expected_response": "คำนวณช่วงโปรตีนโดยอิงน้ำหนัก เป้าหมาย และรูปแบบการฝึก พร้อมแนะนำแหล่งอาหาร"
+  },
+  {
+    "id": 250,
+    "intent": "carbohydrate",
+    "category": "nutrition_hydration",
+    "example_question": "ออกกำลังกายควรกินคาร์บเยอะไหม",
+    "expected_response": "อธิบายบทบาทของคาร์โบไฮเดรตต่อพลังงาน และปรับปริมาณตามกิจกรรมและเป้าหมาย"
+  },
+  {
+    "id": 251,
+    "intent": "carbohydrate",
+    "category": "nutrition_hydration",
+    "example_question": "คาร์บมีผลกับการฝึกยังไง",
+    "expected_response": "อธิบายบทบาทของคาร์โบไฮเดรตต่อพลังงาน และปรับปริมาณตามกิจกรรมและเป้าหมาย"
+  },
+  {
+    "id": 252,
+    "intent": "carbohydrate",
+    "category": "nutrition_hydration",
+    "example_question": "ก่อนวิ่งควรกินคาร์บหรือเปล่า",
+    "expected_response": "อธิบายบทบาทของคาร์โบไฮเดรตต่อพลังงาน และปรับปริมาณตามกิจกรรมและเป้าหมาย"
+  },
+  {
+    "id": 253,
+    "intent": "hydration",
+    "category": "nutrition_hydration",
+    "example_question": "ควรดื่มน้ำเท่าไหร่ตอนออกกำลังกาย",
+    "expected_response": "แนะนำให้ดื่มน้ำตามความกระหาย สภาพอากาศ ระยะเวลา และเหงื่อที่เสีย พร้อมพิจารณาเกลือแร่ในกิจกรรมยาว"
+  },
+  {
+    "id": 254,
+    "intent": "hydration",
+    "category": "nutrition_hydration",
+    "example_question": "ระหว่างวิ่งควรดื่มน้ำยังไง",
+    "expected_response": "แนะนำให้ดื่มน้ำตามความกระหาย สภาพอากาศ ระยะเวลา และเหงื่อที่เสีย พร้อมพิจารณาเกลือแร่ในกิจกรรมยาว"
+  },
+  {
+    "id": 255,
+    "intent": "hydration",
+    "category": "nutrition_hydration",
+    "example_question": "ช่วยวางแผนการดื่มน้ำให้หน่อย",
+    "expected_response": "แนะนำให้ดื่มน้ำตามความกระหาย สภาพอากาศ ระยะเวลา และเหงื่อที่เสีย พร้อมพิจารณาเกลือแร่ในกิจกรรมยาว"
+  },
+  {
+    "id": 256,
+    "intent": "calories",
+    "category": "nutrition_hydration",
+    "example_question": "ช่วยคำนวณแคลอรีสำหรับการฝึก",
+    "expected_response": "ประเมินพลังงานจากข้อมูลผู้ใช้และตั้งช่วงที่เหมาะกับเป้าหมาย พร้อมติดตามผลจริง"
+  },
+  {
+    "id": 257,
+    "intent": "calories",
+    "category": "nutrition_hydration",
+    "example_question": "ฉันควรกินกี่แคลอรีเพื่อเพิ่มกล้าม",
+    "expected_response": "ประเมินพลังงานจากข้อมูลผู้ใช้และตั้งช่วงที่เหมาะกับเป้าหมาย พร้อมติดตามผลจริง"
+  },
+  {
+    "id": 258,
+    "intent": "calories",
+    "category": "nutrition_hydration",
+    "example_question": "ถ้าจะลดไขมันควรกินประมาณเท่าไหร่",
+    "expected_response": "ประเมินพลังงานจากข้อมูลผู้ใช้และตั้งช่วงที่เหมาะกับเป้าหมาย พร้อมติดตามผลจริง"
+  },
+  {
+    "id": 259,
+    "intent": "meal_plan",
+    "category": "nutrition_hydration",
+    "example_question": "ช่วยจัดเมนูสำหรับคนออกกำลังกาย",
+    "expected_response": "จัดเมนูให้สอดคล้องกับเป้าหมาย โปรตีน พลังงาน และอาหารที่ผู้ใช้กินได้จริง"
+  },
+  {
+    "id": 260,
+    "intent": "meal_plan",
+    "category": "nutrition_hydration",
+    "example_question": "ทำ Meal Plan ให้ฉันหน่อย",
+    "expected_response": "จัดเมนูให้สอดคล้องกับเป้าหมาย โปรตีน พลังงาน และอาหารที่ผู้ใช้กินได้จริง"
+  },
+  {
+    "id": 261,
+    "intent": "meal_plan",
+    "category": "nutrition_hydration",
+    "example_question": "ช่วยจัดอาหารให้เข้ากับตาราง Workout",
+    "expected_response": "จัดเมนูให้สอดคล้องกับเป้าหมาย โปรตีน พลังงาน และอาหารที่ผู้ใช้กินได้จริง"
+  },
+  {
+    "id": 262,
+    "intent": "supplement_protein",
+    "category": "nutrition_hydration",
+    "example_question": "Whey Protein จำเป็นไหม",
+    "expected_response": "อธิบายว่าเวย์เป็นเพียงแหล่งโปรตีนเสริม ไม่จำเป็นหากได้รับโปรตีนจากอาหารเพียงพอ"
+  },
+  {
+    "id": 263,
+    "intent": "supplement_protein",
+    "category": "nutrition_hydration",
+    "example_question": "ไม่กินเวย์สร้างกล้ามได้ไหม",
+    "expected_response": "อธิบายว่าเวย์เป็นเพียงแหล่งโปรตีนเสริม ไม่จำเป็นหากได้รับโปรตีนจากอาหารเพียงพอ"
+  },
+  {
+    "id": 264,
+    "intent": "supplement_protein",
+    "category": "nutrition_hydration",
+    "example_question": "ควรกินเวย์ตอนไหน",
+    "expected_response": "อธิบายว่าเวย์เป็นเพียงแหล่งโปรตีนเสริม ไม่จำเป็นหากได้รับโปรตีนจากอาหารเพียงพอ"
+  },
+  {
+    "id": 265,
+    "intent": "creatine",
+    "category": "nutrition_hydration",
+    "example_question": "Creatine คืออะไร",
+    "expected_response": "อธิบายประโยชน์และการใช้งานแบบทั่วไป พร้อมแนะนำให้ศึกษาข้อควรระวังและปรึกษาผู้เชี่ยวชาญเมื่อมีโรคประจำตัว"
+  },
+  {
+    "id": 266,
+    "intent": "creatine",
+    "category": "nutrition_hydration",
+    "example_question": "ควรกิน Creatine ไหม",
+    "expected_response": "อธิบายประโยชน์และการใช้งานแบบทั่วไป พร้อมแนะนำให้ศึกษาข้อควรระวังและปรึกษาผู้เชี่ยวชาญเมื่อมีโรคประจำตัว"
+  },
+  {
+    "id": 267,
+    "intent": "creatine",
+    "category": "nutrition_hydration",
+    "example_question": "Creatine ช่วยเรื่องอะไร",
+    "expected_response": "อธิบายประโยชน์และการใช้งานแบบทั่วไป พร้อมแนะนำให้ศึกษาข้อควรระวังและปรึกษาผู้เชี่ยวชาญเมื่อมีโรคประจำตัว"
+  },
+  {
+    "id": 268,
+    "intent": "caffeine_preworkout",
+    "category": "nutrition_hydration",
+    "example_question": "กินกาแฟก่อนออกกำลังกายได้ไหม",
+    "expected_response": "อธิบายผลของคาเฟอีนต่อความตื่นตัวและให้พิจารณาความไวต่อคาเฟอีน เวลานอน และปริมาณรวมต่อวัน"
+  },
+  {
+    "id": 269,
+    "intent": "caffeine_preworkout",
+    "category": "nutrition_hydration",
+    "example_question": "คาเฟอีนก่อน Workout ช่วยอะไร",
+    "expected_response": "อธิบายผลของคาเฟอีนต่อความตื่นตัวและให้พิจารณาความไวต่อคาเฟอีน เวลานอน และปริมาณรวมต่อวัน"
+  },
+  {
+    "id": 270,
+    "intent": "caffeine_preworkout",
+    "category": "nutrition_hydration",
+    "example_question": "ควรดื่มกาแฟก่อนวิ่งไหม",
+    "expected_response": "อธิบายผลของคาเฟอีนต่อความตื่นตัวและให้พิจารณาความไวต่อคาเฟอีน เวลานอน และปริมาณรวมต่อวัน"
+  },
+  {
+    "id": 271,
+    "intent": "progress_summary",
+    "category": "progress_history",
+    "example_question": "ช่วยสรุปผลการฝึกของฉัน",
+    "expected_response": "สรุปแนวโน้มจาก workout history เช่น ความถี่ volume ระยะทาง หรือเวลา และชี้สิ่งที่เปลี่ยนแปลง"
+  },
+  {
+    "id": 272,
+    "intent": "progress_summary",
+    "category": "progress_history",
+    "example_question": "ดู Progress ของฉันให้หน่อย",
+    "expected_response": "สรุปแนวโน้มจาก workout history เช่น ความถี่ volume ระยะทาง หรือเวลา และชี้สิ่งที่เปลี่ยนแปลง"
+  },
+  {
+    "id": 273,
+    "intent": "progress_summary",
+    "category": "progress_history",
+    "example_question": "ฉันพัฒนาขึ้นไหม",
+    "expected_response": "สรุปแนวโน้มจาก workout history เช่น ความถี่ volume ระยะทาง หรือเวลา และชี้สิ่งที่เปลี่ยนแปลง"
+  },
+  {
+    "id": 274,
+    "intent": "progress_week_compare",
+    "category": "progress_history",
+    "example_question": "เปรียบเทียบสัปดาห์นี้กับสัปดาห์ก่อน",
+    "expected_response": "เปรียบเทียบตัวชี้วัดเดียวกันและอธิบายความเปลี่ยนแปลงโดยไม่สรุปเกินข้อมูล"
+  },
+  {
+    "id": 275,
+    "intent": "progress_week_compare",
+    "category": "progress_history",
+    "example_question": "อาทิตย์นี้ฉันดีขึ้นไหม",
+    "expected_response": "เปรียบเทียบตัวชี้วัดเดียวกันและอธิบายความเปลี่ยนแปลงโดยไม่สรุปเกินข้อมูล"
+  },
+  {
+    "id": 276,
+    "intent": "progress_week_compare",
+    "category": "progress_history",
+    "example_question": "ช่วยเทียบผลงานสองสัปดาห์ให้หน่อย",
+    "expected_response": "เปรียบเทียบตัวชี้วัดเดียวกันและอธิบายความเปลี่ยนแปลงโดยไม่สรุปเกินข้อมูล"
+  },
+  {
+    "id": 277,
+    "intent": "progress_month_compare",
+    "category": "progress_history",
+    "example_question": "เปรียบเทียบเดือนนี้กับเดือนที่แล้ว",
+    "expected_response": "วิเคราะห์จำนวนครั้ง volume เวลา และตัวชี้วัดที่มี พร้อมดูแนวโน้มระยะยาว"
+  },
+  {
+    "id": 278,
+    "intent": "progress_month_compare",
+    "category": "progress_history",
+    "example_question": "เดือนนี้ฝึกดีขึ้นไหม",
+    "expected_response": "วิเคราะห์จำนวนครั้ง volume เวลา และตัวชี้วัดที่มี พร้อมดูแนวโน้มระยะยาว"
+  },
+  {
+    "id": 279,
+    "intent": "progress_month_compare",
+    "category": "progress_history",
+    "example_question": "ช่วยวิเคราะห์ผลทั้งเดือน",
+    "expected_response": "วิเคราะห์จำนวนครั้ง volume เวลา และตัวชี้วัดที่มี พร้อมดูแนวโน้มระยะยาว"
+  },
+  {
+    "id": 280,
+    "intent": "history_today",
+    "category": "progress_history",
+    "example_question": "วันนี้ฉันเล่นอะไรไปบ้าง",
+    "expected_response": "ดึงจาก workout history และสรุปท่า เซต ครั้ง เวลา และข้อมูลที่ระบบบันทึกได้"
+  },
+  {
+    "id": 281,
+    "intent": "history_today",
+    "category": "progress_history",
+    "example_question": "ช่วยสรุป Workout วันนี้",
+    "expected_response": "ดึงจาก workout history และสรุปท่า เซต ครั้ง เวลา และข้อมูลที่ระบบบันทึกได้"
+  },
+  {
+    "id": 282,
+    "intent": "history_today",
+    "category": "progress_history",
+    "example_question": "วันนี้ทำไปกี่ท่า",
+    "expected_response": "ดึงจาก workout history และสรุปท่า เซต ครั้ง เวลา และข้อมูลที่ระบบบันทึกได้"
+  },
+  {
+    "id": 283,
+    "intent": "history_last_session",
+    "category": "progress_history",
+    "example_question": "ครั้งล่าสุดฉันเล่นอะไร",
+    "expected_response": "ค้นหาเซสชันล่าสุดและสรุปข้อมูลสำคัญจากประวัติ"
+  },
+  {
+    "id": 284,
+    "intent": "history_last_session",
+    "category": "progress_history",
+    "example_question": "Workout ล่าสุดของฉันคืออะไร",
+    "expected_response": "ค้นหาเซสชันล่าสุดและสรุปข้อมูลสำคัญจากประวัติ"
+  },
+  {
+    "id": 285,
+    "intent": "history_last_session",
+    "category": "progress_history",
+    "example_question": "ครั้งก่อนฉันฝึกอะไรไป",
+    "expected_response": "ค้นหาเซสชันล่าสุดและสรุปข้อมูลสำคัญจากประวัติ"
+  },
+  {
+    "id": 286,
+    "intent": "history_body_part",
+    "category": "progress_history",
+    "example_question": "ครั้งล่าสุดฉันเล่นอกเมื่อไหร่",
+    "expected_response": "วิเคราะห์ประวัติแยกตาม muscle group และสรุปความถี่ที่บันทึกไว้"
+  },
+  {
+    "id": 287,
+    "intent": "history_body_part",
+    "category": "progress_history",
+    "example_question": "ฉันเล่นขาไปกี่ครั้งสัปดาห์นี้",
+    "expected_response": "วิเคราะห์ประวัติแยกตาม muscle group และสรุปความถี่ที่บันทึกไว้"
+  },
+  {
+    "id": 288,
+    "intent": "history_body_part",
+    "category": "progress_history",
+    "example_question": "กล้ามเนื้อส่วนไหนฉันฝึกบ่อยที่สุด",
+    "expected_response": "วิเคราะห์ประวัติแยกตาม muscle group และสรุปความถี่ที่บันทึกไว้"
+  },
+  {
+    "id": 289,
+    "intent": "progress_volume",
+    "category": "progress_history",
+    "example_question": "Volume ของฉันเพิ่มขึ้นไหม",
+    "expected_response": "คำนวณ volume จากข้อมูลเซตครั้งและน้ำหนักที่ระบบมี พร้อมเปรียบเทียบช่วงเวลา"
+  },
+  {
+    "id": 290,
+    "intent": "progress_volume",
+    "category": "progress_history",
+    "example_question": "สัปดาห์นี้ยกน้ำหนักรวมเท่าไหร่",
+    "expected_response": "คำนวณ volume จากข้อมูลเซตครั้งและน้ำหนักที่ระบบมี พร้อมเปรียบเทียบช่วงเวลา"
+  },
+  {
+    "id": 291,
+    "intent": "progress_volume",
+    "category": "progress_history",
+    "example_question": "ช่วยดู Training Volume ของฉัน",
+    "expected_response": "คำนวณ volume จากข้อมูลเซตครั้งและน้ำหนักที่ระบบมี พร้อมเปรียบเทียบช่วงเวลา"
+  },
+  {
+    "id": 292,
+    "intent": "progress_running",
+    "category": "progress_history",
+    "example_question": "ระยะวิ่งของฉันเพิ่มขึ้นไหม",
+    "expected_response": "เปรียบเทียบระยะเวลา ระยะทาง pace หรือความหนักจากประวัติที่มี"
+  },
+  {
+    "id": 293,
+    "intent": "progress_running",
+    "category": "progress_history",
+    "example_question": "Pace ฉันดีขึ้นหรือยัง",
+    "expected_response": "เปรียบเทียบระยะเวลา ระยะทาง pace หรือความหนักจากประวัติที่มี"
+  },
+  {
+    "id": 294,
+    "intent": "progress_running",
+    "category": "progress_history",
+    "example_question": "ช่วยดูพัฒนาการวิ่งของฉัน",
+    "expected_response": "เปรียบเทียบระยะเวลา ระยะทาง pace หรือความหนักจากประวัติที่มี"
+  },
+  {
+    "id": 295,
+    "intent": "progress_goal",
+    "category": "progress_history",
+    "example_question": "ฉันเข้าใกล้เป้าหมายแค่ไหน",
+    "expected_response": "คำนวณความคืบหน้าจากตัวชี้วัดที่กำหนดไว้ และระบุสิ่งที่ต้องทำต่อ"
+  },
+  {
+    "id": 296,
+    "intent": "progress_goal",
+    "category": "progress_history",
+    "example_question": "เป้าหมายของฉันคืบหน้าเท่าไหร่",
+    "expected_response": "คำนวณความคืบหน้าจากตัวชี้วัดที่กำหนดไว้ และระบุสิ่งที่ต้องทำต่อ"
+  },
+  {
+    "id": 297,
+    "intent": "progress_goal",
+    "category": "progress_history",
+    "example_question": "ช่วยติดตามเป้าหมายการออกกำลังกาย",
+    "expected_response": "คำนวณความคืบหน้าจากตัวชี้วัดที่กำหนดไว้ และระบุสิ่งที่ต้องทำต่อ"
+  },
+  {
+    "id": 298,
+    "intent": "history_export",
+    "category": "progress_history",
+    "example_question": "ฉันอยากดูประวัติการออกกำลังกายทั้งหมด",
+    "expected_response": "สรุปหรือเตรียมข้อมูลประวัติตามช่วงเวลาที่ผู้ใช้กำหนด โดยรักษาโครงสร้างข้อมูลเดิม"
+  },
+  {
+    "id": 299,
+    "intent": "history_export",
+    "category": "progress_history",
+    "example_question": "ขอข้อมูล Workout History ของฉัน",
+    "expected_response": "สรุปหรือเตรียมข้อมูลประวัติตามช่วงเวลาที่ผู้ใช้กำหนด โดยรักษาโครงสร้างข้อมูลเดิม"
+  },
+  {
+    "id": 300,
+    "intent": "history_export",
+    "category": "progress_history",
+    "example_question": "ช่วยส่งสรุปประวัติการฝึก",
+    "expected_response": "สรุปหรือเตรียมข้อมูลประวัติตามช่วงเวลาที่ผู้ใช้กำหนด โดยรักษาโครงสร้างข้อมูลเดิม"
+  },
+  {
+    "id": 301,
+    "intent": "equipment_no_equipment",
+    "category": "home_gym_equipment",
+    "example_question": "ถ้าไม่มีอุปกรณ์เลยควรเล่นอะไร",
+    "expected_response": "ใช้ bodyweight exercises และปรับความยากด้วยท่า จำนวนครั้ง tempo และช่วงการเคลื่อนไหว"
+  },
+  {
+    "id": 302,
+    "intent": "equipment_no_equipment",
+    "category": "home_gym_equipment",
+    "example_question": "ฉันไม่มีอุปกรณ์ออกกำลังกาย",
+    "expected_response": "ใช้ bodyweight exercises และปรับความยากด้วยท่า จำนวนครั้ง tempo และช่วงการเคลื่อนไหว"
+  },
+  {
+    "id": 303,
+    "intent": "equipment_no_equipment",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยจัดโปรแกรมแบบไม่ใช้อุปกรณ์",
+    "expected_response": "ใช้ bodyweight exercises และปรับความยากด้วยท่า จำนวนครั้ง tempo และช่วงการเคลื่อนไหว"
+  },
+  {
+    "id": 304,
+    "intent": "equipment_dumbbell",
+    "category": "home_gym_equipment",
+    "example_question": "มีดัมเบลควรเล่นท่าอะไร",
+    "expected_response": "เลือกท่าดัมเบลที่ครอบคลุมกล้ามเนื้อหลักและเหมาะกับน้ำหนักที่มี"
+  },
+  {
+    "id": 305,
+    "intent": "equipment_dumbbell",
+    "category": "home_gym_equipment",
+    "example_question": "ดัมเบลคู่เดียวทำอะไรได้บ้าง",
+    "expected_response": "เลือกท่าดัมเบลที่ครอบคลุมกล้ามเนื้อหลักและเหมาะกับน้ำหนักที่มี"
+  },
+  {
+    "id": 306,
+    "intent": "equipment_dumbbell",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยจัด Workout ด้วยดัมเบล",
+    "expected_response": "เลือกท่าดัมเบลที่ครอบคลุมกล้ามเนื้อหลักและเหมาะกับน้ำหนักที่มี"
+  },
+  {
+    "id": 307,
+    "intent": "equipment_resistance_band",
+    "category": "home_gym_equipment",
+    "example_question": "มี Resistance Band ควรฝึกอะไร",
+    "expected_response": "แนะนำท่าด้วยยางยืดสำหรับดัน ดึง ขา และแกนกลาง พร้อมเลือกแรงต้านที่ควบคุมได้"
+  },
+  {
+    "id": 308,
+    "intent": "equipment_resistance_band",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยจัดโปรแกรมด้วยยางยืด",
+    "expected_response": "แนะนำท่าด้วยยางยืดสำหรับดัน ดึง ขา และแกนกลาง พร้อมเลือกแรงต้านที่ควบคุมได้"
+  },
+  {
+    "id": 309,
+    "intent": "equipment_resistance_band",
+    "category": "home_gym_equipment",
+    "example_question": "ยางยืดเล่นกล้ามอะไรได้บ้าง",
+    "expected_response": "แนะนำท่าด้วยยางยืดสำหรับดัน ดึง ขา และแกนกลาง พร้อมเลือกแรงต้านที่ควบคุมได้"
+  },
+  {
+    "id": 310,
+    "intent": "equipment_barbell",
+    "category": "home_gym_equipment",
+    "example_question": "มีบาร์เบลควรฝึกอะไร",
+    "expected_response": "จัดท่าหลักด้วยบาร์เบลและท่าเสริมตามพื้นที่และระดับผู้ใช้"
+  },
+  {
+    "id": 311,
+    "intent": "equipment_barbell",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยจัดโปรแกรมบาร์เบล",
+    "expected_response": "จัดท่าหลักด้วยบาร์เบลและท่าเสริมตามพื้นที่และระดับผู้ใช้"
+  },
+  {
+    "id": 312,
+    "intent": "equipment_barbell",
+    "category": "home_gym_equipment",
+    "example_question": "บาร์เบลเหมาะกับท่าไหนบ้าง",
+    "expected_response": "จัดท่าหลักด้วยบาร์เบลและท่าเสริมตามพื้นที่และระดับผู้ใช้"
+  },
+  {
+    "id": 313,
+    "intent": "equipment_machine",
+    "category": "home_gym_equipment",
+    "example_question": "เครื่องนี้เล่นกล้ามส่วนไหน",
+    "expected_response": "อธิบายเป้าหมายของเครื่อง จุดปรับเบื้องต้น และแนวทางใช้แบบปลอดภัย"
+  },
+  {
+    "id": 314,
+    "intent": "equipment_machine",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยอธิบายเครื่องในยิม",
+    "expected_response": "อธิบายเป้าหมายของเครื่อง จุดปรับเบื้องต้น และแนวทางใช้แบบปลอดภัย"
+  },
+  {
+    "id": 315,
+    "intent": "equipment_machine",
+    "category": "home_gym_equipment",
+    "example_question": "ควรใช้เครื่องนี้ยังไง",
+    "expected_response": "อธิบายเป้าหมายของเครื่อง จุดปรับเบื้องต้น และแนวทางใช้แบบปลอดภัย"
+  },
+  {
+    "id": 316,
+    "intent": "equipment_substitute_home",
+    "category": "home_gym_equipment",
+    "example_question": "ไม่มีเครื่องนี้ใช้อะไรแทนได้",
+    "expected_response": "จับคู่ท่าทดแทนที่ให้ stimulus ใกล้เคียงโดยใช้ดัมเบล ยางยืด หรือ bodyweight"
+  },
+  {
+    "id": 317,
+    "intent": "equipment_substitute_home",
+    "category": "home_gym_equipment",
+    "example_question": "ที่บ้านไม่มีเครื่องในยิมควรทำยังไง",
+    "expected_response": "จับคู่ท่าทดแทนที่ให้ stimulus ใกล้เคียงโดยใช้ดัมเบล ยางยืด หรือ bodyweight"
+  },
+  {
+    "id": 318,
+    "intent": "equipment_substitute_home",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยหาท่าแทนเครื่อง",
+    "expected_response": "จับคู่ท่าทดแทนที่ให้ stimulus ใกล้เคียงโดยใช้ดัมเบล ยางยืด หรือ bodyweight"
+  },
+  {
+    "id": 319,
+    "intent": "equipment_weight_selection",
+    "category": "home_gym_equipment",
+    "example_question": "ควรเลือกดัมเบลกี่กิโล",
+    "expected_response": "เลือกน้ำหนักที่ทำจำนวนครั้งเป้าหมายได้ด้วยฟอร์มดีและยังเหลือแรงเล็กน้อยในเซต"
+  },
+  {
+    "id": 320,
+    "intent": "equipment_weight_selection",
+    "category": "home_gym_equipment",
+    "example_question": "น้ำหนักที่เหมาะสมเลือกยังไง",
+    "expected_response": "เลือกน้ำหนักที่ทำจำนวนครั้งเป้าหมายได้ด้วยฟอร์มดีและยังเหลือแรงเล็กน้อยในเซต"
+  },
+  {
+    "id": 321,
+    "intent": "equipment_weight_selection",
+    "category": "home_gym_equipment",
+    "example_question": "ฉันควรเริ่มยกกี่กิโล",
+    "expected_response": "เลือกน้ำหนักที่ทำจำนวนครั้งเป้าหมายได้ด้วยฟอร์มดีและยังเหลือแรงเล็กน้อยในเซต"
+  },
+  {
+    "id": 322,
+    "intent": "equipment_gym_beginner",
+    "category": "home_gym_equipment",
+    "example_question": "เข้ายิมครั้งแรกควรใช้เครื่องอะไร",
+    "expected_response": "เริ่มจากเครื่องและท่าพื้นฐานที่เรียนรู้ได้ง่าย พร้อมกำหนดจำนวนเซตและพัก"
+  },
+  {
+    "id": 323,
+    "intent": "equipment_gym_beginner",
+    "category": "home_gym_equipment",
+    "example_question": "มือใหม่เข้าฟิตเนสควรเริ่มจากอะไร",
+    "expected_response": "เริ่มจากเครื่องและท่าพื้นฐานที่เรียนรู้ได้ง่าย พร้อมกำหนดจำนวนเซตและพัก"
+  },
+  {
+    "id": 324,
+    "intent": "equipment_gym_beginner",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยจัดโปรแกรมสำหรับยิมครั้งแรก",
+    "expected_response": "เริ่มจากเครื่องและท่าพื้นฐานที่เรียนรู้ได้ง่าย พร้อมกำหนดจำนวนเซตและพัก"
+  },
+  {
+    "id": 325,
+    "intent": "equipment_room_space",
+    "category": "home_gym_equipment",
+    "example_question": "ห้องเล็กควรออกกำลังกายอะไร",
+    "expected_response": "เลือกท่าที่ใช้พื้นที่น้อยและลดเสียงหรือแรงกระแทกเมื่อผู้ใช้ต้องการ"
+  },
+  {
+    "id": 326,
+    "intent": "equipment_room_space",
+    "category": "home_gym_equipment",
+    "example_question": "พื้นที่น้อยทำ Workout แบบไหนได้",
+    "expected_response": "เลือกท่าที่ใช้พื้นที่น้อยและลดเสียงหรือแรงกระแทกเมื่อผู้ใช้ต้องการ"
+  },
+  {
+    "id": 327,
+    "intent": "equipment_room_space",
+    "category": "home_gym_equipment",
+    "example_question": "อยู่หอพักควรเล่นอะไร",
+    "expected_response": "เลือกท่าที่ใช้พื้นที่น้อยและลดเสียงหรือแรงกระแทกเมื่อผู้ใช้ต้องการ"
+  },
+  {
+    "id": 328,
+    "intent": "equipment_adjustment",
+    "category": "home_gym_equipment",
+    "example_question": "ควรปรับเบาะเครื่องยังไง",
+    "expected_response": "อธิบายหลักการตั้งตำแหน่งเครื่องให้ข้อต่ออยู่ในแนวเหมาะสม และให้ทดลองด้วยน้ำหนักเบาก่อน"
+  },
+  {
+    "id": 329,
+    "intent": "equipment_adjustment",
+    "category": "home_gym_equipment",
+    "example_question": "ตั้งเครื่องออกกำลังกายยังไง",
+    "expected_response": "อธิบายหลักการตั้งตำแหน่งเครื่องให้ข้อต่ออยู่ในแนวเหมาะสม และให้ทดลองด้วยน้ำหนักเบาก่อน"
+  },
+  {
+    "id": 330,
+    "intent": "equipment_adjustment",
+    "category": "home_gym_equipment",
+    "example_question": "ช่วยบอกวิธีปรับเครื่องให้พอดีตัว",
+    "expected_response": "อธิบายหลักการตั้งตำแหน่งเครื่องให้ข้อต่ออยู่ในแนวเหมาะสม และให้ทดลองด้วยน้ำหนักเบาก่อน"
+  },
+  {
+    "id": 331,
+    "intent": "voice_start_workout",
+    "category": "ai_voice_coach",
+    "example_question": "เริ่ม Workout",
+    "expected_response": "เริ่มเซสชันและอ่านท่าแรก เป้าหมาย จำนวนเซต และจำนวนครั้งให้ผู้ใช้"
+  },
+  {
+    "id": 332,
+    "intent": "voice_start_workout",
+    "category": "ai_voice_coach",
+    "example_question": "เริ่มออกกำลังกายได้เลย",
+    "expected_response": "เริ่มเซสชันและอ่านท่าแรก เป้าหมาย จำนวนเซต และจำนวนครั้งให้ผู้ใช้"
+  },
+  {
+    "id": 333,
+    "intent": "voice_start_workout",
+    "category": "ai_voice_coach",
+    "example_question": "พร้อมแล้ว เริ่มกัน",
+    "expected_response": "เริ่มเซสชันและอ่านท่าแรก เป้าหมาย จำนวนเซต และจำนวนครั้งให้ผู้ใช้"
+  },
+  {
+    "id": 334,
+    "intent": "voice_next_exercise",
+    "category": "ai_voice_coach",
+    "example_question": "ต่อไปทำอะไร",
+    "expected_response": "บอกชื่อท่าถัดไป จำนวนเซต ครั้ง และเวลาพักก่อนเริ่ม"
+  },
+  {
+    "id": 335,
+    "intent": "voice_next_exercise",
+    "category": "ai_voice_coach",
+    "example_question": "ท่าถัดไปคืออะไร",
+    "expected_response": "บอกชื่อท่าถัดไป จำนวนเซต ครั้ง และเวลาพักก่อนเริ่ม"
+  },
+  {
+    "id": 336,
+    "intent": "voice_next_exercise",
+    "category": "ai_voice_coach",
+    "example_question": "ไปท่าต่อไป",
+    "expected_response": "บอกชื่อท่าถัดไป จำนวนเซต ครั้ง และเวลาพักก่อนเริ่ม"
+  },
+  {
+    "id": 337,
+    "intent": "voice_count_reps",
+    "category": "ai_voice_coach",
+    "example_question": "เหลืออีกกี่ครั้ง",
+    "expected_response": "รายงานจำนวน rep ที่ระบบตรวจจับได้และจำนวนที่เหลือจากเป้าหมาย"
+  },
+  {
+    "id": 338,
+    "intent": "voice_count_reps",
+    "category": "ai_voice_coach",
+    "example_question": "ตอนนี้ทำไปกี่ครั้งแล้ว",
+    "expected_response": "รายงานจำนวน rep ที่ระบบตรวจจับได้และจำนวนที่เหลือจากเป้าหมาย"
+  },
+  {
+    "id": 339,
+    "intent": "voice_count_reps",
+    "category": "ai_voice_coach",
+    "example_question": "ช่วยนับครั้งให้หน่อย",
+    "expected_response": "รายงานจำนวน rep ที่ระบบตรวจจับได้และจำนวนที่เหลือจากเป้าหมาย"
+  },
+  {
+    "id": 340,
+    "intent": "voice_rest_timer",
+    "category": "ai_voice_coach",
+    "example_question": "พักกี่วินาที",
+    "expected_response": "เริ่มหรือนับถอยหลังเวลาพักตามค่าที่กำหนดในโปรแกรม"
+  },
+  {
+    "id": 341,
+    "intent": "voice_rest_timer",
+    "category": "ai_voice_coach",
+    "example_question": "เริ่มจับเวลาพัก",
+    "expected_response": "เริ่มหรือนับถอยหลังเวลาพักตามค่าที่กำหนดในโปรแกรม"
+  },
+  {
+    "id": 342,
+    "intent": "voice_rest_timer",
+    "category": "ai_voice_coach",
+    "example_question": "ตอนนี้ต้องพักนานเท่าไหร่",
+    "expected_response": "เริ่มหรือนับถอยหลังเวลาพักตามค่าที่กำหนดในโปรแกรม"
+  },
+  {
+    "id": 343,
+    "intent": "voice_pause_resume",
+    "category": "ai_voice_coach",
+    "example_question": "หยุดก่อน",
+    "expected_response": "หยุดตัวจับเวลาและการนับชั่วคราว แล้วกลับมาต่อจากสถานะเดิมเมื่อผู้ใช้พร้อม"
+  },
+  {
+    "id": 344,
+    "intent": "voice_pause_resume",
+    "category": "ai_voice_coach",
+    "example_question": "พักการฝึกชั่วคราว",
+    "expected_response": "หยุดตัวจับเวลาและการนับชั่วคราว แล้วกลับมาต่อจากสถานะเดิมเมื่อผู้ใช้พร้อม"
+  },
+  {
+    "id": 345,
+    "intent": "voice_pause_resume",
+    "category": "ai_voice_coach",
+    "example_question": "เริ่มต่อได้ไหม",
+    "expected_response": "หยุดตัวจับเวลาและการนับชั่วคราว แล้วกลับมาต่อจากสถานะเดิมเมื่อผู้ใช้พร้อม"
+  },
+  {
+    "id": 346,
+    "intent": "voice_form_feedback",
+    "category": "ai_voice_coach",
+    "example_question": "ทำถูกไหม",
+    "expected_response": "ให้ feedback สั้นตามข้อมูล pose และบอกคำสั่งแก้ไขที่ทำได้ทันที"
+  },
+  {
+    "id": 347,
+    "intent": "voice_form_feedback",
+    "category": "ai_voice_coach",
+    "example_question": "ช่วยบอกว่าท่าฉันผิดตรงไหน",
+    "expected_response": "ให้ feedback สั้นตามข้อมูล pose และบอกคำสั่งแก้ไขที่ทำได้ทันที"
+  },
+  {
+    "id": 348,
+    "intent": "voice_form_feedback",
+    "category": "ai_voice_coach",
+    "example_question": "ตอนนี้ฟอร์มฉันเป็นยังไง",
+    "expected_response": "ให้ feedback สั้นตามข้อมูล pose และบอกคำสั่งแก้ไขที่ทำได้ทันที"
+  },
+  {
+    "id": 349,
+    "intent": "voice_skip_exercise",
+    "category": "ai_voice_coach",
+    "example_question": "ขอข้ามท่านี้",
+    "expected_response": "เสนอการข้ามหรือแทนท่าด้วยตัวเลือกที่ใช้กล้ามเนื้อใกล้เคียง โดยบันทึกการเปลี่ยนแปลง"
+  },
+  {
+    "id": 350,
+    "intent": "voice_skip_exercise",
+    "category": "ai_voice_coach",
+    "example_question": "เปลี่ยนท่านี้ได้ไหม",
+    "expected_response": "เสนอการข้ามหรือแทนท่าด้วยตัวเลือกที่ใช้กล้ามเนื้อใกล้เคียง โดยบันทึกการเปลี่ยนแปลง"
+  },
+  {
+    "id": 351,
+    "intent": "voice_skip_exercise",
+    "category": "ai_voice_coach",
+    "example_question": "ฉันไม่อยากทำท่านี้",
+    "expected_response": "เสนอการข้ามหรือแทนท่าด้วยตัวเลือกที่ใช้กล้ามเนื้อใกล้เคียง โดยบันทึกการเปลี่ยนแปลง"
+  },
+  {
+    "id": 352,
+    "intent": "voice_end_workout",
+    "category": "ai_voice_coach",
+    "example_question": "จบ Workout",
+    "expected_response": "จบเซสชัน บันทึกผล และสรุปจำนวนท่า เซต ครั้ง เวลา และข้อสังเกต"
+  },
+  {
+    "id": 353,
+    "intent": "voice_end_workout",
+    "category": "ai_voice_coach",
+    "example_question": "วันนี้พอแล้ว",
+    "expected_response": "จบเซสชัน บันทึกผล และสรุปจำนวนท่า เซต ครั้ง เวลา และข้อสังเกต"
+  },
+  {
+    "id": 354,
+    "intent": "voice_end_workout",
+    "category": "ai_voice_coach",
+    "example_question": "หยุดการฝึกวันนี้",
+    "expected_response": "จบเซสชัน บันทึกผล และสรุปจำนวนท่า เซต ครั้ง เวลา และข้อสังเกต"
+  },
+  {
+    "id": 355,
+    "intent": "voice_summary",
+    "category": "ai_voice_coach",
+    "example_question": "วันนี้ฉันทำได้เป็นยังไงบ้าง",
+    "expected_response": "สรุป performance วันนี้เทียบกับเป้าหมายและชี้จุดที่ทำได้กับสิ่งที่ควรปรับ"
+  },
+  {
+    "id": 356,
+    "intent": "voice_summary",
+    "category": "ai_voice_coach",
+    "example_question": "สรุปการฝึกวันนี้ให้หน่อย",
+    "expected_response": "สรุป performance วันนี้เทียบกับเป้าหมายและชี้จุดที่ทำได้กับสิ่งที่ควรปรับ"
+  },
+  {
+    "id": 357,
+    "intent": "voice_summary",
+    "category": "ai_voice_coach",
+    "example_question": "ช่วยบอกผล Workout วันนี้",
+    "expected_response": "สรุป performance วันนี้เทียบกับเป้าหมายและชี้จุดที่ทำได้กับสิ่งที่ควรปรับ"
+  },
+  {
+    "id": 358,
+    "intent": "voice_thai_language",
+    "category": "ai_voice_coach",
+    "example_question": "คุยกับฉันเป็นภาษาไทย",
+    "expected_response": "ตั้งการตอบกลับและเสียงสังเคราะห์เป็นภาษาไทย และคงคำสั่งสั้นที่เหมาะกับการฝึก"
+  },
+  {
+    "id": 359,
+    "intent": "voice_thai_language",
+    "category": "ai_voice_coach",
+    "example_question": "ขอเสียงพูดภาษาไทย",
+    "expected_response": "ตั้งการตอบกลับและเสียงสังเคราะห์เป็นภาษาไทย และคงคำสั่งสั้นที่เหมาะกับการฝึก"
+  },
+  {
+    "id": 360,
+    "intent": "voice_thai_language",
+    "category": "ai_voice_coach",
+    "example_question": "ตั้ง Trainer เป็นภาษาไทย",
+    "expected_response": "ตั้งการตอบกลับและเสียงสังเคราะห์เป็นภาษาไทย และคงคำสั่งสั้นที่เหมาะกับการฝึก"
+  },
+  {
+    "id": 361,
+    "intent": "motivation_today",
+    "category": "motivation_adherence",
+    "example_question": "วันนี้ไม่อยากออกกำลังกายเลย",
+    "expected_response": "ช่วยลดภาระด้วยการเสนอเซสชันสั้นหรือกิจกรรมเบา ๆ และเน้นการกลับเข้าสู่กิจวัตร"
+  },
+  {
+    "id": 362,
+    "intent": "motivation_today",
+    "category": "motivation_adherence",
+    "example_question": "ฉันขี้เกียจออกกำลังกาย",
+    "expected_response": "ช่วยลดภาระด้วยการเสนอเซสชันสั้นหรือกิจกรรมเบา ๆ และเน้นการกลับเข้าสู่กิจวัตร"
+  },
+  {
+    "id": 363,
+    "intent": "motivation_today",
+    "category": "motivation_adherence",
+    "example_question": "ไม่มีแรงจูงใจวันนี้",
+    "expected_response": "ช่วยลดภาระด้วยการเสนอเซสชันสั้นหรือกิจกรรมเบา ๆ และเน้นการกลับเข้าสู่กิจวัตร"
+  },
+  {
+    "id": 364,
+    "intent": "motivation_consistency",
+    "category": "motivation_adherence",
+    "example_question": "ทำยังไงให้ออกกำลังกายสม่ำเสมอ",
+    "expected_response": "ตั้งเป้าหมายเล็กและชัดเจน จัดเวลาที่แน่นอน และใช้ประวัติการฝึกเพื่อติดตามความต่อเนื่อง"
+  },
+  {
+    "id": 365,
+    "intent": "motivation_consistency",
+    "category": "motivation_adherence",
+    "example_question": "อยากสร้างวินัยการออกกำลังกาย",
+    "expected_response": "ตั้งเป้าหมายเล็กและชัดเจน จัดเวลาที่แน่นอน และใช้ประวัติการฝึกเพื่อติดตามความต่อเนื่อง"
+  },
+  {
+    "id": 366,
+    "intent": "motivation_consistency",
+    "category": "motivation_adherence",
+    "example_question": "ฉันหลุดตารางบ่อยมาก",
+    "expected_response": "ตั้งเป้าหมายเล็กและชัดเจน จัดเวลาที่แน่นอน และใช้ประวัติการฝึกเพื่อติดตามความต่อเนื่อง"
+  },
+  {
+    "id": 367,
+    "intent": "motivation_missed_workout",
+    "category": "motivation_adherence",
+    "example_question": "เมื่อวานไม่ได้ออกกำลังกายควรทำยังไง",
+    "expected_response": "ไม่ต้องชดเชยแบบเร่งเกินไป ให้กลับเข้าสู่แผนปกติหรือปรับวันฝึกเล็กน้อย"
+  },
+  {
+    "id": 368,
+    "intent": "motivation_missed_workout",
+    "category": "motivation_adherence",
+    "example_question": "พลาด Workout ไปหนึ่งวันต้องชดเชยไหม",
+    "expected_response": "ไม่ต้องชดเชยแบบเร่งเกินไป ให้กลับเข้าสู่แผนปกติหรือปรับวันฝึกเล็กน้อย"
+  },
+  {
+    "id": 369,
+    "intent": "motivation_missed_workout",
+    "category": "motivation_adherence",
+    "example_question": "หลุดตารางแล้วควรกลับมายังไง",
+    "expected_response": "ไม่ต้องชดเชยแบบเร่งเกินไป ให้กลับเข้าสู่แผนปกติหรือปรับวันฝึกเล็กน้อย"
+  },
+  {
+    "id": 370,
+    "intent": "motivation_short_workout",
+    "category": "motivation_adherence",
+    "example_question": "ไม่มีเวลาแต่ก็อยากขยับตัว",
+    "expected_response": "เสนอเซสชันสั้นที่เน้นท่าพื้นฐานและทำได้จริงภายในเวลาที่เหลือ"
+  },
+  {
+    "id": 371,
+    "intent": "motivation_short_workout",
+    "category": "motivation_adherence",
+    "example_question": "มีเวลา 10 นาทีควรทำอะไร",
+    "expected_response": "เสนอเซสชันสั้นที่เน้นท่าพื้นฐานและทำได้จริงภายในเวลาที่เหลือ"
+  },
+  {
+    "id": 372,
+    "intent": "motivation_short_workout",
+    "category": "motivation_adherence",
+    "example_question": "ช่วยทำ Mini Workout ให้หน่อย",
+    "expected_response": "เสนอเซสชันสั้นที่เน้นท่าพื้นฐานและทำได้จริงภายในเวลาที่เหลือ"
+  },
+  {
+    "id": 373,
+    "intent": "motivation_habit",
+    "category": "motivation_adherence",
+    "example_question": "ช่วยสร้างนิสัยออกกำลังกาย",
+    "expected_response": "สร้าง routine ที่ผูกกับกิจวัตรเดิม ตั้งเวลาและกำหนดขั้นต่ำที่ทำได้แม้วันที่ยุ่ง"
+  },
+  {
+    "id": 374,
+    "intent": "motivation_habit",
+    "category": "motivation_adherence",
+    "example_question": "ควรออกกำลังกายเวลาเดิมทุกวันไหม",
+    "expected_response": "สร้าง routine ที่ผูกกับกิจวัตรเดิม ตั้งเวลาและกำหนดขั้นต่ำที่ทำได้แม้วันที่ยุ่ง"
+  },
+  {
+    "id": 375,
+    "intent": "motivation_habit",
+    "category": "motivation_adherence",
+    "example_question": "ทำ Routine ให้ฉันได้ไหม",
+    "expected_response": "สร้าง routine ที่ผูกกับกิจวัตรเดิม ตั้งเวลาและกำหนดขั้นต่ำที่ทำได้แม้วันที่ยุ่ง"
+  },
+  {
+    "id": 376,
+    "intent": "motivation_checkin",
+    "category": "motivation_adherence",
+    "example_question": "วันนี้ควรเช็กอินอะไรบ้าง",
+    "expected_response": "ถามเป้าหมาย เวลา ระดับพลังงาน และความพร้อม เพื่อปรับ Workout ของวันนั้น"
+  },
+  {
+    "id": 377,
+    "intent": "motivation_checkin",
+    "category": "motivation_adherence",
+    "example_question": "ช่วยถามฉันก่อน Workout",
+    "expected_response": "ถามเป้าหมาย เวลา ระดับพลังงาน และความพร้อม เพื่อปรับ Workout ของวันนั้น"
+  },
+  {
+    "id": 378,
+    "intent": "motivation_checkin",
+    "category": "motivation_adherence",
+    "example_question": "ทำ Daily Check-in ให้หน่อย",
+    "expected_response": "ถามเป้าหมาย เวลา ระดับพลังงาน และความพร้อม เพื่อปรับ Workout ของวันนั้น"
+  },
+  {
+    "id": 379,
+    "intent": "motivation_encouragement",
+    "category": "motivation_adherence",
+    "example_question": "ให้กำลังใจหน่อย",
+    "expected_response": "ให้กำลังใจแบบกระชับและเชื่อมกับความก้าวหน้าหรือความสม่ำเสมอที่บันทึกไว้"
+  },
+  {
+    "id": 380,
+    "intent": "motivation_encouragement",
+    "category": "motivation_adherence",
+    "example_question": "ช่วยเป็น Trainer ให้กำลังใจฉัน",
+    "expected_response": "ให้กำลังใจแบบกระชับและเชื่อมกับความก้าวหน้าหรือความสม่ำเสมอที่บันทึกไว้"
+  },
+  {
+    "id": 381,
+    "intent": "motivation_encouragement",
+    "category": "motivation_adherence",
+    "example_question": "พูดให้ฮึดหน่อย",
+    "expected_response": "ให้กำลังใจแบบกระชับและเชื่อมกับความก้าวหน้าหรือความสม่ำเสมอที่บันทึกไว้"
+  },
+  {
+    "id": 382,
+    "intent": "motivation_goal_breakdown",
+    "category": "motivation_adherence",
+    "example_question": "เป้าหมายใหญ่แบ่งเป็นรายสัปดาห์ยังไง",
+    "expected_response": "แบ่งเป้าหมายเป็นพฤติกรรมและตัวชี้วัดย่อย พร้อมกำหนดจุดทบทวน"
+  },
+  {
+    "id": 383,
+    "intent": "motivation_goal_breakdown",
+    "category": "motivation_adherence",
+    "example_question": "ช่วยแบ่งเป้าหมายให้เล็กลง",
+    "expected_response": "แบ่งเป้าหมายเป็นพฤติกรรมและตัวชี้วัดย่อย พร้อมกำหนดจุดทบทวน"
+  },
+  {
+    "id": 384,
+    "intent": "motivation_goal_breakdown",
+    "category": "motivation_adherence",
+    "example_question": "ฉันควรทำ milestone แบบไหน",
+    "expected_response": "แบ่งเป้าหมายเป็นพฤติกรรมและตัวชี้วัดย่อย พร้อมกำหนดจุดทบทวน"
+  },
+  {
+    "id": 385,
+    "intent": "motivation_plateau",
+    "category": "motivation_adherence",
+    "example_question": "รู้สึกว่าฝึกแล้วไม่ก้าวหน้า",
+    "expected_response": "ทบทวนข้อมูลจริงของการฝึกและชี้สิ่งที่ยังพัฒนาได้ โดยหลีกเลี่ยงการคาดเดาเกินข้อมูล"
+  },
+  {
+    "id": 386,
+    "intent": "motivation_plateau",
+    "category": "motivation_adherence",
+    "example_question": "เหมือนผลไม่ไปไหนเลย",
+    "expected_response": "ทบทวนข้อมูลจริงของการฝึกและชี้สิ่งที่ยังพัฒนาได้ โดยหลีกเลี่ยงการคาดเดาเกินข้อมูล"
+  },
+  {
+    "id": 387,
+    "intent": "motivation_plateau",
+    "category": "motivation_adherence",
+    "example_question": "ช่วยทำให้ฉันไม่หมดกำลังใจเรื่อง Progress",
+    "expected_response": "ทบทวนข้อมูลจริงของการฝึกและชี้สิ่งที่ยังพัฒนาได้ โดยหลีกเลี่ยงการคาดเดาเกินข้อมูล"
+  },
+  {
+    "id": 388,
+    "intent": "motivation_reengage",
+    "category": "motivation_adherence",
+    "example_question": "หายจากการออกกำลังกายไปแล้วอยากกลับมา",
+    "expected_response": "เริ่มจากเป้าหมายเล็กและปริมาณฝึกต่ำกว่าช่วงก่อนหยุด แล้วค่อยเพิ่มเมื่อร่างกายปรับตัว"
+  },
+  {
+    "id": 389,
+    "intent": "motivation_reengage",
+    "category": "motivation_adherence",
+    "example_question": "ช่วยเริ่มใหม่ให้หน่อย",
+    "expected_response": "เริ่มจากเป้าหมายเล็กและปริมาณฝึกต่ำกว่าช่วงก่อนหยุด แล้วค่อยเพิ่มเมื่อร่างกายปรับตัว"
+  },
+  {
+    "id": 390,
+    "intent": "motivation_reengage",
+    "category": "motivation_adherence",
+    "example_question": "กลับมาออกกำลังกายหลังหยุดนานควรทำยังไง",
+    "expected_response": "เริ่มจากเป้าหมายเล็กและปริมาณฝึกต่ำกว่าช่วงก่อนหยุด แล้วค่อยเพิ่มเมื่อร่างกายปรับตัว"
+  },
+  {
+    "id": 391,
+    "intent": "safety_stop_signs",
+    "category": "safety",
+    "example_question": "มีอาการอะไรที่ควรหยุดออกกำลังกายทันที",
+    "expected_response": "แนะนำให้หยุดเมื่อมีอาการรุนแรงหรือผิดปกติ เช่น เจ็บหน้าอก เป็นลม หายใจลำบากผิดปกติ หรืออาการเฉียบพลัน และขอความช่วยเหลือทางการแพทย์ตามความเหมาะสม"
+  },
+  {
+    "id": 392,
+    "intent": "safety_stop_signs",
+    "category": "safety",
+    "example_question": "เมื่อไหร่ควรหยุด Workout",
+    "expected_response": "แนะนำให้หยุดเมื่อมีอาการรุนแรงหรือผิดปกติ เช่น เจ็บหน้าอก เป็นลม หายใจลำบากผิดปกติ หรืออาการเฉียบพลัน และขอความช่วยเหลือทางการแพทย์ตามความเหมาะสม"
+  },
+  {
+    "id": 393,
+    "intent": "safety_stop_signs",
+    "category": "safety",
+    "example_question": "อาการแบบไหนไม่ควรฝืน",
+    "expected_response": "แนะนำให้หยุดเมื่อมีอาการรุนแรงหรือผิดปกติ เช่น เจ็บหน้าอก เป็นลม หายใจลำบากผิดปกติ หรืออาการเฉียบพลัน และขอความช่วยเหลือทางการแพทย์ตามความเหมาะสม"
+  },
+  {
+    "id": 394,
+    "intent": "safety_dizziness",
+    "category": "safety",
+    "example_question": "ออกกำลังกายแล้วเวียนหัวควรทำยังไง",
+    "expected_response": "ให้หยุดหรือลดความหนักและพักในที่ปลอดภัย พร้อมประเมินอาการ; หากรุนแรง ต่อเนื่อง หรือมีอาการเตือนอื่นควรขอความช่วยเหลือทางการแพทย์"
+  },
+  {
+    "id": 395,
+    "intent": "safety_dizziness",
+    "category": "safety",
+    "example_question": "ฉันรู้สึกมึนหัวระหว่าง Workout",
+    "expected_response": "ให้หยุดหรือลดความหนักและพักในที่ปลอดภัย พร้อมประเมินอาการ; หากรุนแรง ต่อเนื่อง หรือมีอาการเตือนอื่นควรขอความช่วยเหลือทางการแพทย์"
+  },
+  {
+    "id": 396,
+    "intent": "safety_dizziness",
+    "category": "safety",
+    "example_question": "เวียนหัวตอนวิ่งควรหยุดไหม",
+    "expected_response": "ให้หยุดหรือลดความหนักและพักในที่ปลอดภัย พร้อมประเมินอาการ; หากรุนแรง ต่อเนื่อง หรือมีอาการเตือนอื่นควรขอความช่วยเหลือทางการแพทย์"
+  },
+  {
+    "id": 397,
+    "intent": "safety_chest_pain",
+    "category": "safety",
+    "example_question": "ออกกำลังกายแล้วเจ็บหน้าอก",
+    "expected_response": "หยุดกิจกรรมทันทีและขอความช่วยเหลือทางการแพทย์ฉุกเฉิน โดยเฉพาะเมื่อมีหายใจลำบาก หน้ามืด หรืออาการร้าวร่วมด้วย"
+  },
+  {
+    "id": 398,
+    "intent": "safety_chest_pain",
+    "category": "safety",
+    "example_question": "ถ้าเจ็บหน้าอกตอนวิ่งควรทำยังไง",
+    "expected_response": "หยุดกิจกรรมทันทีและขอความช่วยเหลือทางการแพทย์ฉุกเฉิน โดยเฉพาะเมื่อมีหายใจลำบาก หน้ามืด หรืออาการร้าวร่วมด้วย"
+  },
+  {
+    "id": 399,
+    "intent": "safety_chest_pain",
+    "category": "safety",
+    "example_question": "เจ็บหน้าอกระหว่างเล่นเวทควรฝืนไหม",
+    "expected_response": "หยุดกิจกรรมทันทีและขอความช่วยเหลือทางการแพทย์ฉุกเฉิน โดยเฉพาะเมื่อมีหายใจลำบาก หน้ามืด หรืออาการร้าวร่วมด้วย"
+  },
+  {
+    "id": 400,
+    "intent": "safety_joint_pain",
+    "category": "safety",
+    "example_question": "เจ็บเข่าตอน Squat ควรทำยังไง",
+    "expected_response": "หยุดท่าที่กระตุ้นอาการและลดโหลดหรือเปลี่ยนท่า หากอาการต่อเนื่องหรือรุนแรงควรประเมินโดยผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 401,
+    "intent": "safety_joint_pain",
+    "category": "safety",
+    "example_question": "ปวดข้อระหว่างท่าบริหารควรหยุดไหม",
+    "expected_response": "หยุดท่าที่กระตุ้นอาการและลดโหลดหรือเปลี่ยนท่า หากอาการต่อเนื่องหรือรุนแรงควรประเมินโดยผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 402,
+    "intent": "safety_joint_pain",
+    "category": "safety",
+    "example_question": "เข่าเจ็บตอนออกกำลังกาย",
+    "expected_response": "หยุดท่าที่กระตุ้นอาการและลดโหลดหรือเปลี่ยนท่า หากอาการต่อเนื่องหรือรุนแรงควรประเมินโดยผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 403,
+    "intent": "safety_back_pain",
+    "category": "safety",
+    "example_question": "เจ็บหลังตอน Deadlift",
+    "expected_response": "หยุดท่าที่กระตุ้นอาการ ตรวจฟอร์มและลดโหลดเมื่อกลับมาฝึก; หากปวดมาก ร้าว ชา หรืออ่อนแรงควรพบผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 404,
+    "intent": "safety_back_pain",
+    "category": "safety",
+    "example_question": "หลังปวดระหว่างยกน้ำหนักควรทำไง",
+    "expected_response": "หยุดท่าที่กระตุ้นอาการ ตรวจฟอร์มและลดโหลดเมื่อกลับมาฝึก; หากปวดมาก ร้าว ชา หรืออ่อนแรงควรพบผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 405,
+    "intent": "safety_back_pain",
+    "category": "safety",
+    "example_question": "ยกเวทแล้วเจ็บหลังควรหยุดไหม",
+    "expected_response": "หยุดท่าที่กระตุ้นอาการ ตรวจฟอร์มและลดโหลดเมื่อกลับมาฝึก; หากปวดมาก ร้าว ชา หรืออ่อนแรงควรพบผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 406,
+    "intent": "safety_shoulder_pain",
+    "category": "safety",
+    "example_question": "เจ็บไหล่ตอน Bench Press",
+    "expected_response": "หยุดหรือปรับท่าที่กระตุ้นอาการและไม่ฝืนช่วงที่เจ็บ หากอาการยังอยู่ควรประเมินโดยผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 407,
+    "intent": "safety_shoulder_pain",
+    "category": "safety",
+    "example_question": "ไหล่เจ็บเวลายกแขนควรฝึกต่อไหม",
+    "expected_response": "หยุดหรือปรับท่าที่กระตุ้นอาการและไม่ฝืนช่วงที่เจ็บ หากอาการยังอยู่ควรประเมินโดยผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 408,
+    "intent": "safety_shoulder_pain",
+    "category": "safety",
+    "example_question": "ปวดไหล่ระหว่างเล่นเวท",
+    "expected_response": "หยุดหรือปรับท่าที่กระตุ้นอาการและไม่ฝืนช่วงที่เจ็บ หากอาการยังอยู่ควรประเมินโดยผู้เชี่ยวชาญ"
+  },
+  {
+    "id": 409,
+    "intent": "safety_muscle_soreness",
+    "category": "safety",
+    "example_question": "ปวดกล้ามหลังออกกำลังกายต้องหยุดไหม",
+    "expected_response": "ประเมินความรุนแรงของอาการและเลือกพักหรือ active recovery; หลีกเลี่ยงการฝืนเมื่อปวดรุนแรงหรือมีอาการผิดปกติ"
+  },
+  {
+    "id": 410,
+    "intent": "safety_muscle_soreness",
+    "category": "safety",
+    "example_question": "DOMS แบบไหนยังออกกำลังกายได้",
+    "expected_response": "ประเมินความรุนแรงของอาการและเลือกพักหรือ active recovery; หลีกเลี่ยงการฝืนเมื่อปวดรุนแรงหรือมีอาการผิดปกติ"
+  },
+  {
+    "id": 411,
+    "intent": "safety_muscle_soreness",
+    "category": "safety",
+    "example_question": "กล้ามเนื้อเมื่อยมากควรพักหรือฝึกเบา",
+    "expected_response": "ประเมินความรุนแรงของอาการและเลือกพักหรือ active recovery; หลีกเลี่ยงการฝืนเมื่อปวดรุนแรงหรือมีอาการผิดปกติ"
+  },
+  {
+    "id": 412,
+    "intent": "safety_overexertion",
+    "category": "safety",
+    "example_question": "ฉันเหนื่อยมากระหว่าง Workout",
+    "expected_response": "ลดความหนักหรือพักและประเมินการนอน น้ำ และอาหาร หากอาการรุนแรงหรือผิดปกติควรขอความช่วยเหลือ"
+  },
+  {
+    "id": 413,
+    "intent": "safety_overexertion",
+    "category": "safety",
+    "example_question": "รู้สึกหมดแรงผิดปกติควรทำยังไง",
+    "expected_response": "ลดความหนักหรือพักและประเมินการนอน น้ำ และอาหาร หากอาการรุนแรงหรือผิดปกติควรขอความช่วยเหลือ"
+  },
+  {
+    "id": 414,
+    "intent": "safety_overexertion",
+    "category": "safety",
+    "example_question": "ฝึกหนักเกินไปหรือเปล่า",
+    "expected_response": "ลดความหนักหรือพักและประเมินการนอน น้ำ และอาหาร หากอาการรุนแรงหรือผิดปกติควรขอความช่วยเหลือ"
+  },
+  {
+    "id": 415,
+    "intent": "safety_medical_clearance",
+    "category": "safety",
+    "example_question": "มีโรคประจำตัวควรเริ่มออกกำลังกายยังไง",
+    "expected_response": "แนะนำให้ปรึกษาแพทย์หรือผู้เชี่ยวชาญก่อนเริ่มหรือเพิ่มความหนัก โดยเฉพาะเมื่อมีโรคประจำตัวหรือข้อจำกัดเฉพาะ"
+  },
+  {
+    "id": 416,
+    "intent": "safety_medical_clearance",
+    "category": "safety",
+    "example_question": "ถ้ามีปัญหาสุขภาพควรเริ่ม Workout แบบไหน",
+    "expected_response": "แนะนำให้ปรึกษาแพทย์หรือผู้เชี่ยวชาญก่อนเริ่มหรือเพิ่มความหนัก โดยเฉพาะเมื่อมีโรคประจำตัวหรือข้อจำกัดเฉพาะ"
+  },
+  {
+    "id": 417,
+    "intent": "safety_medical_clearance",
+    "category": "safety",
+    "example_question": "ควรปรึกษาหมอก่อนเริ่มออกกำลังกายไหม",
+    "expected_response": "แนะนำให้ปรึกษาแพทย์หรือผู้เชี่ยวชาญก่อนเริ่มหรือเพิ่มความหนัก โดยเฉพาะเมื่อมีโรคประจำตัวหรือข้อจำกัดเฉพาะ"
+  },
+  {
+    "id": 418,
+    "intent": "safety_injury_return",
+    "category": "safety",
+    "example_question": "บาดเจ็บแล้วกลับมาออกกำลังกายเมื่อไหร่",
+    "expected_response": "กลับมาฝึกตามคำแนะนำของผู้เชี่ยวชาญที่ดูแลอาการ และเริ่มจากความหนักต่ำก่อนเพิ่มทีละขั้น"
+  },
+  {
+    "id": 419,
+    "intent": "safety_injury_return",
+    "category": "safety",
+    "example_question": "หลังพักจากอาการเจ็บควรเริ่มยังไง",
+    "expected_response": "กลับมาฝึกตามคำแนะนำของผู้เชี่ยวชาญที่ดูแลอาการ และเริ่มจากความหนักต่ำก่อนเพิ่มทีละขั้น"
+  },
+  {
+    "id": 420,
+    "intent": "safety_injury_return",
+    "category": "safety",
+    "example_question": "อยากกลับมาออกกำลังกายหลังบาดเจ็บ",
+    "expected_response": "กลับมาฝึกตามคำแนะนำของผู้เชี่ยวชาญที่ดูแลอาการ และเริ่มจากความหนักต่ำก่อนเพิ่มทีละขั้น"
+  }
+]

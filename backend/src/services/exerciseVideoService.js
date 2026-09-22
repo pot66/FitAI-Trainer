@@ -3,6 +3,15 @@ const prisma = require('./prisma');
 // Supplemental verified YouTube tutorials for exercises that might not have a record in the DB table
 const SUPPLEMENTAL_VIDEOS = [
   {
+    exerciseName: 'Kettlebell Swing',
+    title: 'Kettlebell Swing - วิดีโอสอนการฝึกฟอร์มที่ถูกต้อง',
+    url: 'https://youtu.be/YSxHifyI6s8',
+    videoId: 'YSxHifyI6s8',
+    category: 'Strength',
+    targetMuscle: 'Glutes, Hamstrings, Hips, Shoulders',
+    difficulty: 'Beginner',
+  },
+  {
     exerciseName: 'Crunch',
     title: 'Crunch - วิดีโอสอน',
     url: 'https://youtu.be/Xyd_fa5zoEU',
@@ -211,6 +220,10 @@ async function loadAllVideos() {
 
   // Synonyms and common aliases
   const aliases = [
+    ['คัทลียาบัล', 'kettlebell swing'],
+    ['เคตเทิลเบล', 'kettlebell swing'],
+    ['เคตเทิลเบลล์', 'kettlebell swing'],
+    ['kettlebell', 'kettlebell swing'],
     ['pushup', 'push-up'],
     ['pushups', 'push-up'],
     ['วิดพื้น', 'push-up'],

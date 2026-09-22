@@ -35,6 +35,8 @@ import api from "./services/api";
 import {
   applyPlanAdjustment,
   createPersonalizedWeeklyPlan,
+  cleanExerciseName,
+  sanitizePlan,
 } from "./ai/recommendationEngine";
 import ChatMessageContent from "./components/ChatMessageContent";
 import FoodCameraModal from "./components/FoodCameraModal";
@@ -256,41 +258,34 @@ function AIAssistant({
           const savedSignature = localStorage.getItem("fitai-plan-signature");
           const isSameProfile = Boolean(savedSignature && savedSignature === profileSignature);
 
+          const sanitizedSaved = Array.isArray(savedPlan) ? sanitizePlan(savedPlan) : null;
           const hasCurrentPlan =
             isSameProfile &&
-            Array.isArray(savedPlan) &&
-            savedPlan.every(
+            Array.isArray(sanitizedSaved) &&
+            sanitizedSaved.length === 7 &&
+            sanitizedSaved.every(
               (day) =>
-                day.catalogVersion === 2 &&
+                day.key &&
                 (
-                  day.exerciseName ===
-                  "Rest" ||
-                  (
-                    Array.isArray(
-                      day.exercises
-                    ) &&
-                    day.exercises.length >= 5
-                  )
+                  day.exerciseName === "Rest" ||
+                  (Array.isArray(day.exercises) && day.exercises.length > 0)
                 )
             );
 
-          const planToUse =
-            hasCurrentPlan
-              ? savedPlan
-              : generated.plan;
+          const planToUse = hasCurrentPlan
+            ? sanitizedSaved
+            : sanitizePlan(generated.plan);
 
           setWeeklyPlan(planToUse);
 
-          if (!hasCurrentPlan) {
-            localStorage.setItem(
-              "fitai-weekly-plan",
-              JSON.stringify(planToUse)
-            );
-            localStorage.setItem(
-              "fitai-plan-signature",
-              profileSignature
-            );
-          }
+          localStorage.setItem(
+            "fitai-weekly-plan",
+            JSON.stringify(planToUse)
+          );
+          localStorage.setItem(
+            "fitai-plan-signature",
+            profileSignature
+          );
         }
       )
       .catch((error) => {
@@ -977,15 +972,12 @@ function AIAssistant({
     // =====================================
 
     if (adjustment.changed) {
-      setWeeklyPlan(
-        adjustment.plan
-      );
+      const sanitized = sanitizePlan(adjustment.plan);
+      setWeeklyPlan(sanitized);
 
       localStorage.setItem(
         "fitai-weekly-plan",
-        JSON.stringify(
-          adjustment.plan
-        )
+        JSON.stringify(sanitized)
       );
 
       setJustUpdatedPlan(true);
@@ -2278,7 +2270,7 @@ function AIAssistant({
                             key={`${day.key}-${exercise.name}-${index}`}
                             className="flex items-center justify-between text-xs"
                           >
-                            <b className="font-semibold text-zinc-300">{exercise.name}</b>
+                            <b className="font-semibold text-zinc-300">{cleanExerciseName(exercise.name)}</b>
                             <small className="text-[11px] text-zinc-400">
                               {exercise.sets
                                 ? `${exercise.sets} เซ็ต · ${exercise.repetitions}`

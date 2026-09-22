@@ -746,9 +746,19 @@ function extractTargetExercise(text, exercises = []) {
     return null;
 }
 
-function extractExercisesFromAssistantText(text) {
+const TUTORIAL_VERBS_REGEX = /(ยืนตรง|โดยวาง|ขับขา|เมื่อ|ปรับตำแหน่ง|กลับ.*คืน|เริ่มต้น|ให้หายใจ|หายใจเข้า|หายใจออก|ยืดขา|งอข้อศอก|งอเข่า|เกร็งหน้าท้อง|เกร็งลำตัว|เกร็งกล้ามเนื้อ|ก้าวเท้า|วางเท้า|ส่งน้ำหนัก|ระดับศีรษะ|ระดับสายตา|ลำตัวตรง|หลังตรง|ค่อยๆ|ดันตัว|ดึงตัว|ทำซ้ำ|ค้างไว้|ระวัง|อย่าให้|วางมือ|วางฝ่ามือ|ยุบข้อศอก|ย่อสะโพก|ลุกขึ้นยืน|โน้มตัว|สูดลมหายใจ)/i;
+
+function isInstructionSentence(str) {
+    if (!str) return false;
+    const clean = str.trim();
+    if (clean.length > 35) return true;
+    if (TUTORIAL_VERBS_REGEX.test(clean)) return true;
+    return false;
+}
+
+function extractExercisesFromAssistantText(text, availableExercises = []) {
     if (!text) return null;
-    const lines = String(text).split('\n');
+    const lines = String(text).split(/\r?\n/);
     const exercises = [];
     let focus = '';
 
@@ -762,11 +772,23 @@ function extractExercisesFromAssistantText(text) {
         const trimmed = line.trim();
         const exMatch = trimmed.match(/^(?:\d+[\.\)]|\-|\*|•)\s*([A-Za-zก-๙\s\-]+?)(?:\s*\((\d+)\s*เซ็ต\s*[\·,\.]\s*([^\)]+)\))?(?:\s*▶️.*)?$/);
         if (exMatch && exMatch[1]) {
-            const name = exMatch[1].replace(/^[0-9\.\s]+/, '').trim();
-            if (name.length > 2 && !/^(วิดีโอ|youtube|คลิป|ท่า|คำแนะนำ|ช่วง|ตาราง|ข้อแนะนำ)/i.test(name)) {
+            const rawName = exMatch[1].replace(/^[0-9\.\s]+/, '').trim();
+            const hasExplicitSetsReps = Boolean(exMatch[2] && exMatch[3]);
+
+            if (isInstructionSentence(rawName)) {
+                continue;
+            }
+
+            if (!hasExplicitSetsReps) {
+                if (rawName.length > 25 || /^(วิดีโอ|youtube|คลิป|ท่า|คำแนะนำ|ช่วง|ตาราง|ข้อแนะนำ|วิธี|ขั้นตอน|ข้อควรระวัง)/i.test(rawName)) {
+                    continue;
+                }
+            }
+
+            if (rawName.length >= 2 && !/^(วิดีโอ|youtube|คลิป|ท่า|คำแนะนำ|ช่วง|ตาราง|ข้อแนะนำ|วิธี|ขั้นตอน|ข้อควรระวัง)/i.test(rawName)) {
                 exercises.push({
-                    name,
-                    sets: exMatch[2] ? Number(exMatch[2]) : 2,
+                    name: rawName,
+                    sets: exMatch[2] ? Number(exMatch[2]) : 3,
                     repetitions: exMatch[3] ? exMatch[3].trim() : '10–12 ครั้ง'
                 });
             }
@@ -776,7 +798,118 @@ function extractExercisesFromAssistantText(text) {
     if (exercises.length > 0) {
         return { focus: focus || 'ช่วงแขน', exercises };
     }
+
+    // Fallback for single exercise tutorial: check Kettlebell / คัทลียาบัล
+    if (/(คัทลียาบัล|เคตเทิลเบล|เคตเทิลเบลล์|kettlebell)/i.test(text)) {
+        return {
+            focus: focus || 'ช่วงบน',
+            exercises: [
+                {
+                    name: 'Kettlebell Swing',
+                    sets: 3,
+                    repetitions: '10–12 ครั้ง'
+                }
+            ]
+        };
+    }
+
+    // Check availableExercises from DB/catalog
+    if (Array.isArray(availableExercises) && availableExercises.length > 0) {
+        for (const ex of availableExercises) {
+            if (ex.name && ex.name.length > 3) {
+                const escaped = ex.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+                if (regex.test(text)) {
+                    return {
+                        focus: focus || ex.category || 'การออกกำลังกาย',
+                        exercises: [
+                            {
+                                name: ex.name,
+                                sets: 3,
+                                repetitions: '10–12 ครั้ง'
+                            }
+                        ]
+                    };
+                }
+            }
+        }
+    }
+
+    const COMMON_EXERCISES = [
+        { pattern: /(วิดพื้น|push[- ]?up)/i, name: 'Push Up', focus: 'ช่วงบน' },
+        { pattern: /(สควอท|สควอต|squat)/i, name: 'Squat', focus: 'ช่วงล่าง' },
+        { pattern: /(แพลงก์|แพลงค์|plank)/i, name: 'Plank', focus: 'แกนกลางลำตัว' },
+        { pattern: /(ลันจ์|lunges?)/i, name: 'Lunges', focus: 'ช่วงล่าง' },
+        { pattern: /(ดิปส์|tricep dips?|dips?)/i, name: 'Tricep Dips', focus: 'ช่วงแขน' },
+        { pattern: /(ไบเซป|biceps? curl)/i, name: 'Biceps Curl', focus: 'ช่วงแขน' },
+        { pattern: /(ซิทอัพ|sit[- ]?up)/i, name: 'Sit-up', focus: 'แกนกลางลำตัว' },
+        { pattern: /(ครันช์|crunch)/i, name: 'Crunch', focus: 'แกนกลางลำตัว' },
+        { pattern: /(เบอร์ปี|burpee)/i, name: 'Burpee', focus: 'ทั้งร่างกาย' },
+        { pattern: /(กระโดดตบ|jumping jack)/i, name: 'Jumping Jack', focus: 'คาร์ดิโอและความทนทาน' }
+    ];
+
+    for (const item of COMMON_EXERCISES) {
+        if (item.pattern.test(text)) {
+            return {
+                focus: focus || item.focus,
+                exercises: [
+                    {
+                        name: item.name,
+                        sets: 3,
+                        repetitions: '10–12 ครั้ง'
+                    }
+                ]
+            };
+        }
+    }
+
     return null;
+}
+
+function cleanExerciseName(name) {
+  if (!name) return "";
+  let clean = String(name).trim();
+  const isInstruction = clean.length > 35 || TUTORIAL_VERBS_REGEX.test(clean);
+  if (isInstruction) {
+    if (/(คัทลียาบัล|เคตเทิลเบล|เคตเทิลเบลล์|kettlebell)/i.test(clean)) return "Kettlebell Swing";
+    if (/(วิดพื้น|push)/i.test(clean)) return "Push Up";
+    if (/(สควอท|squat)/i.test(clean)) return "Squat";
+    if (/(แพลงก์|plank)/i.test(clean)) return "Plank";
+    if (/(ลันจ์|lunge)/i.test(clean)) return "Lunges";
+    if (/(ดิปส์|dips)/i.test(clean)) return "Tricep Dips";
+    return "Bodyweight Exercise";
+  }
+  return clean;
+}
+
+function sanitizePlan(plan) {
+  if (!Array.isArray(plan)) return plan;
+  return plan.map((day) => {
+    if (!day) return day;
+    const rawExercises = Array.isArray(day.exercises) && day.exercises.length > 0
+      ? day.exercises
+      : (day.exerciseName ? [{ name: day.exerciseName, sets: day.sets || 3, repetitions: day.repetitions || "10–12 ครั้ง" }] : []);
+    const seen = new Set();
+    const sanitizedExercises = [];
+    for (const ex of rawExercises) {
+      const cleanName = cleanExerciseName(ex.name);
+      if (cleanName && !seen.has(cleanName)) {
+        seen.add(cleanName);
+        sanitizedExercises.push({
+          ...ex,
+          name: cleanName,
+          sets: ex.sets || 3,
+          repetitions: ex.repetitions || "10–12 ครั้ง"
+        });
+      }
+    }
+    const primaryName = sanitizedExercises[0]?.name || cleanExerciseName(day.exerciseName) || "Exercise";
+    return {
+      ...day,
+      exerciseName: primaryName,
+      exercises: sanitizedExercises.length > 0 ? sanitizedExercises : rawExercises
+    };
+  });
 }
 
 async function suggestPlanAdjustment({ profile, exercises = [], plan = [], message, todayKey, lastAssistantMessage = "" }) {
@@ -786,9 +919,9 @@ async function suggestPlanAdjustment({ profile, exercises = [], plan = [], messa
     const lowerMessage = String(message || "").toLowerCase();
 
         // Check anaphoric references from previous assistant recommendation
-    const isAnaphoric = /(ท่านี้|ท่าเหล่านี้|ท่าพวกนี้|ตามนี้|ที่แนะนำ|ที่บอก|ท่านั้น|ท่าข้างบน|เอาท่านี้|นำท่านี้|ใช้ท่านี้|จัดตามนี้|อัปเดตตามนี้|ใส่ตารางของวันนี้|ใช้ในตาราง|ใส่ตาราง)/i.test(lowerMessage);
+    const isAnaphoric = /(ท่านี้|ท่าเหล่านี้|ท่าพวกนี้|ตามนี้|ที่แนะนำ|ที่บอก|ท่านั้น|ท่าข้างบน|เอาท่านี้|นำท่านี้|ใช้ท่านี้|จัดตามนี้|อัปเดตตามนี้|ใส่ตารางของวันนี้|ใช้ในตาราง|ใส่ตาราง|นำมาใช้ในตาราง|นำไปใช้ในตาราง|เพิ่มในตาราง|ลงตาราง)/i.test(lowerMessage);
     if (isAnaphoric && lastAssistantMessage) {
-        const extracted = extractExercisesFromAssistantText(lastAssistantMessage);
+        const extracted = extractExercisesFromAssistantText(lastAssistantMessage, exercises);
         if (extracted && extracted.exercises.length > 0) {
             const next = plan.map((day, i) => i === targetIndex ? {
                 ...day,
@@ -808,7 +941,7 @@ async function suggestPlanAdjustment({ profile, exercises = [], plan = [], messa
             const msg = `ตารางการออกกำลังกายสำหรับวัน${dayLabel} (**${extracted.focus || "การออกกำลังกาย"}**):\n\n**ท่าในตารางที่ต้องออกสำหรับวันนี้:**\n${exerciseListStr}\n\nตารางออกกำลังกายทางด้านขวาได้รับการอัปเดตตรงตามรายการนี้เรียบร้อยแล้วครับ สามารถคลิกดูคลิปวิดีโอสาธิตแต่ละท่าจาก YouTube ด้านล่างเพื่อฝึกฟอร์มที่ถูกต้องได้เลยครับ 🎯`;
             const enriched = await enrichResponseWithVideos(msg);
             return {
-                plan: next,
+                plan: sanitizePlan(next),
                 changed: true,
                 message: enriched
             };

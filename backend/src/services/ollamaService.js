@@ -87,11 +87,22 @@ function createSystemPrompt(context, videoCatalog = "", coachingMatch = null) {
     );
   }
 
-    if (coachingMatch) {
+  if (coachingMatch) {
     lines.push(
       "",
       `【หลักการและแนวทางของ FitAI สำหรับคำถามเรื่องนี้ (${coachingMatch.category} / ${coachingMatch.intent})】:`,
-      `• ทิศทางความถูกต้อง: ${coachingMatch.expected_response}`,
+      `• ทิศทางความถูกต้อง: ${coachingMatch.expected_response}`
+    );
+    if (coachingMatch.persona) {
+      lines.push(`• สภาพการณ์ผู้ใช้ (${coachingMatch.persona.name}): ${coachingMatch.persona.core_principle} - คำแนะนำหลัก: ${coachingMatch.persona.guidelines.join('; ')}`);
+    }
+    if (coachingMatch.constraint) {
+      lines.push(`• เงื่อนไข/ข้อจำกัด (${coachingMatch.constraint.name}): แท็กติก: ${coachingMatch.constraint.tactics.join('; ')}`);
+    }
+    if (coachingMatch.foodHack) {
+      lines.push(`• เกร็ดอาหารและโภชนาการ (${coachingMatch.foodHack.title}): ${coachingMatch.foodHack.savings || ''} ${(coachingMatch.foodHack.rules || coachingMatch.foodHack.items || []).join('; ')}`);
+    }
+    lines.push(
       "• คำแนะนำในการตอบ: ให้อิสระแก่คุณในการอธิบายอย่างละเอียด มีชีวิตชีวา ใช้ตัวอย่างและคำพูดที่อบอุ่นเป็นธรรมชาติ โดยยึดหลักการความถูกต้องนี้เป็นแนวทางหลัก"
     );
   }

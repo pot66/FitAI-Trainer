@@ -76,6 +76,8 @@ export function AppRoutes({
             <AIAssistant
               user={user}
               onProfile={() => navigate(PATHS.PROFILE)}
+              onDashboard={() => navigate(PATHS.DASHBOARD)}
+              onProgress={() => navigate(PATHS.PROGRESS)}
               onSettings={() => navigate(PATHS.SETTINGS)}
               onWorkout={() => navigate(PATHS.WORKOUT)}
               onFood={() => navigate(PATHS.FOOD)}

@@ -13,6 +13,8 @@ import {
   Send,
   Volume2,
   User,
+  LayoutDashboard,
+  History,
   Settings,
   LogOut,
   ArrowRight,
@@ -46,6 +48,8 @@ import { speakText, stopSpeech, isSpeakingNow } from "./utils/speechUtils";
 function AIAssistant({
   user,
   onProfile,
+  onDashboard,
+  onProgress,
   onSettings,
   onWorkout,
   onFood,
@@ -1645,6 +1649,35 @@ function AIAssistant({
                 >
                   <User size={15} />
                   <span>โปรไฟล์ของฉัน</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    if (onDashboard) onDashboard();
+                    else if (onBack) onBack();
+                    else window.location.href = "/dashboard";
+                  }}
+                >
+                  <LayoutDashboard size={15} />
+                  <span>แดชบอร์ด (Dashboard)</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    if (onProgress) onProgress();
+                    else window.location.href = "/progress";
+                  }}
+                >
+                  <History size={15} />
+                  <span>ประวัติการออกกำลังกาย</span>
                 </button>
 
                 <button

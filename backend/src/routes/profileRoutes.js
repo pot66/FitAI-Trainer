@@ -21,4 +21,16 @@ router.post(
   createOrUpdateProfile
 );
 
+router.put(
+  "/me",
+  authMiddleware,
+  createOrUpdateProfile
+);
+
+router.patch(
+  "/me",
+  authMiddleware,
+  createOrUpdateProfile
+);
+
 module.exports = router;

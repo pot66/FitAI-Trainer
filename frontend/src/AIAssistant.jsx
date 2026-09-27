@@ -13,7 +13,6 @@ import {
   Send,
   Volume2,
   User,
-  LayoutDashboard,
   History,
   Settings,
   LogOut,
@@ -1649,21 +1648,6 @@ function AIAssistant({
                 >
                   <User size={15} />
                   <span>โปรไฟล์ของฉัน</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="w-full px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    if (onDashboard) onDashboard();
-                    else if (onBack) onBack();
-                    else window.location.href = "/dashboard";
-                  }}
-                >
-                  <LayoutDashboard size={15} />
-                  <span>แดชบอร์ด (Dashboard)</span>
                 </button>
 
                 <button

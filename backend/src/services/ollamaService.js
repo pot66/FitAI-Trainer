@@ -1,4 +1,6 @@
 const { matchCoachingIntent } = require("./coachKnowledgeService");
+const { getUserLearnedContext } = require("./userLearningService");
+const { shouldSearchGoogle, searchGoogle, formatSearchResultsForPrompt } = require("./googleSearchService");
 const { getPromptCatalog } = require("./exerciseVideoService");
 const { aiConfig } = require("../config");
 
@@ -107,6 +109,22 @@ function createSystemPrompt(context, videoCatalog = "", coachingMatch = null) {
     );
   }
 
+  // Injected User Chat Learning & Memory Preferences
+  if (context.userLearnedContext && context.userLearnedContext.promptDirective) {
+    lines.push(
+      "",
+      context.userLearnedContext.promptDirective
+    );
+  }
+
+  // Injected Google / Live Web Search Results
+  if (context.searchData && context.searchData.results && context.searchData.results.length) {
+    lines.push(
+      "",
+      formatSearchResultsForPrompt(context.searchData)
+    );
+  }
+
   lines.push(
     "",
     `ข้อมูล Profile ผู้ใช้: ${compactProfile(context.profile)}`,
@@ -171,7 +189,28 @@ async function askOllama(message, context = {}) {
     }
   }
 
-  // Match question against 420-item coaching dataset for precise domain guidance
+  // Ensure user learned context is available if userId is provided
+  if (!context.userLearnedContext && context.userId) {
+    try {
+      context.userLearnedContext = await getUserLearnedContext(context.userId);
+    } catch (e) {
+      // Ignore error
+    }
+  }
+
+  // Ensure Google search data is available if needed
+  if (!context.searchData) {
+    const searchCheck = shouldSearchGoogle(message);
+    if (searchCheck.shouldSearch) {
+      try {
+        context.searchData = await searchGoogle(searchCheck.query);
+      } catch (e) {
+        // Ignore error
+      }
+    }
+  }
+
+  // Match question against coaching dataset for precise domain guidance
   const coachingMatch = matchCoachingIntent(message);
 
   // Keep lean history of 4 recent turns to ensure ultra-fast GPU inference (<5s) without timeout

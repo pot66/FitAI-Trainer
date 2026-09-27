@@ -1,5 +1,7 @@
 const prisma = require("../services/prisma");
 const { generateAIResponse } = require("../services/aiService");
+const { getUserLearnedContext, invalidateUserMemory } = require("../services/userLearningService");
+const { shouldSearchGoogle, searchGoogle } = require("../services/googleSearchService");
 
 async function createChatSession(req, res) {
     try {
@@ -126,6 +128,25 @@ async function sendMessage(req, res) {
       take: 10,
     });
 
+    // ดึงข้อมูลที่ AI เรียนรู้จากประวัติการแชทของผู้ใช้นี้
+    let userLearnedContext = null;
+    try {
+      userLearnedContext = await getUserLearnedContext(req.user.userId);
+    } catch (learnErr) {
+      console.warn("Could not retrieve learned context for user:", learnErr.message);
+    }
+
+    // ตรวจสอบว่าจำเป็นต้องค้นหาข้อมูลจาก Google / Web หรือไม่
+    let searchData = null;
+    const searchCheck = shouldSearchGoogle(message);
+    if (searchCheck.shouldSearch) {
+      try {
+        searchData = await searchGoogle(searchCheck.query);
+      } catch (searchErr) {
+        console.warn("Google search error in chatController:", searchErr.message);
+      }
+    }
+
     const aiResponse = await generateAIResponse(message, {
       profile,
       workout,
@@ -133,7 +154,13 @@ async function sendMessage(req, res) {
       history: history.reverse().slice(0, -1),
       activePlan,
       planUpdated: Boolean(planUpdated),
+      userId: req.user.userId,
+      userLearnedContext,
+      searchData,
     });
+
+    // Invalidate cached user memory to incorporate this latest interaction
+    invalidateUserMemory(req.user.userId);
 
     // บันทึกคำตอบ AI
     const assistantMessage = await prisma.chatMessage.create({

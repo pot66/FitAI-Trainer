@@ -1,4 +1,6 @@
 const { matchCoachingIntent, generateIntentFallback } = require("./coachKnowledgeService");
+const { getUserLearnedContext } = require("./userLearningService");
+const { shouldSearchGoogle, searchGoogle, formatSearchResultsForFallback } = require("./googleSearchService");
 function getBMIAdvice(profile) {
     if (!profile || !profile.bmi) {
         return "";
@@ -197,6 +199,36 @@ function generateFallbackResponse(message, context = {}) {
     const text = String(message || "").trim();
     const lowerText = text.toLowerCase();
 
+    // 1.1 Google / Web Search Fallback Response (เมื่อมีการค้นหาข้อมูลจากอินเทอร์เน็ต)
+    if (context.searchData && context.searchData.results && context.searchData.results.length) {
+        const searchBlock = formatSearchResultsForFallback(context.searchData);
+        let learnedCue = "";
+        if (context.userLearnedContext && context.userLearnedContext.briefSummary) {
+            learnedCue = "\n" + context.userLearnedContext.briefSummary + "\n";
+        }
+        return [
+            "FitAI ได้ค้นหาข้อมูลล่าสุดจาก Google และเว็บไซต์ที่เกี่ยวข้องให้คุณเรียบร้อยครับ 🌐🔍",
+            learnedCue,
+            searchBlock,
+            "💡 **คำแนะนำจาก FitAI:** คุณสามารถคลิกดูลิงก์ต้นทางด้านบนเพื่ออ่านข้อมูลฉบับเต็ม หรือบอกผมเพิ่มเติมหากต้องการให้สรุปจุดไหนเป็นพิเศษครับ!"
+        ].filter(Boolean).join("\n");
+    }
+
+    // 1.0 Google & Live Web Search Fallback Response
+    if (context.searchData && context.searchData.results && context.searchData.results.length) {
+        const searchBlock = formatSearchResultsForFallback(context.searchData);
+        let learnedCue = "";
+        if (context.userLearnedContext && context.userLearnedContext.briefSummary) {
+            learnedCue = "\n" + context.userLearnedContext.briefSummary + "\n";
+        }
+        return [
+            "FitAI ได้ค้นหาข้อมูลล่าสุดจาก Google และเว็บไซต์ที่เกี่ยวข้องให้คุณเรียบร้อยครับ 🌐🔍",
+            learnedCue,
+            searchBlock,
+            "💡 **คำแนะนำจาก FitAI:** คุณสามารถคลิกดูลิงก์ต้นทางด้านบนเพื่ออ่านข้อมูลฉบับเต็ม หรือบอกผมเพิ่มเติมหากต้องการให้สรุปหรือปรับเข้ากับแผนของคุณได้เลยครับ!"
+        ].filter(Boolean).join("\n");
+    }
+
     // 1. Off-topic Guardrail (อยู่นอกเหนือฟิตเนส/สุขภาพ)
     const isOffTopic = /(เขียนโค้ด|python|javascript|java|php|การเมือง|หุ้น|คริปโต|หวย|ดูดวง|ซ่อมรถ|ข่าวบันเทิง|ดารา)/i.test(lowerText);
     if (isOffTopic) {
@@ -292,6 +324,25 @@ function generateFallbackResponse(message, context = {}) {
             "",
             "🔥 **คำแนะนำ:** อย่าลืมวอร์มอัพ 3-5 นาทีก่อนเริ่ม และคูลดาวน์ยืดเหยียดหลังฝึกเสร็จนะครับ คุณสามารถบอกผมได้ตลอดว่าอยากเน้นส่วนไหนเป็นพิเศษครับ!"
         ].join("\n");
+    }
+
+    // 6. Natural Trainer Default Response (พร้อมความเข้าใจประวัติผู้ใช้รายบุคคล)
+    if (context.userLearnedContext) {
+        const mem = context.userLearnedContext;
+        const memoryPoints = [];
+        if (mem.focusAreas && mem.focusAreas.length) memoryPoints.push(`เน้น${mem.focusAreas.join(", ")}`);
+        if (mem.constraints && mem.constraints.length) memoryPoints.push(mem.constraints.join(", "));
+        if (mem.dietHabits && mem.dietHabits.length) memoryPoints.push(mem.dietHabits.join(", "));
+        
+        if (memoryPoints.length) {
+            return [
+                "สวัสดีครับ FitAI พร้อมลุยและให้คำปรึกษาเรื่องฟิตเนสกับคุณเสมอครับ! 🎯💪",
+                "",
+                `💡 **FitAI จดจำความต้องการของคุณได้:** จากประวัติการพูดคุยของคุณ คุณมักจะ${memoryPoints.join(" และ ")} ใช่ไหมครับ!`,
+                "",
+                "วันนี้คุณอยากให้ผมช่วยจัดตารางออกกำลังกาย แนะนำท่าเฉพาะส่วน หรือแนะนำเมนูสุขภาพเพื่อต่อยอดความฟิตของคุณดีครับ? บอกผมได้เลยครับ! 😊"
+            ].join("\n");
+        }
     }
 
     // 6. Natural Trainer Default Response (แทนที่คำตอบหุ่นยนต์แบบเดิม)
@@ -586,6 +637,34 @@ function handleFoodAndNutritionQuery(message, context = {}) {
 
 async function generateAIResponse(message, context = {}) {
     let answer = "";
+
+    // 0.1 Lazy load User Learned Context from Chat History
+    if (!context.userLearnedContext && context.userId) {
+        try {
+            context.userLearnedContext = await getUserLearnedContext(context.userId);
+        } catch (learnErr) {
+            console.warn("Could not retrieve learned context for user:", learnErr.message);
+        }
+    }
+
+    // 0.2 Check if Google Search is requested or needed
+    const searchCheck = shouldSearchGoogle(message);
+    if (searchCheck.shouldSearch && !context.searchData) {
+        try {
+            context.searchData = await searchGoogle(searchCheck.query);
+        } catch (searchErr) {
+            console.warn("Google search failed in generateAIResponse:", searchErr.message);
+        }
+    }
+
+    // 0.3 If user explicitly requested to search Google / web, prioritize live search response
+    if (searchCheck.shouldSearch && searchCheck.reason === 'explicit_request' && context.searchData?.results?.length) {
+        const ollamaSearchResponse = await askOllama(message, context);
+        if (ollamaSearchResponse) {
+            return await enrichResponseWithVideos(ollamaSearchResponse, message);
+        }
+        return formatSearchResultsForFallback(context.searchData);
+    }
 
     // 0. Strict Fitness Scope Guardrail: Do not answer non-fitness/tech/coding/political topics
     const isNonFitnessQuery = /(เขียนโค้ด|python|javascript|c\+\+|php|html|css|sql|เขียนโปรแกรม|แจกโค้ด|แก้บั๊ก|การเมือง|หุ้น|คริปโต|หวย|ดูดวง|ซ่อมรถ|ข่าวบันเทิง)/i.test(String(message || ""));

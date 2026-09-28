@@ -51,3 +51,9 @@ docker-data/
 *.tar.gz
 ml/datasets/
 ml/runs/
+
+# Unity Raw Project
+malong/
+
+# Allow animation JSON in frontend
+!frontend/public/models/*.json

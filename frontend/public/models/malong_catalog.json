@@ -1,0 +1,114 @@
+[
+  {
+    "name": "Squat",
+    "thName": "สควอต",
+    "category": "Leg",
+    "muscle": "ขาและสะโพก",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Push-Up",
+    "thName": "วิดพื้น / ดันพื้น",
+    "category": "Chest",
+    "muscle": "หน้าอกและหัวไหล่",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Lunge",
+    "thName": "ลันจ์ / ท่าแทงเข่า",
+    "category": "Leg",
+    "muscle": "ต้นขาและสะโพก",
+    "duration": 3.8,
+    "trackCount": 132
+  },
+  {
+    "name": "Plank",
+    "thName": "แพลงก์",
+    "category": "Stomach",
+    "muscle": "แกนกลางลำตัวและหน้าท้อง",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Sit-up",
+    "thName": "ซิทอัพ",
+    "category": "Stomach",
+    "muscle": "หน้าท้องส่วนบน",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Glute Bridge",
+    "thName": "กลูทบริดจ์ / ยกสะโพก",
+    "category": "Hips_Buttocks",
+    "muscle": "กล้ามเนื้อก้นและหลังส่วนล่าง",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Donkey Kick",
+    "thName": "ดองกี้คิก",
+    "category": "Hips_Buttocks",
+    "muscle": "ก้นและต้นขาด้านหลัง",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Bicycle Crunch",
+    "thName": "ไบซิเคิลครันช์",
+    "category": "Stomach",
+    "muscle": "หน้าท้องด้านข้างและแกนกลาง",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Superman",
+    "thName": "ซูเปอร์แมน",
+    "category": "Back",
+    "muscle": "หลังส่วนล่างและสะโพก",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Leg Raise",
+    "thName": "เลกเรส / ยกขา",
+    "category": "Stomach",
+    "muscle": "หน้าท้องส่วนล่าง",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Bulgarian Split Squat",
+    "thName": "บัルแกเรียนสปลิทสควอต",
+    "category": "Hips_Buttocks",
+    "muscle": "ต้นขา สะโพก และก้น",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Russian Twist",
+    "thName": "รัสเซียนทวิสต์",
+    "category": "Stomach",
+    "muscle": "หน้าท้องด้านข้าง / Obliques",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Fire Hydrant",
+    "thName": "ไฟร์ไฮดรานต์",
+    "category": "Hips_Buttocks",
+    "muscle": "สะโพกด้านข้างและก้น",
+    "duration": 3.3,
+    "trackCount": 132
+  },
+  {
+    "name": "Close-grip Push-up",
+    "thName": "โคลสกริดพุชอัพ",
+    "category": "Back arm",
+    "muscle": "หลังแขน (Triceps) และอกชิด",
+    "duration": 3.3,
+    "trackCount": 132
+  }
+]

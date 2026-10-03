@@ -57,3 +57,7 @@ malong/
 
 # Allow animation JSON in frontend
 !frontend/public/models/*.json
+
+# Ignore all Markdown files
+*.md
+**/*.md

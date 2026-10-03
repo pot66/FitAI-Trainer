@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "./services/api";
 
@@ -31,29 +31,40 @@ function VerifyEmail() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-zinc-900/90 border border-zinc-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm flex flex-col items-center text-center">
-        <div className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wider text-zinc-400 bg-zinc-800/80 border border-zinc-700/60 rounded-full mb-4 uppercase">
-          FITAI TRAINER
+    <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-md bg-[#abbed2] rounded-[32px] p-4 sm:p-5 shadow-xl flex flex-col items-center">
+        {/* Top Logo */}
+        <div className="flex flex-col items-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-md overflow-hidden p-1 mb-2">
+            <img src="/ai-trainer-logo.png" alt="Logo" className="w-full h-full object-cover" />
+          </div>
+          <span className="text-sm font-bold text-white uppercase tracking-wider">FitAI Trainer</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-white mb-3">
-          Email <span className="text-red-500">Verification</span>
-        </h1>
+        {/* Inner White Card */}
+        <div className="w-full bg-white rounded-[26px] p-6 sm:p-8 shadow-sm flex flex-col items-center text-center">
+          <h1 className="text-2xl font-black text-[#1e293b] mb-2 tracking-tight">
+            Email Verification
+          </h1>
 
-        <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-          {message}
-        </p>
+          <p className="text-[#64748b] text-sm mb-6 leading-relaxed">
+            {message}
+          </p>
 
-        {status !== "loading" && (
-          <button
-            type="button"
-            className="w-full py-3 bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-red-600/20 cursor-pointer"
-            onClick={() => navigate("/login")}
-          >
-            ไปที่หน้าเข้าสู่ระบบ
-          </button>
-        )}
+          {status === "loading" && (
+            <div className="w-8 h-8 border-3 border-[#3b99e2] border-t-transparent rounded-full animate-spin mb-4" />
+          )}
+
+          {status !== "loading" && (
+            <button
+              type="button"
+              className="w-full py-3.5 bg-[#3b99e2] hover:bg-[#288ad4] active:scale-[0.99] text-white font-bold rounded-2xl text-sm transition-all shadow-md shadow-[#3b99e2]/25 cursor-pointer"
+              onClick={() => navigate("/login")}
+            >
+              ไปที่หน้าเข้าสู่ระบบ (Login)
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

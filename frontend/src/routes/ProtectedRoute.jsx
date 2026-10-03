@@ -4,15 +4,15 @@ import { PATHS } from "./paths";
 
 export function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-zinc-900/90 border border-zinc-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm flex flex-col items-center text-center gap-4">
+    <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-sm bg-white border border-slate-200/80 rounded-[24px] p-8 shadow-sm flex flex-col items-center text-center gap-4">
         <div className="relative flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full border-2 border-zinc-800 border-t-red-500 animate-spin" />
-          <div className="absolute w-6 h-6 rounded-full bg-red-600/20 blur-sm" />
+          <div className="w-12 h-12 rounded-full border-3 border-slate-200 border-t-[#3b99e2] animate-spin" />
+          <div className="absolute w-6 h-6 rounded-full bg-[#3b99e2]/20 blur-sm" />
         </div>
         <div>
-          <h2 className="text-base font-bold text-white">กำลังโหลดข้อมูล...</h2>
-          <p className="text-xs text-zinc-400 mt-1">กรุณารอสักครู่ ระบบกำลังจัดเตรียมข้อมูล</p>
+          <h2 className="text-base font-bold text-[#1e293b]">กำลังโหลดข้อมูล...</h2>
+          <p className="text-xs text-[#64748b] mt-1">กรุณารอสักครู่ ระบบกำลังจัดเตรียมข้อมูล</p>
         </div>
       </div>
     </div>

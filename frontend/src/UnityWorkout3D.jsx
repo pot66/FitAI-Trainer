@@ -547,43 +547,43 @@ function UnityWorkout3D({
 
   return (
     <div
-      className={`bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col ${className} ${
+      className={`bg-white border border-slate-200/80 rounded-[24px] overflow-hidden shadow-sm flex flex-col ${className} ${
         isFullscreen ? "fixed inset-0 z-50 rounded-none" : "relative"
       }`}
     >
       {/* 3D View Topbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-zinc-950/90 border-b border-zinc-800 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-[#abbed2] border-b border-[#9bb0c4]">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-red-600/20 border border-red-500/30 text-red-400 uppercase tracking-wide flex items-center gap-1">
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-white/70 border border-white/80 text-[#1e293b] uppercase tracking-wide flex items-center gap-1">
             <span>{activeExercise.icon}</span>
             <span>MALONG 3D COACH</span>
           </span>
 
           {/* Exercise Dropdown Selector */}
-          <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700/80 rounded-lg px-2 py-0.5">
-            <span className="text-[11px] text-zinc-400 font-medium">ท่าโมเดล:</span>
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-sm">
+            <span className="text-[11px] text-[#475569] font-bold">ท่าโมเดล:</span>
             <select
               value={selected3DId}
               onChange={(e) => {
                 setSelected3DId(e.target.value);
                 if (onSelectExercise) onSelectExercise(e.target.value);
               }}
-              className="bg-transparent text-xs text-white font-semibold focus:outline-none cursor-pointer py-1 max-w-[200px] truncate"
+              className="bg-transparent text-xs text-[#1e293b] font-bold focus:outline-none cursor-pointer py-0.5 max-w-[200px] truncate"
             >
               {EXERCISES_3D_CATALOG.map((item) => (
-                <option key={item.id} value={item.id} className="bg-zinc-900 text-white">
+                <option key={item.id} value={item.id} className="bg-white text-[#1e293b]">
                   {item.icon} {item.name} ({item.thName})
                 </option>
               ))}
             </select>
           </div>
 
-          <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-800 border border-sky-300">
             🎯 {activeExercise.muscle}
           </span>
 
           {isWorkoutStarted && (
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
               Reps: {repetitions}
             </span>
           )}
@@ -593,7 +593,7 @@ function UnityWorkout3D({
           <button
             type="button"
             onClick={() => setEngineMode((m) => (m === "three" ? "unity" : "three"))}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors cursor-pointer"
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-[#1e293b] border border-white/80 shadow-sm transition-colors cursor-pointer"
             title="สลับโหมด Native 3D และ Unity WebGL"
           >
             {engineMode === "three" ? "🎮 โหมด: Native 3D" : "🎮 โหมด: Unity WebGL"}
@@ -604,7 +604,7 @@ function UnityWorkout3D({
               <button
                 type="button"
                 onClick={togglePlay}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-[#1e293b] border border-white/80 shadow-sm transition-colors cursor-pointer"
                 title={isPlaying ? "พักอนิเมชัน" : "เล่นต่อ"}
               >
                 {isPlaying ? "⏸ พัก" : "▶ เล่น"}
@@ -612,7 +612,7 @@ function UnityWorkout3D({
               <button
                 type="button"
                 onClick={() => setAnimSpeed((s) => (s === 1 ? 0.5 : s === 0.5 ? 1.5 : 1))}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-[#1e293b] border border-white/80 shadow-sm transition-colors cursor-pointer"
                 title="ปรับความเร็วอนิเมชัน"
               >
                 ⚡ {animSpeed}x
@@ -620,7 +620,7 @@ function UnityWorkout3D({
               <button
                 type="button"
                 onClick={() => handleZoom(0.85)}
-                className="px-2 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors cursor-pointer"
+                className="px-2 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-[#1e293b] border border-white/80 shadow-sm transition-colors cursor-pointer"
                 title="ซูมเข้า"
               >
                 🔍+
@@ -628,7 +628,7 @@ function UnityWorkout3D({
               <button
                 type="button"
                 onClick={() => handleZoom(1.18)}
-                className="px-2 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors cursor-pointer"
+                className="px-2 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-[#1e293b] border border-white/80 shadow-sm transition-colors cursor-pointer"
                 title="ซูมออก"
               >
                 🔍-
@@ -636,7 +636,7 @@ function UnityWorkout3D({
               <button
                 type="button"
                 onClick={handleResetCamera}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-[#1e293b] border border-white/80 shadow-sm transition-colors cursor-pointer flex items-center gap-1"
                 title="จัดมุมมองให้เห็นตัวโมเดลเต็มตัวอย่างเหมาะสม"
               >
                 <span>🔄</span>
@@ -648,7 +648,7 @@ function UnityWorkout3D({
           <button
             type="button"
             onClick={() => setIsFullscreen((prev) => !prev)}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors cursor-pointer"
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-[#1e293b] border border-white/80 shadow-sm transition-colors cursor-pointer"
             title={isFullscreen ? "ย่อหน้าจอ" : "เต็มหน้าจอ"}
           >
             {isFullscreen ? "🗗 ย่อ" : "⛶ ขยาย"}
@@ -657,13 +657,13 @@ function UnityWorkout3D({
       </div>
 
       {/* Viewport */}
-      <div className="relative w-full flex-1 min-h-[400px] bg-zinc-950 overflow-hidden flex items-center justify-center">
+      <div className="relative w-full flex-1 min-h-[400px] bg-slate-900 overflow-hidden flex items-center justify-center">
         {engineMode === "three" ? (
           <>
             <div ref={mountRef} className="w-full h-full min-h-[400px]" />
 
             {isLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/85 z-10 p-4">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/85 z-10 p-4">
                 <span className="text-4xl mb-3 animate-bounce">{activeExercise.icon}</span>
                 <span className="text-sm font-semibold text-zinc-200">
                   กำลังโหลด Malong 3D Coach... ({loadingProgress}%)
@@ -671,7 +671,7 @@ function UnityWorkout3D({
                 <div className="w-48 h-2 bg-zinc-800 rounded-full overflow-hidden mt-3">
                   <div
                     style={{ width: `${loadingProgress}%` }}
-                    className="h-full bg-red-600 transition-all duration-200"
+                    className="h-full bg-[#3b99e2] transition-all duration-200"
                   />
                 </div>
                 <span className="text-[11px] text-zinc-400 mt-2">
@@ -681,7 +681,7 @@ function UnityWorkout3D({
             )}
 
             {hasError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 p-4 text-center">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 p-4 text-center">
                 <span className="text-3xl mb-2">⚠️</span>
                 <p className="text-sm text-red-400">
                   ไม่สามารถโหลดโมเดล 3D ได้ กรุณาลองใหม่อีกครั้ง

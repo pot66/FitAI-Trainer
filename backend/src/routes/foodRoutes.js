@@ -10,6 +10,7 @@ const {
   getFoodLogById,
   deleteFoodLog,
   searchFoods,
+  recommendFoodAlternatives,
 } = require("../controllers/foodController");
 
 const router = express.Router();
@@ -31,6 +32,8 @@ router.post("/analyze", upload.single("image"), analyzeFood);
 // Nutrition Calculator & Database Search
 router.post("/calculate", calculateNutrition);
 router.get("/search", searchFoods);
+router.get("/similar", recommendFoodAlternatives);
+router.get("/alternatives", recommendFoodAlternatives);
 
 // Food Logs CRUD & Daily Summary
 router.get("/logs/today", getTodayFoodSummary);

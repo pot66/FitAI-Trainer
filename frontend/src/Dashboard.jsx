@@ -1,4 +1,4 @@
-﻿import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthProvider";
 
 function Dashboard({ profile, error }) {
@@ -6,27 +6,22 @@ function Dashboard({ profile, error }) {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
-        {/* Top Navigation / Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-800/80">
-          <div>
-            <div className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wider text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-full mb-2 uppercase">
-              AI FITNESS ASSISTANT
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">
-              FitAI <span className="text-red-500 font-black">Trainer</span>
-            </h1>
-            <p className="text-zinc-400 text-sm mt-1">
-              ยินดีต้อนรับคุณ <strong className="text-zinc-200">{user?.name || "User"}</strong>
-            </p>
+    <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex flex-col font-sans">
+      {/* Header Bar */}
+      <header className="border-b border-[#9bb0c4] bg-[#abbed2] sticky top-0 z-20 shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img src="/ai-trainer-logo.png" alt="Logo" className="w-8 h-8 rounded-full shadow-sm" />
+            <span className="text-base font-extrabold text-[#1e293b] tracking-wide">
+              FitAI <span className="text-white font-black">Trainer</span>
+            </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => navigate("/settings")}
-              className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 rounded-xl text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-[#1e293b] border border-white/60 rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
             >
               <span>⚙️</span>
               <span>ตั้งค่า</span>
@@ -34,68 +29,98 @@ function Dashboard({ profile, error }) {
             <button
               type="button"
               onClick={logout}
-              className="px-4 py-2 bg-red-950/40 hover:bg-red-900/50 text-red-400 border border-red-800/40 rounded-xl text-sm font-medium transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
             >
               ออกจากระบบ
             </button>
           </div>
         </div>
+      </header>
+
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+        {/* Welcome Banner */}
+        <div className="bg-white border border-slate-200/80 rounded-[24px] p-6 sm:p-7 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center px-3 py-1 text-xs font-bold tracking-wider text-[#1e293b] bg-[#edf1f4] border border-slate-200/80 rounded-full mb-2 uppercase">
+              AI FITNESS DASHBOARD
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1e293b]">
+              ยินดีต้อนรับคุณ <span className="text-[#3b99e2]">{user?.name || "User"}</span>
+            </h1>
+            <p className="text-[#64748b] text-sm mt-1">
+              ผู้ช่วยออกกำลังกายและควบคุมโภชนาการส่วนบุคคลด้วยระบบปัญญาประดิษฐ์
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/ai")}
+            className="px-5 py-3 bg-[#3b99e2] hover:bg-[#288ad4] text-white font-bold text-sm rounded-2xl shadow-md shadow-[#3b99e2]/25 transition-all cursor-pointer flex items-center justify-center gap-2 self-start sm:self-auto active:scale-95"
+          >
+            <span>🤖</span>
+            <span>เริ่มคุยกับ AI</span>
+          </button>
+        </div>
 
         {/* Error Card */}
         {error && (
-          <div className="bg-red-950/40 border border-red-800/50 rounded-2xl p-5 text-red-400">
-            <h2 className="text-base font-semibold mb-1">ไม่สามารถโหลด Profile ได้</h2>
-            <p className="text-sm text-red-400/90">{error}</p>
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2 shadow-sm">
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        {/* User Information Section */}
+        {/* Profile Details Section */}
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
+          <h2 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
             <span>👤</span>
             <span>ข้อมูลผู้ใช้งาน</span>
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-4.5 flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">ชื่อ</span>
-              <strong className="text-lg font-bold text-zinc-100">{user?.name || "-"}</strong>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-1 shadow-sm">
+              <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider">ชื่อ-นามสกุล</span>
+              <strong className="text-lg font-bold text-[#1e293b] truncate">{user?.name || "-"}</strong>
             </div>
 
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-4.5 flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Email</span>
-              <strong className="text-lg font-bold text-zinc-100 truncate">{user?.email || "-"}</strong>
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-1 shadow-sm">
+              <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider">Username</span>
+              <strong className="text-lg font-bold text-[#1e293b] truncate">{user?.username || "-"}</strong>
             </div>
 
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-4.5 flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">อายุ</span>
-              <strong className="text-lg font-bold text-zinc-100">{profile?.age ? `${profile.age} ปี` : "-"}</strong>
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-1 shadow-sm">
+              <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider">Email</span>
+              <strong className="text-lg font-bold text-[#1e293b] truncate">{user?.email || "-"}</strong>
+            </div>
+
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-1 shadow-sm">
+              <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider">อายุ</span>
+              <strong className="text-lg font-bold text-[#1e293b]">{profile?.age ? `${profile.age} ปี` : "-"}</strong>
             </div>
           </div>
         </section>
 
         {/* Health Section */}
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
+          <h2 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
             <span>📊</span>
             <span>ข้อมูลสุขภาพ</span>
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-4.5 flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">ส่วนสูง</span>
-              <strong className="text-lg font-bold text-zinc-100">{profile?.height ? `${profile.height} cm` : "-"}</strong>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-1 shadow-sm">
+              <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider">ส่วนสูง</span>
+              <strong className="text-lg font-bold text-[#1e293b]">{profile?.height ? `${profile.height} cm` : "-"}</strong>
             </div>
 
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-4.5 flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">น้ำหนัก</span>
-              <strong className="text-lg font-bold text-zinc-100">{profile?.weight ? `${profile.weight} kg` : "-"}</strong>
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-1 shadow-sm">
+              <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider">น้ำหนัก</span>
+              <strong className="text-lg font-bold text-[#1e293b]">{profile?.weight ? `${profile.weight} kg` : "-"}</strong>
             </div>
 
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-4.5 flex flex-col gap-1 relative overflow-hidden">
-              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">BMI</span>
-              <div className="flex items-baseline gap-2">
-                <strong className="text-xl font-black text-red-500">{profile?.bmi || "-"}</strong>
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-1 shadow-sm relative overflow-hidden">
+              <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider">BMI</span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <strong className="text-2xl font-black text-[#3b99e2]">{profile?.bmi || "-"}</strong>
                 {profile?.bmiStatus && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#c4d7e6] text-[#1e293b] border border-slate-300">
                     {profile.bmiStatus}
                   </span>
                 )}
@@ -106,24 +131,24 @@ function Dashboard({ profile, error }) {
 
         {/* Main Action Deck */}
         <section className="flex flex-col gap-3 pt-2">
-          <h2 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
+          <h2 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
             <span>🚀</span>
             <span>เมนูลัด FitAI Trainer</span>
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* AI Assistant */}
             <button
               type="button"
               onClick={() => navigate("/ai")}
-              className="p-5 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-2xl text-left shadow-lg shadow-red-600/20 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[120px] group"
+              className="p-5 bg-gradient-to-br from-[#3b99e2] to-[#2563eb] hover:from-[#288ad4] hover:to-[#1d4ed8] text-white rounded-[24px] text-left shadow-md shadow-[#3b99e2]/25 transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[125px] group"
             >
               <div className="flex items-center justify-between">
                 <span className="text-2xl">🤖</span>
-                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-semibold">แนะนำ</span>
+                <span className="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-bold">แนะนำ</span>
               </div>
               <div>
                 <strong className="block text-base font-bold">AI Assistant</strong>
-                <span className="text-xs text-red-100 opacity-90">ปรึกษาและวางแผนการออกกำลังกายกับ AI</span>
+                <span className="text-xs text-blue-100 opacity-95">ปรึกษาและวางแผนการออกกำลังกายกับ AI</span>
               </div>
             </button>
 
@@ -131,19 +156,19 @@ function Dashboard({ profile, error }) {
             <button
               type="button"
               onClick={() => navigate("/food")}
-              className="p-5 bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-red-500/40 text-zinc-100 rounded-2xl text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[120px] group"
+              className="p-5 bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 text-[#1e293b] rounded-[24px] text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[125px] shadow-sm group"
             >
               <div className="flex items-center justify-between">
                 <span className="text-2xl">🍽️</span>
-                <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                <span className="text-[10px] bg-[#c4d7e6] text-[#1e293b] border border-slate-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
                   AI Calorie
                 </span>
               </div>
               <div>
-                <strong className="block text-base font-bold group-hover:text-red-400 transition-colors">
+                <strong className="block text-base font-bold group-hover:text-[#3b99e2] transition-colors">
                   AI Food Tracker
                 </strong>
-                <span className="text-xs text-zinc-400">ถ่ายรูปคำนวณแคลอรีและบันทึกอาหาร</span>
+                <span className="text-xs text-[#64748b]">ถ่ายรูปคำนวณแคลอรีและบันทึกอาหาร</span>
               </div>
             </button>
 
@@ -151,12 +176,12 @@ function Dashboard({ profile, error }) {
             <button
               type="button"
               onClick={() => navigate("/workout")}
-              className="p-5 bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-100 rounded-2xl text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[120px]"
+              className="p-5 bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 text-[#1e293b] rounded-[24px] text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[125px] shadow-sm group"
             >
               <span className="text-2xl">🏋️‍♂️</span>
               <div>
-                <strong className="block text-base font-bold">Workout Mode</strong>
-                <span className="text-xs text-zinc-400">ฝึกออกกำลังกายพร้อมตรวจจับท่าทางด้วย AI</span>
+                <strong className="block text-base font-bold group-hover:text-[#3b99e2] transition-colors">Workout Mode</strong>
+                <span className="text-xs text-[#64748b]">ฝึกออกกำลังกายพร้อมตรวจจับท่าทางด้วย AI</span>
               </div>
             </button>
 
@@ -164,12 +189,12 @@ function Dashboard({ profile, error }) {
             <button
               type="button"
               onClick={() => navigate("/plan")}
-              className="p-5 bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-100 rounded-2xl text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[120px]"
+              className="p-5 bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 text-[#1e293b] rounded-[24px] text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[125px] shadow-sm group"
             >
               <span className="text-2xl">📅</span>
               <div>
-                <strong className="block text-base font-bold">Weekly Plan</strong>
-                <span className="text-xs text-zinc-400">ตารางการฝึกรายสัปดาห์เฉพาะตัว</span>
+                <strong className="block text-base font-bold group-hover:text-[#3b99e2] transition-colors">Weekly Plan</strong>
+                <span className="text-xs text-[#64748b]">ตารางการฝึกรายสัปดาห์เฉพาะตัว</span>
               </div>
             </button>
 
@@ -177,12 +202,12 @@ function Dashboard({ profile, error }) {
             <button
               type="button"
               onClick={() => navigate("/progress")}
-              className="p-5 bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-100 rounded-2xl text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[120px]"
+              className="p-5 bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 text-[#1e293b] rounded-[24px] text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[125px] shadow-sm group"
             >
               <span className="text-2xl">📈</span>
               <div>
-                <strong className="block text-base font-bold">Progress</strong>
-                <span className="text-xs text-zinc-400">ติดตามพัฒนาการและสถิติการออกกำลังกาย</span>
+                <strong className="block text-base font-bold group-hover:text-[#3b99e2] transition-colors">Progress</strong>
+                <span className="text-xs text-[#64748b]">ติดตามพัฒนาการและสถิติการออกกำลังกาย</span>
               </div>
             </button>
 
@@ -190,12 +215,12 @@ function Dashboard({ profile, error }) {
             <button
               type="button"
               onClick={() => navigate("/profile")}
-              className="p-5 bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-100 rounded-2xl text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[120px]"
+              className="p-5 bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 text-[#1e293b] rounded-[24px] text-left transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between min-h-[125px] shadow-sm group"
             >
               <span className="text-2xl">👤</span>
               <div>
-                <strong className="block text-base font-bold">My Profile</strong>
-                <span className="text-xs text-zinc-400">แก้ไขข้อมูลส่วนตัวและเป้าหมาย</span>
+                <strong className="block text-base font-bold group-hover:text-[#3b99e2] transition-colors">My Profile</strong>
+                <span className="text-xs text-[#64748b]">แก้ไขข้อมูลส่วนตัวและเป้าหมาย</span>
               </div>
             </button>
           </div>

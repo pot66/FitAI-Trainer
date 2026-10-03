@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "./services/api";
 import { createPersonalizedWeeklyPlan } from "./ai/recommendationEngine";
 
@@ -67,52 +67,53 @@ function WorkoutPlan({ onBack, onStartCamera }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex items-center justify-center font-sans">
         <div className="flex flex-col items-center gap-3">
-          <svg className="animate-spin h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-8 w-8 text-[#3b99e2]" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
           </svg>
-          <span className="text-sm text-zinc-400">กำลังจัดตารางด้วย AI...</span>
+          <span className="text-sm text-[#64748b] font-medium">กำลังจัดตารางด้วย AI...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex flex-col font-sans">
       {/* Top Header */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b border-[#9bb0c4] bg-[#abbed2] sticky top-0 z-20 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
           <button
             type="button"
             onClick={onBack}
-            className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-1.5 bg-white hover:bg-slate-50 text-[#1e293b] border border-white/60 rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
           >
             <span>←</span>
-            <span>กลับหน้าหลัก</span>
+            <span>กลับหน้าแชต</span>
           </button>
-          <span className="text-sm font-semibold text-zinc-300">Weekly Workout Plan</span>
-          <div className="w-16" />
+          <span className="text-sm font-bold text-[#1e293b] tracking-wide">Weekly Workout Plan</span>
+          <span className="px-3.5 py-1 bg-white/70 border border-white/80 rounded-full text-xs font-bold text-[#1e293b] shadow-sm">
+            AI WEEKLY PLAN
+          </span>
         </div>
       </header>
 
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
         <div>
-          <div className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wider text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-full mb-2 uppercase">
-            AI WEEKLY PLAN
+          <div className="inline-flex items-center px-3 py-1 text-xs font-bold tracking-wider text-[#1e293b] bg-white border border-slate-200/80 rounded-full mb-2 uppercase shadow-sm">
+            FITAI SCHEDULE
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <span>📅</span>
-            <span>ตารางฝึกออกกำลังกาย</span>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1e293b] tracking-tight">
+            ตารางออกกำลังกายของคุณ
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            แผนฝึกประจำสัปดาห์ที่ปรับแต่งโดย AI ตามระดับสมรรถภาพและเป้าหมายของคุณ
+          <p className="text-xs sm:text-sm text-[#475569] mt-1">
+            AI จัดท่าฝึกให้ตลอดสัปดาห์ คุณปรับตามเวลาหรือความพร้อมได้เสมอ
           </p>
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2 shadow-sm">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
@@ -120,17 +121,17 @@ function WorkoutPlan({ onBack, onStartCamera }) {
 
         {/* Today's Focus Card */}
         {today && (
-          <section className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-red-950/30 border border-zinc-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+          <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#3b99e2] uppercase tracking-wider">
                 เป้าหมายวันนี้ • {today.label}
               </span>
-              <h2 className="text-2xl font-black text-white">
+              <h2 className="text-2xl font-black text-[#1e293b]">
                 {today.exerciseName === "Rest"
                   ? "วันนี้เป็นวันพักผ่อนและฟื้นฟูร่างกาย"
                   : `${today.exerciseName} • ${today.focus}`}
               </h2>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-[#64748b]">
                 {today.exerciseName === "Rest"
                   ? "ดื่มน้ำให้เพียงพอ ยืดเหยียดเบาๆ และนอนหลับพักผ่อนให้เต็มที่"
                   : `${today.sets} เซ็ต • ${today.repetitions}`}
@@ -140,7 +141,7 @@ function WorkoutPlan({ onBack, onStartCamera }) {
               <button
                 type="button"
                 onClick={startToday}
-                className="px-6 py-3 bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-red-600/20 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+                className="px-6 py-3.5 bg-[#3b99e2] hover:bg-[#288ad4] active:scale-[0.99] text-white font-bold rounded-2xl text-sm transition-all shadow-md shadow-[#3b99e2]/25 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 <span>🚀</span>
                 <span>เริ่มฝึกท่านี้เลย</span>
@@ -151,18 +152,18 @@ function WorkoutPlan({ onBack, onStartCamera }) {
 
         {/* AI Recommendation Summary */}
         {recommendation && (
-          <section className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-3">
+          <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 sm:p-7 shadow-sm text-[#1e293b] flex flex-col gap-3">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#3b99e2] uppercase tracking-wider">
                 คำแนะนำเฉพาะบุคคล
               </span>
-              <strong className="text-base text-zinc-100 font-bold">{recommendation.summary}</strong>
-              <p className="text-xs text-zinc-400">{recommendation.training.genderNote}</p>
+              <strong className="text-base text-[#1e293b] font-bold">{recommendation.summary}</strong>
+              <p className="text-xs text-[#64748b]">{recommendation.training.genderNote}</p>
             </div>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-3 border-t border-zinc-800/80">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-3 border-t border-slate-100">
               {recommendation.training.notes.map((note) => (
-                <li key={note} className="text-xs text-zinc-300 flex items-start gap-2">
-                  <span className="text-red-500 font-bold">•</span>
+                <li key={note} className="text-xs text-[#475569] flex items-start gap-2">
+                  <span className="text-[#3b99e2] font-bold">•</span>
                   <span>{note}</span>
                 </li>
               ))}
@@ -171,16 +172,16 @@ function WorkoutPlan({ onBack, onStartCamera }) {
         )}
 
         {/* 7-Day Plan Grid */}
-        <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800">
+        <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 sm:p-7 flex flex-col gap-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div>
-              <h2 className="text-lg font-bold text-white">ตารางฝึก 7 วัน</h2>
-              <p className="text-xs text-zinc-400">คุณสามารถปรับเปลี่ยนท่าออกกำลังกายหรือจำนวนเซ็ตได้ตามสะดวก</p>
+              <h2 className="text-lg font-bold text-[#1e293b]">ตารางฝึก 7 วัน</h2>
+              <p className="text-xs text-[#64748b]">คุณสามารถปรับเปลี่ยนท่าออกกำลังกายหรือจำนวนเซ็ตได้ตามสะดวก</p>
             </div>
             <button
               type="button"
               onClick={regeneratePlan}
-              className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+              className="px-4 py-2 bg-[#edf1f4] hover:bg-[#e2e8f0] text-[#1e293b] border border-slate-200/80 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-sm"
             >
               <span>🔄</span>
               <span>รีเซ็ตตาม AI</span>
@@ -193,53 +194,53 @@ function WorkoutPlan({ onBack, onStartCamera }) {
               return (
                 <article
                   key={day.key}
-                  className={`rounded-2xl p-4 flex flex-col gap-3 border transition-all ${
+                  className={`rounded-[22px] p-4 flex flex-col gap-3 border transition-all ${
                     isToday
-                      ? "bg-red-950/20 border-red-500/50 shadow-md shadow-red-500/5"
-                      : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
+                      ? "bg-white border-2 border-[#3b99e2] shadow-md shadow-[#3b99e2]/15"
+                      : "bg-white border border-slate-200/80 hover:border-slate-300 shadow-sm"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-300">
+                    <span className="text-xs font-bold text-[#1e293b]">
                       {day.label}
                     </span>
                     {isToday && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-600 text-white uppercase">
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#3b99e2] text-white uppercase shadow-sm">
                         วันนี้
                       </span>
                     )}
                   </div>
 
-                  <strong className="text-xs text-red-400 font-semibold truncate">
+                  <strong className="text-xs text-[#3b99e2] font-bold truncate">
                     {day.focus}
                   </strong>
 
-                  <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 flex items-center justify-between">
-                    <span className="font-semibold text-zinc-200">
+                  <div className="w-full bg-[#c4d7e6] border border-slate-300 rounded-xl px-3 py-2 text-xs text-[#1e293b] flex items-center justify-between">
+                    <span className="font-bold text-[#1e293b]">
                       {day.exerciseName === "Rest" ? "พักผ่อน / ฟื้นฟู" : day.exerciseName}
                     </span>
-                    <span className="text-[10px] font-medium text-red-400 bg-red-950/40 px-1.5 py-0.5 rounded border border-red-900/30">
+                    <span className="text-[10px] font-bold text-[#1e293b] bg-white/70 px-2 py-0.5 rounded-full border border-white/80">
                       AI แนะนำ
                     </span>
                   </div>
 
                   {day.exerciseName !== "Rest" && (
                     <div className="flex items-center gap-2 pt-1">
-                      <div className="flex-1 flex items-center bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1">
+                      <div className="flex-1 flex items-center bg-[#edf1f4] border border-slate-200 rounded-xl px-2 py-1.5">
                         <input
                           aria-label={`จำนวนเซ็ตของ ${day.label}`}
                           value={day.sets}
                           onChange={(e) => updateDay(day.key, "sets", e.target.value)}
-                          className="w-full bg-transparent text-xs text-center text-zinc-100 focus:outline-none"
+                          className="w-full bg-transparent text-xs text-center text-[#1e293b] font-bold focus:outline-none"
                         />
-                        <span className="text-[10px] text-zinc-500 ml-1">เซ็ต</span>
+                        <span className="text-[10px] text-[#64748b] font-medium ml-1">เซ็ต</span>
                       </div>
-                      <div className="flex-1 flex items-center bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1">
+                      <div className="flex-1 flex items-center bg-[#edf1f4] border border-slate-200 rounded-xl px-2 py-1.5">
                         <input
                           aria-label={`จำนวนครั้งของ ${day.label}`}
                           value={day.repetitions}
                           onChange={(e) => updateDay(day.key, "repetitions", e.target.value)}
-                          className="w-full bg-transparent text-xs text-center text-zinc-100 focus:outline-none"
+                          className="w-full bg-transparent text-xs text-center text-[#1e293b] font-bold focus:outline-none"
                         />
                       </div>
                     </div>

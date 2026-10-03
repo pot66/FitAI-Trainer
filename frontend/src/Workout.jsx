@@ -4,7 +4,7 @@ import PoseDetector from "./PoseDetector";
 import PoseAnalyzer from "./PoseAnalyzer";
 import UnityWorkout3D from "./UnityWorkout3D";
 import { createExerciseEngine } from "./ai/exerciseEngine";
-import { speakText, stopSpeech } from "./utils/speechUtils";
+import { speakText, stopSpeech, speakAnimeMentorCue, ANIME_MENTOR_PHRASES, ANIME_MENTOR_VOICE_CONFIG } from "./utils/speechUtils";
 
 function Workout({ onBack }) {
   const exerciseEngineRef = useRef(null);
@@ -49,6 +49,7 @@ function Workout({ onBack }) {
   });
   const lastRepCountRef = useRef(0);
   const lastCheerTimeRef = useRef(0);
+  const lastWarningTimeRef = useRef(0);
   const cheerTimerRef = useRef(null);
 
   const loadExercises = async () => {
@@ -122,12 +123,7 @@ function Workout({ onBack }) {
       const now = Date.now();
       if (now - lastCheerTimeRef.current > 16000) {
         lastCheerTimeRef.current = now;
-        const idleCheers = [
-          "หายใจเข้าลึกๆ นะครับ ค่อยๆ ทำตามจังหวะ คุณทำได้แน่นอน!",
-          "ฮึบไว้ครับ! ความพยายามในตอนนี้จะสร้างความแข็งแกร่งให้คุณ!",
-          "โฟกัสที่กล้ามเนื้อและฟอร์ม แล้วดันตัวขึ้นมาอีกครั้งครับ สู้ๆ!",
-          "อย่าเพิ่งยอมแพ้ครับ อีกนิดเดียวจะบรรลุเป้าหมายแล้ว!",
-        ];
+        const idleCheers = ANIME_MENTOR_PHRASES.idle_cues;
         const randomCheer = idleCheers[Math.floor(Math.random() * idleCheers.length)];
         setEncouragement({
           message: randomCheer,
@@ -135,7 +131,7 @@ function Workout({ onBack }) {
           showBanner: true,
           rep: lastRepCountRef.current,
         });
-        speakCheer(randomCheer);
+        speakAnimeMentorCue("idle", { phrase: randomCheer });
         if (cheerTimerRef.current) clearTimeout(cheerTimerRef.current);
         cheerTimerRef.current = setTimeout(() => {
           setEncouragement((prev) => ({ ...prev, showBanner: false }));
@@ -145,14 +141,10 @@ function Workout({ onBack }) {
     return () => clearInterval(interval);
   }, [isWorkoutStarted]);
 
-  const speakCheer = (text) => {
+  const speakCheer = (text, cueType = "praise") => {
     if (!cheerSoundEnabled) return;
     try {
-      speakText(text, {
-        rate: 1.05,
-        pitch: 1.1,
-        force: true,
-      });
+      speakAnimeMentorCue(cueType, { phrase: text }, { force: true });
     } catch (e) {
       console.warn("TTS cheer error:", e);
     }
@@ -167,33 +159,16 @@ function Workout({ onBack }) {
 
     let cheerMsg = "";
     let emoji = "🔥";
+    let cueType = "rep";
 
-    if (currentReps === 1) {
-      cheerMsg = "ยอดเยี่ยมมาก! เริ่มต้น Rep แรกได้สวยงาม ลุยต่อเลยครับ!";
-      emoji = "🚀";
-    } else if (currentReps === Math.floor(targetReps / 2)) {
-      cheerMsg = `ครึ่งทางแล้วครับ! ทำได้ ${currentReps} ครั้งแล้ว สู้ๆ!`;
-      emoji = "⚡";
-    } else if (currentReps === targetReps - 2) {
-      cheerMsg = "อีกแค่ 2 ครั้งจะครบเป้าหมายแล้ว ฮึบไว้ครับ!";
-      emoji = "💪";
-    } else if (currentReps === targetReps - 1) {
-      cheerMsg = "ครั้งสุดท้ายแล้วครับ! ใส่ให้สุดพลังเลย!";
-      emoji = "🔥";
-    } else if (currentReps >= targetReps) {
-      cheerMsg = `สุดยอดมาก! คุณทำครบเป้าหมาย ${targetReps} ครั้งแล้ว ยอดเยี่ยมที่สุด 🎉`;
-      emoji = "🏆";
+    if (!isFormCorrect) {
+      cheerMsg = "รักษาหลังให้ตรงครับ ค่อย ๆ ย่อตัวลง";
+      emoji = "⚠️";
+      cueType = "warning";
     } else {
-      const repCheers = [
-        "ดีมากครับ รักษาจังหวะไว้!",
-        "ฟอร์มสวยมาก ดันตัวขึ้นมาเลย!",
-        "เก่งมาก ฮึบไว้ครับ!",
-        "สู้ต่อไป ทำได้ดีมากครับ!",
-        "กล้ามเนื้อกำลังทำงานได้ยอดเยี่ยม!",
-        "คุมลมหายใจแล้วไปต่อครับ!",
-      ];
-      cheerMsg = repCheers[currentReps % repCheers.length];
-      emoji = "🔥";
+      cheerMsg = ANIME_MENTOR_PHRASES.getRepCue(currentReps, targetReps);
+      emoji = currentReps >= targetReps ? "🏆" : "🔥";
+      cueType = (targetReps - currentReps <= 5) ? "rep_count" : "form_praise";
     }
 
     setEncouragement({
@@ -203,9 +178,9 @@ function Workout({ onBack }) {
       rep: currentReps,
     });
 
-    if (canSpeak) {
+    if (canSpeak && cheerSoundEnabled) {
       lastCheerTimeRef.current = now;
-      speakCheer(cheerMsg);
+      speakAnimeMentorCue(cueType, { rep: currentReps, target: targetReps, phrase: cheerMsg });
     }
 
     if (cheerTimerRef.current) clearTimeout(cheerTimerRef.current);
@@ -237,6 +212,33 @@ function Workout({ onBack }) {
       lastRepCountRef.current = result.reps;
       if (isWorkoutStarted) {
         triggerEncouragement(result.reps, result.form === "correct");
+      }
+    } else if (isWorkoutStarted && result?.form && result.form !== "correct" && result.feedback) {
+      const now = Date.now();
+      if (now - lastWarningTimeRef.current > 7500 && now - lastCheerTimeRef.current > 3000) {
+        lastWarningTimeRef.current = now;
+        let warningCue = "รักษาหลังให้ตรงครับ";
+        const fb = result.feedback.toLowerCase();
+        if (fb.includes("ย่อ") || fb.includes("ต่ำ") || fb.includes("ลึก")) {
+          warningCue = "ค่อย ๆ ย่อตัวลงครับ";
+        } else if (fb.includes("หลัง") || fb.includes("ตรง") || fb.includes("ลำตัว")) {
+          warningCue = "รักษาหลังให้ตรงครับ";
+        } else if (fb.includes("เร็ว") || fb.includes("รีบ") || fb.includes("หายใจ")) {
+          warningCue = "ค่อย ๆ หายใจ อย่ารีบครับ";
+        }
+        if (cheerSoundEnabled) {
+          speakAnimeMentorCue("warning", { phrase: warningCue });
+        }
+        setEncouragement({
+          message: warningCue,
+          emoji: "⚠️",
+          showBanner: true,
+          rep: lastRepCountRef.current,
+        });
+        if (cheerTimerRef.current) clearTimeout(cheerTimerRef.current);
+        cheerTimerRef.current = setTimeout(() => {
+          setEncouragement((prev) => ({ ...prev, showBanner: false }));
+        }, 3200);
       }
     }
   };
@@ -324,14 +326,14 @@ function Workout({ onBack }) {
       exerciseEngineRef.current.reset();
     }
 
-    const startCheer = "พร้อมแล้วครับ! หายใจเข้าลึกๆ ยืนประจำตำแหน่ง แล้วเริ่มฝึกได้เลยครับ สู้ๆ!";
+    const startCheer = "เอาล่ะ เริ่มกันเลยครับ";
     setEncouragement({
       message: startCheer,
       emoji: "🔥",
       showBanner: true,
       rep: 0,
     });
-    speakCheer("พร้อมแล้วครับ ยืนประจำตำแหน่งแล้วเริ่มฝึกได้เลย สู้ๆ ครับ!");
+    if (cheerSoundEnabled) speakAnimeMentorCue("start");
     setTimeout(() => {
       setEncouragement((prev) => ({ ...prev, showBanner: false }));
     }, 4000);
@@ -345,8 +347,10 @@ function Workout({ onBack }) {
     setStartedAt(null);
     stopCamera();
 
-    const finishCheer = `ยอดเยี่ยมมากครับ! คุณออกกำลังกายไปทั้งหมด ${aiResult?.reps || 0} ครั้ง พักผ่อนและดื่มน้ำให้เพียงพอนะครับ 🎉`;
-    speakCheer(finishCheer);
+    const finishCheer = ANIME_MENTOR_PHRASES.finish(aiResult?.reps || 0);
+    if (cheerSoundEnabled) {
+      speakAnimeMentorCue("finish", { reps: aiResult?.reps || 0 });
+    }
     setEncouragement({
       message: finishCheer,
       emoji: "🏆",
@@ -357,8 +361,9 @@ function Workout({ onBack }) {
 
   const speakCoachReply = (text) => {
     speakText(text, {
-      rate: 1.0,
-      pitch: 1.0,
+      context: "default",
+      rate: ANIME_MENTOR_VOICE_CONFIG.default.rate,
+      pitch: ANIME_MENTOR_VOICE_CONFIG.default.pitch,
     });
   };
 
@@ -424,59 +429,61 @@ function Workout({ onBack }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <svg className="animate-spin h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-8 w-8 text-[#3b99e2]" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
           </svg>
-          <span className="text-sm text-zinc-400">กำลังโหลดระบบ Workout...</span>
+          <span className="text-sm text-[#64748b] font-medium">กำลังโหลดระบบ Workout...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex flex-col font-sans">
       {/* Header */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b border-[#9bb0c4] bg-[#abbed2] sticky top-0 z-20 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between">
           <button
             type="button"
             onClick={onBack}
-            className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-1.5 bg-white hover:bg-slate-50 text-[#1e293b] border border-white/60 rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
           >
             <span>←</span>
-            <span>กลับ Dashboard</span>
+            <span>กลับ</span>
           </button>
-          <span className="text-sm font-semibold text-zinc-300">AI Workout Room</span>
-          <div className="w-16" />
+          <span className="text-sm font-bold text-[#1e293b] tracking-wide">AI Workout Room</span>
+          <span className="px-3 py-1 bg-white/50 border border-white/60 rounded-full text-xs font-semibold text-[#1e293b] shadow-sm">
+            AI Training
+          </span>
         </div>
       </header>
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
         <div>
-          <div className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wider text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-full mb-2 uppercase">
+          <div className="inline-flex items-center px-3 py-1 text-xs font-bold tracking-wider text-[#1e293b] bg-white border border-slate-200/80 rounded-full mb-2 uppercase shadow-sm">
             AI FITNESS ASSISTANT
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl font-extrabold text-[#1e293b] tracking-tight flex items-center gap-2">
             <span>🏋️‍♂️</span>
             <span>AI Workout Room</span>
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-[#475569] mt-1">
             ฝึกออกกำลังกายแบบเรียลไทม์ พร้อมการนับ Rep และตรวจฟอร์มด้วยระบบ AI Vision & 3D Coach
           </p>
         </div>
 
         {/* Alerts */}
         {error && (
-          <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2 shadow-sm">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
         )}
         {cameraError && (
-          <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2 shadow-sm">
             <span>📹</span>
             <span>{cameraError}</span>
           </div>
@@ -484,18 +491,18 @@ function Workout({ onBack }) {
 
         {/* Active Plan Recommendation Banner (AI Assigned) */}
         {(activePlan || selectedExercise) && (
-          <section className="bg-gradient-to-r from-red-950/40 via-zinc-900/80 to-zinc-900 border border-red-500/30 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg shadow-red-950/20">
+          <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
             <div>
-              <span className="text-[11px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-[#3b99e2] uppercase tracking-wider flex items-center gap-1.5">
                 <span>🤖</span>
                 <span>ท่าออกกำลังกายที่ AI กำหนดให้</span>
               </span>
-              <h2 className="text-lg font-bold text-white mt-0.5">{selectedExercise?.name || activePlan?.exerciseName}</h2>
+              <h2 className="text-lg font-bold text-[#1e293b] mt-0.5">{selectedExercise?.name || activePlan?.exerciseName}</h2>
               <p className="text-xs text-zinc-400">
                 {activePlan ? `เป้าหมาย: ${activePlan.sets} เซ็ต • ${activePlan.repetitions} • โฟกัส ${activePlan.focus}` : `โฟกัส: ${selectedExercise?.category || "Bodyweight"}`}
               </p>
             </div>
-            <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-red-600/20 text-red-400 border border-red-500/30 self-start sm:self-auto flex items-center gap-1.5">
+            <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#c4d7e6] text-[#1e293b] border border-slate-300 self-start sm:self-auto flex items-center gap-1.5">
               <span>✨</span>
               <span>AI จัดตารางให้</span>
             </span>
@@ -506,12 +513,12 @@ function Workout({ onBack }) {
 
         {/* View Switcher Controls */}
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+          <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200/80 shadow-sm">
             <button
               type="button"
               onClick={() => setViewMode("split")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewMode === "split" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"
+                viewMode === "split" ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25" : "text-[#64748b] hover:text-[#1e293b]"
               }`}
             >
               📱 แยกหน้าจอ (Split)
@@ -520,7 +527,7 @@ function Workout({ onBack }) {
               type="button"
               onClick={() => setViewMode("camera")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewMode === "camera" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"
+                viewMode === "camera" ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25" : "text-[#64748b] hover:text-[#1e293b]"
               }`}
             >
               📹 กล้อง AI
@@ -529,7 +536,7 @@ function Workout({ onBack }) {
               type="button"
               onClick={() => setViewMode("3d")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewMode === "3d" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-white"
+                viewMode === "3d" ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25" : "text-[#64748b] hover:text-[#1e293b]"
               }`}
             >
               🏋️ Malong 3D Coach
@@ -548,8 +555,8 @@ function Workout({ onBack }) {
               }}
               className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 cheerSoundEnabled
-                  ? "bg-red-600/20 text-red-300 border-red-500/40 shadow-sm"
-                  : "bg-zinc-900 text-zinc-500 border-zinc-800"
+                  ? "bg-[#c4d7e6] text-[#1e293b] border-slate-300 shadow-sm"
+                  : "bg-white text-[#64748b] border-slate-200/80 shadow-sm"
               }`}
               title={cheerSoundEnabled ? "ปิดเสียงโค้ชให้กำลังใจ" : "เปิดเสียงโค้ชให้กำลังใจ"}
             >
@@ -562,7 +569,7 @@ function Workout({ onBack }) {
                 type="button"
                 onClick={startCamera}
                 disabled={cameraLoading}
-                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 bg-[#3b99e2] hover:bg-[#288ad4] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shadow-[#3b99e2]/25"
               >
                 <span>📹</span>
                 <span>{cameraLoading ? "กำลังเปิดกล้อง..." : "เปิดกล้อง"}</span>
@@ -572,7 +579,7 @@ function Workout({ onBack }) {
                 type="button"
                 onClick={stopCamera}
                 disabled={isWorkoutStarted}
-                className="px-4 py-2 bg-red-950/40 hover:bg-red-900/50 text-red-400 border border-red-800/40 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 ปิดกล้อง
               </button>
@@ -584,17 +591,17 @@ function Workout({ onBack }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Left / Camera View */}
           {(viewMode === "split" || viewMode === "camera") && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-                <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+            <div className="bg-white border border-slate-200/80 rounded-[24px] p-5 flex flex-col gap-4 shadow-sm">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
                   <span>📹</span>
                   <span>AI Camera View</span>
                 </span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                     cameraActive
-                      ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/60"
-                      : "bg-zinc-800 text-zinc-500"
+                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                      : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {cameraActive ? "● ONLINE" : "○ OFFLINE"}
@@ -623,7 +630,7 @@ function Workout({ onBack }) {
                 />
 
                 {!cameraActive && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 text-center p-4">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-center p-4">
                     <span className="text-4xl mb-2">📹</span>
                     <h3 className="text-base font-bold text-white">กล้องยังไม่เปิดใช้งาน</h3>
                     <p className="text-xs text-zinc-400 mt-1 max-w-xs">
@@ -663,13 +670,13 @@ function Workout({ onBack }) {
 
         {/* Real-time AI Exercise Engine Result Card */}
         {cameraActive && (
-          <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 shadow-xl">
+          <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 sm:p-7 flex flex-col gap-5 shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
               <div>
-                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[#3b99e2] uppercase tracking-wider">
                   AI EXERCISE ENGINE
                 </span>
-                <h2 className="text-lg font-extrabold text-white">
+                <h2 className="text-lg font-extrabold text-[#1e293b]">
                   {selectedExercise?.name || "Exercise"}
                 </h2>
               </div>
@@ -677,7 +684,7 @@ function Workout({ onBack }) {
                 className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                   aiResult?.form === "correct"
                     ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/60"
-                    : "bg-amber-950/60 text-amber-400 border border-amber-800/60"
+                    : "bg-amber-100 text-amber-800 border border-amber-300"
                 }`}
               >
                 {aiResult?.form === "correct" ? "✓ ฟอร์มถูกต้อง" : "⚠️ ปรับฟอร์ม"}
@@ -685,43 +692,43 @@ function Workout({ onBack }) {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
-                <span className="text-[11px] text-zinc-500 font-semibold">จำนวนครั้ง (Reps)</span>
-                <strong className="text-2xl font-black text-white">{aiResult?.reps ?? 0}</strong>
+              <div className="bg-[#f8fafc] border border-slate-200/80 rounded-2xl p-4 flex flex-col">
+                <span className="text-[11px] text-[#64748b] font-bold">จำนวนครั้ง (Reps)</span>
+                <strong className="text-2xl font-black text-[#1e293b]">{aiResult?.reps ?? 0}</strong>
               </div>
-              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
-                <span className="text-[11px] text-zinc-500 font-semibold">คะแนนฟอร์ม (Score)</span>
-                <strong className="text-2xl font-black text-red-500">{aiResult?.score ?? 0}</strong>
+              <div className="bg-[#f8fafc] border border-slate-200/80 rounded-2xl p-4 flex flex-col">
+                <span className="text-[11px] text-[#64748b] font-bold">คะแนนฟอร์ม (Score)</span>
+                <strong className="text-2xl font-black text-[#3b99e2]">{aiResult?.score ?? 0}</strong>
               </div>
-              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
-                <span className="text-[11px] text-zinc-500 font-semibold">มุมข้อต่อ (Angle)</span>
-                <strong className="text-2xl font-black text-white">
+              <div className="bg-[#f8fafc] border border-slate-200/80 rounded-2xl p-4 flex flex-col">
+                <span className="text-[11px] text-[#64748b] font-bold">มุมข้อต่อ (Angle)</span>
+                <strong className="text-2xl font-black text-[#1e293b]">
                   {aiResult?.angles?.averageKneeAngle ??
                     aiResult?.angles?.averageElbowAngle ??
                     aiResult?.angles?.averageHipAngle ??
                     0}°
                 </strong>
               </div>
-              <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 flex flex-col">
-                <span className="text-[11px] text-zinc-500 font-semibold">จังหวะ (Phase)</span>
-                <strong className="text-2xl font-black text-zinc-300">{aiResult?.phase || "ready"}</strong>
+              <div className="bg-[#f8fafc] border border-slate-200/80 rounded-2xl p-4 flex flex-col">
+                <span className="text-[11px] text-[#64748b] font-bold">จังหวะ (Phase)</span>
+                <strong className="text-2xl font-black text-[#475569]">{aiResult?.phase || "ready"}</strong>
               </div>
             </div>
 
             {/* Live AI Encouragement & Motivation Card */}
-            <div className="bg-gradient-to-r from-red-950/60 via-zinc-900 to-zinc-900 border border-red-500/40 rounded-xl p-4 flex items-center justify-between gap-3 shadow-xl">
+            <div className="bg-[#edf1f4] border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl animate-pulse">{encouragement.emoji}</span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-red-400 font-extrabold uppercase tracking-wider">
+                    <span className="text-[10px] text-[#3b99e2] font-extrabold uppercase tracking-wider">
                       AI COACH MOTIVATION (เสียงให้กำลังใจ)
                     </span>
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-red-600/20 text-red-300 border border-red-500/30">
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-white text-[#1e293b] border border-slate-300">
                       LIVE
                     </span>
                   </div>
-                  <strong className="text-sm text-white font-bold block mt-0.5">
+                  <strong className="text-sm text-[#1e293b] font-bold block mt-0.5">
                     {encouragement.message}
                   </strong>
                 </div>
@@ -748,13 +755,13 @@ function Workout({ onBack }) {
               </button>
             </div>
 
-            <div className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-4 flex items-center gap-3">
+            <div className="bg-[#f8fafc] border border-slate-200/80 rounded-2xl p-4 flex items-center gap-3">
               <span className="text-xl">🤖</span>
               <div>
                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">
                   AI Real-time Feedback
                 </span>
-                <strong className="text-sm text-zinc-200">
+                <strong className="text-sm text-[#1e293b] font-medium">
                   {aiResult?.feedback || "พร้อมสำหรับการฝึก ยืนประจำตำแหน่งแล้วเริ่มย่อตัวได้เลย"}
                 </strong>
               </div>
@@ -763,12 +770,12 @@ function Workout({ onBack }) {
         )}
 
         {/* Voice Coach Section */}
-        <section className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div>
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
               VOICE COACH
             </div>
-            <h2 className="text-base font-bold text-white mt-0.5">คุยกับ AI โค้ชด้วยเสียง</h2>
+            <h2 className="text-base font-bold text-[#1e293b] mt-0.5">คุยกับ AI โค้ชด้วยเสียง</h2>
             <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
               {voiceLoading
                 ? "AI กำลังประมวลผลคำถาม..."
@@ -787,8 +794,8 @@ function Workout({ onBack }) {
             disabled={voiceLoading}
             className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap self-start sm:self-auto ${
               voiceListening
-                ? "bg-red-600 animate-pulse text-white shadow-lg shadow-red-600/30"
-                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
+                ? "bg-rose-500 animate-pulse text-white shadow-md shadow-rose-500/30"
+                : "bg-[#3b99e2] hover:bg-[#288ad4] text-white shadow-sm shadow-[#3b99e2]/25"
             }`}
           >
             <span>🎙️</span>
@@ -797,22 +804,22 @@ function Workout({ onBack }) {
         </section>
 
         {/* Main Workout Control Panel */}
-        <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-2xl">
+        <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-[#c4d7e6] border border-slate-300 flex items-center justify-center text-2xl">
               🏋️‍♂️
             </div>
             <div>
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
                 CURRENT WORKOUT
               </span>
-              <h3 className="text-lg font-black text-white">
+              <h3 className="text-lg font-black text-[#1e293b]">
                 {selectedExercise ? selectedExercise.name : "กำลังโหลดท่าจาก AI..."}
               </h3>
               <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
-                <span>⏱️ เวลา: <strong className="text-white font-mono">{formatDuration(duration)}</strong></span>
+                <span>⏱️ เวลา: <strong className="text-[#1e293b] font-mono">{formatDuration(duration)}</strong></span>
                 <span>•</span>
-                <span>🔥 Reps: <strong className="text-red-400">{aiResult?.reps ?? 0}</strong></span>
+                <span>🔥 Reps: <strong className="text-[#3b99e2]">{aiResult?.reps ?? 0}</strong></span>
               </div>
             </div>
           </div>
@@ -823,7 +830,7 @@ function Workout({ onBack }) {
                 type="button"
                 onClick={startWorkout}
                 disabled={cameraLoading || loading}
-                className="w-full sm:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-500 active:scale-[0.99] disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-red-600/25 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-3.5 bg-[#3b99e2] hover:bg-[#288ad4] active:scale-[0.99] disabled:opacity-50 text-white font-bold rounded-2xl text-sm transition-all shadow-md shadow-[#3b99e2]/25 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span>▶</span>
                 <span>Start AI Workout</span>
@@ -832,7 +839,7 @@ function Workout({ onBack }) {
               <button
                 type="button"
                 onClick={stopWorkout}
-                className="w-full sm:w-auto px-8 py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-[0.99] text-white border border-zinc-700 font-bold rounded-xl text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-3.5 bg-slate-800 hover:bg-slate-700 active:scale-[0.99] text-white font-bold rounded-2xl text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>⏹</span>
                 <span>จบเซสชัน Workout</span>

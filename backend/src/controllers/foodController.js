@@ -4,6 +4,8 @@ const {
   calculateTotalNutrition,
   getNutrition,
   searchFoodDatabase,
+  searchFoodsWithSuggestions,
+  findSimilarFoodEntries,
 } = require("../services/nutritionService");
 
 function getAutoMealType() {
@@ -439,10 +441,40 @@ async function deleteFoodLog(req, res) {
 async function searchFoods(req, res) {
   try {
     const query = req.query.q || "";
-    const results = searchFoodDatabase(query, 12);
-    return res.json({ success: true, data: results });
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 12));
+    const result = searchFoodsWithSuggestions(query, limit);
+
+    return res.json({
+      success: true,
+      data: result.data,
+      notFound: result.notFound,
+      suggestions: result.suggestions,
+    });
   } catch (error) {
     console.error("Search foods error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+/**
+ * GET /api/food/similar?q=... or /api/food/alternatives?q=...
+ * Recommend similar or substitute food items with calories and reasoning.
+ */
+async function recommendFoodAlternatives(req, res) {
+  try {
+    const query = req.query.q || req.query.name || "";
+    if (!query.trim()) {
+      return res.status(400).json({ success: false, message: "กรุณาระบุชื่ออาหาร" });
+    }
+    const limit = Math.min(10, Math.max(1, Number(req.query.limit) || 4));
+    const alternatives = findSimilarFoodEntries(query, limit);
+
+    return res.json({
+      success: true,
+      data: alternatives,
+    });
+  } catch (error) {
+    console.error("Recommend food alternatives error:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
@@ -456,4 +488,5 @@ module.exports = {
   getFoodLogById,
   deleteFoodLog,
   searchFoods,
+  recommendFoodAlternatives,
 };

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Play, ExternalLink, X } from 'lucide-react';
 
 export function extractYouTubeId(url = '') {
@@ -31,7 +31,7 @@ export default function YouTubeCard({ url, title }) {
         href={url}
         target='_blank'
         rel='noopener noreferrer'
-        className='inline-flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 px-2.5 py-1 rounded-md text-xs font-semibold no-underline transition-colors my-1'
+        className='inline-flex items-center gap-1.5 bg-[#c4d7e6] text-[#1e293b] border border-slate-300 hover:bg-[#b0c8dc] px-2.5 py-1 rounded-lg text-xs font-bold no-underline transition-colors my-1'
       >
         <span>▶️</span>
         <span>{title || url}</span>
@@ -51,18 +51,18 @@ export default function YouTubeCard({ url, title }) {
   const displayTitle = title || 'วิดีโอสาธิตท่าออกกำลังกาย';
 
   return (
-    <div className='bg-zinc-900/90 border border-white/10 rounded-xl overflow-hidden shadow-lg hover:border-red-500/40 hover:-translate-y-0.5 transition-all flex flex-col'>
+    <div className='bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:border-[#3b99e2]/50 hover:-translate-y-0.5 transition-all flex flex-col'>
       {isPlaying ? (
-        <div className='flex flex-col w-full bg-zinc-950'>
-          <div className='flex items-center justify-between px-3 py-2 bg-white/5 border-b border-white/10'>
-            <span className='text-xs font-semibold text-zinc-200 truncate max-w-[80%]'>{displayTitle}</span>
+        <div className='flex flex-col w-full bg-slate-900'>
+          <div className='flex items-center justify-between px-3 py-2 bg-[#abbed2] border-b border-[#9bb0c4]'>
+            <span className='text-xs font-bold text-[#1e293b] truncate max-w-[80%]'>{displayTitle}</span>
             <button
               type='button'
-              className='flex items-center gap-1 bg-transparent border border-white/15 text-zinc-400 hover:text-white hover:bg-white/10 rounded px-2 py-0.5 text-xs transition-colors cursor-pointer'
+              className='flex items-center gap-1 bg-white hover:bg-slate-100 text-[#1e293b] border border-white/60 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors cursor-pointer'
               onClick={() => setIsPlaying(false)}
               title='ปิดวิดีโอ'
             >
-              <X size={16} />
+              <X size={14} />
               <span>ปิด</span>
             </button>
           </div>
@@ -82,46 +82,46 @@ export default function YouTubeCard({ url, title }) {
             className='relative w-full aspect-video bg-cover bg-center flex items-center justify-center overflow-hidden'
             style={{ backgroundImage: `url(${thumbnailUrl})` }}
           >
-            <div className='absolute inset-0 bg-gradient-to-b from-black/20 to-black/70 group-hover:from-black/10 group-hover:to-black/50 transition-colors' />
+            <div className='absolute inset-0 bg-gradient-to-b from-black/10 to-black/60 group-hover:from-black/10 group-hover:to-black/40 transition-colors' />
             <button
               type='button'
-              className='relative z-10 w-12 h-12 rounded-full bg-red-600 border-0 flex items-center justify-center pl-0.5 cursor-pointer shadow-lg shadow-red-600/40 group-hover:scale-110 group-hover:bg-red-700 transition-all'
+              className='relative z-10 w-12 h-12 rounded-full bg-[#3b99e2] border-0 flex items-center justify-center pl-0.5 cursor-pointer shadow-lg shadow-[#3b99e2]/40 group-hover:scale-110 group-hover:bg-[#288ad4] transition-all'
               title='กดเพื่อเล่นวิดีโอ'
               onClick={(e) => {
                 e.stopPropagation();
                 setIsPlaying(true);
               }}
             >
-              <Play size={22} fill='#ffffff' color='#ffffff' />
+              <Play size={20} fill='#ffffff' color='#ffffff' />
             </button>
-            <div className='absolute top-2 right-2 z-10 bg-black/80 text-red-500 text-[11px] font-bold px-2 py-0.5 rounded tracking-wide'>
+            <div className='absolute top-2 right-2 z-10 bg-white/90 text-[#1e293b] text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm tracking-wide'>
               YouTube
             </div>
           </div>
-          <div className='p-3 flex flex-col gap-2 flex-1 justify-between'>
-            <strong className='text-xs font-semibold text-zinc-100 leading-snug line-clamp-2'>{displayTitle}</strong>
+          <div className='p-3.5 flex flex-col gap-2.5 flex-1 justify-between bg-white'>
+            <strong className='text-xs font-bold text-[#1e293b] leading-snug line-clamp-2'>{displayTitle}</strong>
             <div className='flex items-center gap-2 mt-auto'>
               <button
                 type='button'
-                className='flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white border-0 rounded-md px-2.5 py-1 text-xs font-semibold cursor-pointer transition-colors'
+                className='flex items-center gap-1 bg-[#3b99e2] hover:bg-[#288ad4] text-white border-0 rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer transition-colors shadow-sm shadow-[#3b99e2]/25'
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsPlaying(true);
                 }}
               >
-                <Play size={13} fill='currentColor' />
+                <Play size={12} fill='currentColor' />
                 <span>ดูในแชท</span>
               </button>
               <a
                 href={url}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='flex items-center gap-1 bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white border border-white/10 rounded-md px-2 py-1 text-xs font-medium no-underline transition-colors'
+                className='flex items-center gap-1 bg-[#edf1f4] hover:bg-[#e2e8f0] text-[#1e293b] border border-slate-200/80 rounded-xl px-2.5 py-1.5 text-xs font-semibold no-underline transition-colors'
                 onClick={(e) => e.stopPropagation()}
                 title='เปิดดูใน YouTube (แท็บใหม่)'
               >
                 <span>เปิดบน YouTube</span>
-                <ExternalLink size={13} />
+                <ExternalLink size={12} />
               </a>
             </div>
           </div>

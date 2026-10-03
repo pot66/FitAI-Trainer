@@ -1,11 +1,130 @@
 /**
  * speechUtils.js
- * High-definition, crystal-clear bilingual (Thai & English) Text-to-Speech Engine
- * for FitAI Trainer Chatbot & Workout Audio Assistant.
+ * AI Japanese Anime Mentor / Professional Fitness Coach Voice Engine
+ * 
+ * Voice Character & Personality:
+ * - Adult Male (ผู้ชายวัยผู้ใหญ่)
+ * - Deep, smooth, resonant & warm tone (เสียงทุ้ม นุ่ม ลึก และอบอุ่น)
+ * - Calm, composed, confident (สุขุม เยือกเย็น มั่นใจ)
+ * - Experienced Master / Mentor weight (มีน้ำหนักเสียงแบบผู้ฝึกสอนหรืออาจารย์)
+ * - Moderate-to-measured tempo, never rushed (จังหวะการพูดปานกลางค่อนไปทางช้า)
+ * - Clear, natural Thai pronunciation with fitness phonetic clarity
+ * - Original Anime Sensei vibe without exaggerated caricature
  */
 
 // ==========================================
-// 1. Fitness & Nutrition Phonetics Dictionary
+// 1. Anime Mentor Voice Acoustic Profiles
+// ==========================================
+export const ANIME_MENTOR_VOICE_CONFIG = {
+  // Default tone: deep, calm, confident, warm mentor (ทุ้ม นุ่ม ลึก สุขุม)
+  default: { pitch: 0.84, rate: 0.92, description: "เสียงทุ้ม นุ่ม ลึก สุขุม มั่นใจ" },
+
+  // Start workout: slightly more energetic and motivating (มีพลังเพิ่มขึ้นเล็กน้อย มั่นใจ)
+  start: { pitch: 0.88, rate: 0.95, description: "มีพลัง มั่นใจ เริ่มต้นการฝึก" },
+
+  // Form correction / warning: polite but firm and clear (เตือนอย่างสุภาพแต่จริงจัง ชัดเจน)
+  form_warning: { pitch: 0.83, rate: 0.90, description: "สุภาพแต่จริงจัง เน้นความถูกต้องของฟอร์ม" },
+
+  // Form praise: confident and warm praise (ชมด้วยน้ำเสียงมั่นใจและอบอุ่น)
+  form_praise: { pitch: 0.85, rate: 0.92, description: "มั่นใจและอบอุ่น ให้กำลังใจอย่างจริงใจ" },
+
+  // Counting reps: clear, steady, rhythmic cadence (พูดชัดเจนและมีจังหวะ)
+  rep_count: { pitch: 0.84, rate: 0.92, description: "ชัดเจน มีจังหวะ มั่นคง" },
+
+  // Rest period: relaxing, soothing, calm tone (น้ำเสียงผ่อนคลาย สบายๆ)
+  rest: { pitch: 0.82, rate: 0.88, description: "ผ่อนคลาย ใจเย็น ให้ฟื้นฟูร่างกาย" },
+
+  // Next set transition: steady, ready, disciplined (พร้อมและมั่นคง)
+  next_set: { pitch: 0.86, rate: 0.93, description: "พร้อมและมั่นคง เตรียมเริ่มเซ็ตต่อไป" },
+
+  // End workout: proud, encouraging mentor (ภูมิใจและให้กำลังใจอย่างจริงใจ)
+  finish: { pitch: 0.85, rate: 0.90, description: "ภูมิใจ ให้กำลังใจ สรุปผลอย่างทรงคุณค่า" },
+};
+
+// ==========================================
+// 2. Anime Mentor Authentic Dialogue Library
+// ==========================================
+export const ANIME_MENTOR_PHRASES = {
+  // เริ่ม Workout
+  start: [
+    "เอาล่ะ เริ่มกันเลยครับ",
+    "พร้อมแล้วนะครับ เข้าประจำตำแหน่งแล้วเริ่มได้เลยครับ",
+  ],
+
+  // เมื่อผู้ใช้ทำท่าผิด - เตือนอย่างสุภาพแต่จริงจัง
+  form_warning: {
+    back: "รักษาหลังให้ตรงครับ",
+    lower: "ค่อย ๆ ย่อตัวลงครับ",
+    breathe: "ค่อย ๆ หายใจ อย่ารีบครับ",
+    knees: "ระวังอย่าให้หัวเข่าเลยปลายเท้านะครับ",
+    core: "เกร็งหน้าท้องไว้ครับ ลำตัวนิ่งเข้าไว้",
+    head: "มองตรงไปข้างหน้าครับ อย่าก้มคอ",
+    elbows: "คุมข้อศอกให้ชิดลำตัวไว้ครับ",
+    general: "รักษาหลังให้ตรงครับ",
+  },
+
+  // เมื่อผู้ใช้ทำท่าถูกต้อง - ชมด้วยน้ำเสียงมั่นใจและอบอุ่น
+  form_praise: [
+    "ดีครับ รักษาฟอร์มแบบนั้นไว้",
+    "ดีมากครับ ทำต่อไป",
+    "โฟกัสที่กล้ามเนื้อ คุมจังหวะได้ดีมากครับ",
+    "นิ่งและมั่นคงมากครับ ลุยต่อเลย",
+  ],
+
+  // จังหวะการพูดระหว่างเซ็ต / ให้กำลังใจขณะกำลังฝึก
+  idle_cues: [
+    "ค่อย ๆ หายใจ อย่ารีบครับ",
+    "รักษาฟอร์มและโฟกัสไว้ครับ คุณทำได้ดีแล้ว",
+    "ควบคุมลมหายใจให้สม่ำเสมอครับ",
+    "ดีครับ ตั้งสมาธิไว้แล้วไปต่อ",
+  ],
+
+  // ตอนพัก - ผ่อนคลาย
+  rest: [
+    "พักได้ครับ คุณทำได้ดีมาก",
+    "ค่อย ๆ หายใจ ผ่อนคลายกล้ามเนื้อสักครู่ครับ",
+    "พักดื่มน้ำให้สดชื่น แล้วค่อยเตรียมตัวสำหรับเซ็ตต่อไปครับ",
+  ],
+
+  // เซ็ตต่อไป
+  next_set: [
+    "พร้อมแล้วนะครับ เซ็ตต่อไปเริ่มได้เลย",
+    "ลุยเซ็ตต่อไปกันครับ ตั้งสมาธิให้ดี",
+  ],
+
+  // ตอนจบ Workout - ภูมิใจและให้กำลังใจ
+  finish: (reps = 0) =>
+    `พักได้ครับ คุณทำได้ดีมาก วันนี้ฝึกไปทั้งหมด ${reps} ครั้ง การฝึกฝนอย่างมีวินัยคือหัวใจสำคัญ พักผ่อนให้เต็มที่แล้วพบกันใหม่ครับ`,
+
+  // ตอนนับจำนวนครั้ง - ชัดเจนและมีจังหวะตามตัวอย่าง
+  getRepCue: (currentReps, targetReps = 10) => {
+    if (currentReps === 1) {
+      return "เอาล่ะ เริ่มต้นได้ดีครับ คุมจังหวะไว้";
+    }
+    const remaining = targetReps - currentReps;
+    if (remaining === 5) {
+      return "เหลืออีกห้าครั้งครับ";
+    }
+    if (currentReps === Math.floor(targetReps / 2)) {
+      return "ครึ่งทางแล้วครับ รักษาฟอร์มแบบนั้นไว้";
+    }
+    if (remaining === 2) {
+      return "อีกสองครั้งครับ คุมฟอร์มไว้";
+    }
+    if (remaining === 1) {
+      return "ครั้งสุดท้ายแล้วครับ ตั้งสมาธิไว้";
+    }
+    if (currentReps >= targetReps) {
+      return "ดีมากครับ ครบตามเป้าหมายแล้ว พักได้ครับ";
+    }
+    return currentReps % 2 === 0
+      ? "ดีครับ รักษาฟอร์มแบบนั้นไว้"
+      : "ดีมากครับ ทำต่อไป";
+  },
+};
+
+// ==========================================
+// 3. Fitness & Nutrition Phonetics Dictionary
 // ==========================================
 export const FITNESS_THAI_PHONETICS = {
   // Brand & Coach
@@ -34,6 +153,9 @@ export const FITNESS_THAI_PHONETICS = {
   "side plank": "ไซด์แพลงก์",
   "lunge": "ลันจ์",
   "lunges": "ลันจ์",
+  "reverse lunge": "รีเวิร์สลันจ์",
+  "bird dog": "เบิร์ดด็อก",
+  "knee push up": "นีพุชอัป",
   "walking lunge": "วอล์กกิ้งลันจ์",
   "burpee": "เบอร์ปี",
   "burpees": "เบอร์ปี",
@@ -143,7 +265,7 @@ const SORTED_PHONETIC_KEYS = Object.keys(FITNESS_THAI_PHONETICS).sort(
 );
 
 // ==========================================
-// 2. Text Normalization & Cleaning
+// 4. Text Normalization & Cleaning
 // ==========================================
 export function cleanTextForSpeech(rawText) {
   if (!rawText || typeof rawText !== "string") return "";
@@ -179,19 +301,14 @@ export function cleanTextForSpeech(rawText) {
   text = text.replace(/^[-=_*]{3,}\s*$/gm, "");
 
   // 9. Expand common units and abbreviations
-  // kcal / cal
   text = text.replace(/(\d+(?:\.\d+)?)\s*(?:kcal|แคลอรี่|cal)\b/gi, "$1 กิโลแคลอรี่");
-  // kg / g / mg
   text = text.replace(/(\d+(?:\.\d+)?)\s*kg\b/gi, "$1 กิโลกรัม");
   text = text.replace(/(\d+(?:\.\d+)?)\s*g\b/gi, "$1 กรัม");
   text = text.replace(/(\d+(?:\.\d+)?)\s*mg\b/gi, "$1 มิลลิกรัม");
-  // cm / m
   text = text.replace(/(\d+(?:\.\d+)?)\s*cm\b/gi, "$1 เซนติเมตร");
   text = text.replace(/(\d+(?:\.\d+)?)\s*m\b/gi, "$1 เมตร");
-  // reps / sets
   text = text.replace(/(\d+(?:\s*-\s*\d+)?)\s*reps?\b/gi, "$1 ครั้ง");
   text = text.replace(/(\d+(?:\s*-\s*\d+)?)\s*sets?\b/gi, "$1 เซ็ต");
-  // min / sec
   text = text.replace(/(\d+(?:\.\d+)?)\s*(?:mins?|min)\b/gi, "$1 นาที");
   text = text.replace(/(\d+(?:\.\d+)?)\s*(?:secs?|sec|s)\b/gi, "$1 วินาที");
 
@@ -203,6 +320,9 @@ export function cleanTextForSpeech(rawText) {
       const regex = new RegExp(`\\b${englishTerm}\\b`, "gi");
       text = text.replace(regex, thaiPhonetic);
     }
+
+    // Smooth "ค่อย ๆ" and Maiyamok
+    text = text.replace(/ค่อย\s*ๆ/g, "ค่อย ค่อย");
   }
 
   // 11. Remove stray brackets & symbols that TTS engines read out literally
@@ -222,7 +342,7 @@ export function cleanTextForSpeech(rawText) {
 }
 
 // ==========================================
-// 3. Sentence Chunking & Language Routing
+// 5. Sentence Chunking & Language Routing
 // ==========================================
 export function splitIntoSpeechChunks(text) {
   if (!text) return [];
@@ -239,14 +359,13 @@ export function splitIntoSpeechChunks(text) {
       /(?:[A-Z][a-zA-Z\s]{4,}[.!?])|(?:[A-Z][a-z]+(?:\s+[A-Za-z]+){2,})/.test(line);
 
     if (hasThai && hasEnglishSentence) {
-      // Split on sentence boundaries between Thai and English
       const sentences = line.split(/(?<=[.!?])\s+/).filter(Boolean);
       for (const s of sentences) {
         if (s.trim()) chunks.push(s.trim());
       }
-    } else if (line.length > 160) {
-      // Split long lines by commas or conversational pauses
-      const subParts = line.split(/(?<=[,;])\s+|(?<=(?:ครับ|ค่ะ|นะ|เลย))\s+/).filter(Boolean);
+    } else if (line.length > 140) {
+      // Split long lines by punctuation or natural mentor pauses (ครับ, นะครับ, อย่ารีบครับ)
+      const subParts = line.split(/(?<=[,;])\s+|(?<=(?:ครับ|นะครับ|นะ|เลย|อย่ารีบครับ))\s+/).filter(Boolean);
       for (const part of subParts) {
         if (part.trim()) chunks.push(part.trim());
       }
@@ -265,7 +384,7 @@ export function splitIntoSpeechChunks(text) {
 }
 
 // ==========================================
-// 4. Voice Discovery & Selection Engine
+// 6. Voice Discovery & Adult Male Priority Engine
 // ==========================================
 let cachedVoices = [];
 
@@ -284,12 +403,53 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
       cachedVoices = window.speechSynthesis.getVoices();
     };
   }
-  // Initial prime
   cachedVoices = window.speechSynthesis.getVoices();
 }
 
 /**
- * Select the highest quality, clearest voice available on the user's OS/browser
+ * Filter helpers to strictly select adult male mentor voices and avoid high-pitch/female voices
+ */
+function isFemaleVoice(name = "") {
+  const lower = name.toLowerCase();
+  return (
+    lower.includes("premwadee") ||
+    lower.includes("achara") ||
+    lower.includes("jenny") ||
+    lower.includes("aria") ||
+    lower.includes("zira") ||
+    lower.includes("samantha") ||
+    lower.includes("victoria") ||
+    lower.includes("karen") ||
+    lower.includes("moira") ||
+    lower.includes("fiona") ||
+    lower.includes("veena") ||
+    lower.includes("female") ||
+    lower.includes("woman") ||
+    lower.includes("girl")
+  );
+}
+
+function isMaleVoice(name = "") {
+  const lower = name.toLowerCase();
+  return (
+    lower.includes("niwat") ||
+    lower.includes("pattara") ||
+    lower.includes("guy") ||
+    lower.includes("christopher") ||
+    lower.includes("david") ||
+    lower.includes("mark") ||
+    lower.includes("george") ||
+    lower.includes("keita") ||
+    lower.includes("daichi") ||
+    lower.includes("takumi") ||
+    lower.includes("naoki") ||
+    lower.includes("male") ||
+    lower.includes("man")
+  );
+}
+
+/**
+ * Select the highest quality Adult Male Anime Mentor voice
  */
 export function getBestVoice(targetLang = "th-TH") {
   const voices = getAvailableVoices();
@@ -298,15 +458,21 @@ export function getBestVoice(targetLang = "th-TH") {
   const isThai = targetLang.toLowerCase().startsWith("th");
 
   if (isThai) {
-    // 1. Edge/Windows Natural Online Thai Voices (Studio quality)
-    const naturalThai = voices.find(
+    // 1. Edge/Windows Natural Online Male Voice (Microsoft Niwat Online - Studio Quality)
+    const niwatVoice = voices.find(
       (v) =>
-        (v.name.includes("Natural") || v.name.includes("Online")) &&
-        (v.lang.toLowerCase().includes("th") || v.name.includes("Thai") || v.name.includes("Niwat") || v.name.includes("Premwadee"))
+        (v.name.includes("Niwat") || (isMaleVoice(v.name) && v.lang.toLowerCase().startsWith("th"))) &&
+        (v.name.includes("Natural") || v.name.includes("Online"))
     );
-    if (naturalThai) return naturalThai;
+    if (niwatVoice) return niwatVoice;
 
-    // 2. Chrome Google ภาษาไทย
+    // 2. Any local/installed Male Thai voice
+    const localMaleThai = voices.find(
+      (v) => v.lang.toLowerCase().startsWith("th") && isMaleVoice(v.name)
+    );
+    if (localMaleThai) return localMaleThai;
+
+    // 3. Chrome Google ภาษาไทย (modulated with pitch 0.84 to give resonant deep adult male tone)
     const googleThai = voices.find(
       (v) =>
         v.name.toLowerCase().includes("google") &&
@@ -314,37 +480,53 @@ export function getBestVoice(targetLang = "th-TH") {
     );
     if (googleThai) return googleThai;
 
-    // 3. Local OS Thai Voices (e.g. Microsoft Pattara)
-    const localThai = voices.find((v) => v.lang.toLowerCase().startsWith("th"));
-    if (localThai) return localThai;
+    // 4. Any Thai voice that is not explicitly marked female
+    const nonFemaleThai = voices.find(
+      (v) => v.lang.toLowerCase().startsWith("th") && !isFemaleVoice(v.name)
+    );
+    if (nonFemaleThai) return nonFemaleThai;
+
+    // 5. Ultimate Thai fallback
+    const anyThai = voices.find((v) => v.lang.toLowerCase().startsWith("th"));
+    if (anyThai) return anyThai;
   } else {
-    // 1. Edge/Windows Natural Online English Voices (Studio quality)
-    const naturalEn = voices.find(
+    // English chunks: Deep resonant adult male narrators (Microsoft Guy / Christopher / David)
+    const maleEnNatural = voices.find(
       (v) =>
         (v.name.includes("Natural") || v.name.includes("Online")) &&
-        (v.lang.toLowerCase().startsWith("en") || v.name.includes("Jenny") || v.name.includes("Guy") || v.name.includes("Aria"))
+        v.lang.toLowerCase().startsWith("en") &&
+        (v.name.includes("Guy") || v.name.includes("Christopher") || isMaleVoice(v.name)) &&
+        !isFemaleVoice(v.name)
     );
-    if (naturalEn) return naturalEn;
+    if (maleEnNatural) return maleEnNatural;
 
-    // 2. Google US English
+    const localMaleEn = voices.find(
+      (v) => v.lang.toLowerCase().startsWith("en") && isMaleVoice(v.name) && !isFemaleVoice(v.name)
+    );
+    if (localMaleEn) return localMaleEn;
+
     const googleEn = voices.find(
       (v) =>
         v.name.toLowerCase().includes("google") &&
-        v.lang.toLowerCase().startsWith("en")
+        v.lang.toLowerCase().startsWith("en") &&
+        !isFemaleVoice(v.name)
     );
     if (googleEn) return googleEn;
 
-    // 3. Local OS English Voices (e.g. Microsoft David, Zira, Mark)
-    const localEn = voices.find((v) => v.lang.toLowerCase().startsWith("en"));
-    if (localEn) return localEn;
+    const nonFemaleEn = voices.find(
+      (v) => v.lang.toLowerCase().startsWith("en") && !isFemaleVoice(v.name)
+    );
+    if (nonFemaleEn) return nonFemaleEn;
+
+    const anyEn = voices.find((v) => v.lang.toLowerCase().startsWith("en"));
+    if (anyEn) return anyEn;
   }
 
-  // Fallback to any voice matching prefix
   return voices.find((v) => v.lang.toLowerCase().startsWith(targetLang.slice(0, 2))) || null;
 }
 
 // ==========================================
-// 5. Speech Queue & Playback Controller
+// 7. Speech Queue & Playback Controller
 // ==========================================
 let currentSpeechQueue = [];
 let currentQueueIndex = 0;
@@ -403,14 +585,15 @@ export function isSpeakingNow() {
 }
 
 /**
- * Speak text with high clarity, bilingual pronunciation, and Chrome cutoff prevention.
- * @param {string} rawText - Raw response text or workout cheer
+ * Speak text with high clarity, adult male anime mentor persona, and Chrome cutoff prevention.
+ * @param {string} rawText - Raw text or workout cheer
  * @param {object} options - Configuration options
  */
 export function speakText(rawText, options = {}) {
   const {
+    context = "default",
     rate: customRate,
-    pitch = 1.0,
+    pitch: customPitch,
     lang: forceLang = null,
     onStart = null,
     onEnd = null,
@@ -443,11 +626,17 @@ export function speakText(rawText, options = {}) {
   const chunks = splitIntoSpeechChunks(cleanedText);
   if (chunks.length === 0) return false;
 
-  // Get user preferred speech rate from localStorage or option
+  // Get anime mentor preset for given context
+  const mentorProfile = ANIME_MENTOR_VOICE_CONFIG[context] || ANIME_MENTOR_VOICE_CONFIG.default;
+
+  // Pitch: Deep, resonant adult male (0.84 default)
+  const speechPitch = typeof customPitch === "number" ? customPitch : mentorProfile.pitch;
+
+  // Rate: Measured, composed mentor cadence (0.92 default)
   let speechRate = customRate;
   if (typeof speechRate !== "number") {
-    const savedRate = parseFloat(localStorage.getItem("fitai-speech-rate") || "1.0");
-    speechRate = isNaN(savedRate) ? 1.0 : savedRate;
+    const savedRate = parseFloat(localStorage.getItem("fitai-speech-rate") || "");
+    speechRate = !isNaN(savedRate) && savedRate > 0 ? savedRate : mentorProfile.rate;
   }
 
   currentSpeechQueue = chunks;
@@ -475,9 +664,9 @@ export function speakText(rawText, options = {}) {
 
     utterance.lang = chunkLang;
     utterance.rate = speechRate;
-    utterance.pitch = pitch;
+    utterance.pitch = speechPitch;
 
-    // Pick best voice
+    // Pick best Adult Male Voice
     const bestVoice = getBestVoice(chunkLang);
     if (bestVoice) {
       utterance.voice = bestVoice;
@@ -489,7 +678,6 @@ export function speakText(rawText, options = {}) {
     };
 
     utterance.onerror = (event) => {
-      // Ignore 'canceled' error when interrupted by user
       if (event.error === "canceled" || event.error === "interrupted") {
         return;
       }
@@ -513,8 +701,60 @@ export function speakText(rawText, options = {}) {
   return true;
 }
 
+/**
+ * Specialized high-level trigger for Anime Mentor Workout Cues
+ */
+export function speakAnimeMentorCue(cueType, params = {}, options = {}) {
+  let phrase = "";
+  let context = cueType;
+
+  if (cueType === "start") {
+    phrase = ANIME_MENTOR_PHRASES.start[0]; // "เอาล่ะ เริ่มกันเลยครับ"
+    context = "start";
+  } else if (cueType === "rep") {
+    const rep = params.rep || 1;
+    const target = params.target || 10;
+    phrase = params.phrase || ANIME_MENTOR_PHRASES.getRepCue(rep, target);
+    context = (target - rep <= 5) ? "rep_count" : "form_praise";
+  } else if (cueType === "warning") {
+    const key = params.key || "general";
+    phrase = params.phrase || ANIME_MENTOR_PHRASES.form_warning[key] || "รักษาหลังให้ตรงครับ";
+    context = "form_warning";
+  } else if (cueType === "praise") {
+    const list = ANIME_MENTOR_PHRASES.form_praise;
+    phrase = params.phrase || list[Math.floor(Math.random() * list.length)];
+    context = "form_praise";
+  } else if (cueType === "idle") {
+    const list = ANIME_MENTOR_PHRASES.idle_cues;
+    phrase = list[Math.floor(Math.random() * list.length)];
+    context = "form_praise";
+  } else if (cueType === "rest") {
+    phrase = params.phrase || ANIME_MENTOR_PHRASES.rest[0]; // "พักได้ครับ คุณทำได้ดีมาก"
+    context = "rest";
+  } else if (cueType === "next_set") {
+    phrase = params.phrase || ANIME_MENTOR_PHRASES.next_set[0]; // "พร้อมแล้วนะครับ เซ็ตต่อไปเริ่มได้เลย"
+    context = "next_set";
+  } else if (cueType === "finish") {
+    phrase = params.phrase || ANIME_MENTOR_PHRASES.finish(params.reps || 0);
+    context = "finish";
+  } else if (typeof params === "string") {
+    phrase = params;
+  }
+
+  const profile = ANIME_MENTOR_VOICE_CONFIG[context] || ANIME_MENTOR_VOICE_CONFIG.default;
+
+  return speakText(phrase, {
+    context,
+    pitch: options.pitch ?? profile.pitch,
+    rate: options.rate ?? profile.rate,
+    force: options.force ?? true,
+    ...options,
+  });
+}
+
 export default {
   speakText,
+  speakAnimeMentorCue,
   stopSpeech,
   isSpeakingNow,
   cleanTextForSpeech,
@@ -522,4 +762,6 @@ export default {
   getAvailableVoices,
   getBestVoice,
   FITNESS_THAI_PHONETICS,
+  ANIME_MENTOR_VOICE_CONFIG,
+  ANIME_MENTOR_PHRASES,
 };

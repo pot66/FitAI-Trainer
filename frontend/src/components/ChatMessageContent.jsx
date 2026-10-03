@@ -12,7 +12,7 @@ function renderBoldText(text, keyPrefix = "bold") {
       parts.push(text.substring(lastIndex, match.index));
     }
     parts.push(
-      <strong key={`${keyPrefix}-${match.index}`} className="font-bold text-zinc-100">
+      <strong key={`${keyPrefix}-${match.index}`} className="font-bold text-[#1e293b]">
         {match[1]}
       </strong>
     );
@@ -54,8 +54,8 @@ function renderInlineMarkdown(text) {
         rel="noopener noreferrer"
         className={
           isYouTube
-            ? "inline-flex items-center gap-1 bg-red-500/10 text-red-400 border border-red-500/25 hover:bg-red-500/20 hover:border-red-500 rounded px-2 py-0.5 font-semibold text-xs transition-all my-0.5"
-            : "text-sky-400 underline underline-offset-2 hover:text-sky-300"
+            ? "inline-flex items-center gap-1 bg-[#c4d7e6] text-[#1e293b] border border-slate-300 hover:bg-[#b0c8dc] rounded-lg px-2 py-0.5 font-bold text-xs transition-all my-0.5"
+            : "text-[#3b99e2] underline underline-offset-2 hover:text-[#288ad4] font-semibold"
         }
       >
         {isYouTube && <span className="text-xs">&#9651; </span>}
@@ -132,8 +132,8 @@ export default function ChatMessageContent({ content, onLogFood }) {
   }, [content]);
 
   return (
-    <div className="flex flex-col gap-2 w-full text-sm leading-relaxed">
-      <div className="text-[14.5px] leading-relaxed text-inherit">
+    <div className="flex flex-col gap-2 w-full text-sm leading-relaxed text-[#1e293b]">
+      <div className="text-[14.5px] leading-relaxed text-[#1e293b]">
         {lines.map((line, idx) => {
           const trimmed = line.trim();
           if (!trimmed) {
@@ -141,33 +141,33 @@ export default function ChatMessageContent({ content, onLogFood }) {
           }
           if (trimmed.startsWith("### ")) {
             return (
-              <h4 key={idx} className="text-base font-semibold mt-2.5 mb-1 text-zinc-100">
+              <h4 key={idx} className="text-base font-bold mt-2.5 mb-1 text-[#1e293b]">
                 {renderInlineMarkdown(trimmed.substring(4))}
               </h4>
             );
           }
           if (trimmed.startsWith("## ")) {
             return (
-              <h3 key={idx} className="text-base font-bold mt-3 mb-1 text-zinc-100">
+              <h3 key={idx} className="text-base font-extrabold mt-3 mb-1 text-[#1e293b]">
                 {renderInlineMarkdown(trimmed.substring(3))}
               </h3>
             );
           }
           if (trimmed.startsWith("# ")) {
             return (
-              <h2 key={idx} className="text-lg font-bold mt-3.5 mb-1 text-zinc-100">
+              <h2 key={idx} className="text-lg font-black mt-3.5 mb-1 text-[#1e293b]">
                 {renderInlineMarkdown(trimmed.substring(2))}
               </h2>
             );
           }
           if (trimmed === "---") {
-            return <hr key={idx} className="border-t border-white/10 my-2.5" />;
+            return <hr key={idx} className="border-t border-slate-200 my-2.5" />;
           }
           if (/^[-*•]\s+/.test(trimmed)) {
             const bulletText = trimmed.replace(/^[-*•]\s+/, "");
             return (
               <div key={idx} className="flex items-baseline gap-2 my-0.5 pl-1">
-                <span className="text-red-500 text-base leading-none">•</span>
+                <span className="text-[#3b99e2] text-base leading-none font-bold">•</span>
                 <span className="flex-1">{renderInlineMarkdown(bulletText)}</span>
               </div>
             );
@@ -176,7 +176,7 @@ export default function ChatMessageContent({ content, onLogFood }) {
           if (numMatch) {
             return (
               <div key={idx} className="flex items-baseline gap-2 my-0.5">
-                <span className="font-bold text-red-500 min-w-[18px]">{numMatch[1]}.</span>
+                <span className="font-bold text-[#3b99e2] min-w-[18px]">{numMatch[1]}.</span>
                 <span className="flex-1">{renderInlineMarkdown(numMatch[2])}</span>
               </div>
             );
@@ -191,16 +191,16 @@ export default function ChatMessageContent({ content, onLogFood }) {
 
       {/* Interactive Food Calorie Action Card */}
       {foodActionData && (
-        <div className="mt-2.5 p-3.5 bg-gradient-to-r from-red-950/40 via-zinc-900 to-zinc-900 border border-red-500/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div className="mt-2.5 p-4 bg-white border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-base">🍽️</span>
-              <span className="font-bold text-white text-sm">{foodActionData.name}</span>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-red-600/20 text-red-400 border border-red-500/30">
+              <span className="font-bold text-[#1e293b] text-sm">{foodActionData.name}</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#c4d7e6] text-[#1e293b] border border-slate-300">
                 {foodActionData.calories} kcal
               </span>
             </div>
-            <div className="text-xs text-zinc-400 mt-1 flex items-center gap-2 flex-wrap">
+            <div className="text-xs text-[#64748b] mt-1 flex items-center gap-2 flex-wrap">
               <span>🍗 โปรตีน {foodActionData.protein}g</span>
               <span>•</span>
               <span>🍚 คาร์บ {foodActionData.carbs}g</span>
@@ -217,10 +217,10 @@ export default function ChatMessageContent({ content, onLogFood }) {
                 setIsLogged(true);
               }
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer ${
               isLogged
-                ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 cursor-default"
-                : "bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-950/40"
+                ? "bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-default"
+                : "bg-[#3b99e2] hover:bg-[#288ad4] text-white shadow-sm shadow-[#3b99e2]/25"
             }`}
           >
             <span>{isLogged ? "✓" : "+"}</span>
@@ -230,8 +230,8 @@ export default function ChatMessageContent({ content, onLogFood }) {
       )}
 
       {youtubeVideos.length > 0 && (
-        <div className="mt-3 pt-2.5 border-t border-white/10">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 mb-2.5">
+        <div className="mt-3 pt-3 border-t border-slate-200/80">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#475569] mb-2.5">
             <span>🎥 วิดีโอสอนการออกกำลังกาย ({youtubeVideos.length} คลิป)</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1,3 +1,9 @@
+const {
+  findFoodEntry,
+  findSimilarFoodEntries,
+  getNutrition,
+  loadDatabase,
+} = require("./nutritionService");
 const { matchCoachingIntent, generateIntentFallback } = require("./coachKnowledgeService");
 const { getUserLearnedContext } = require("./userLearningService");
 const { shouldSearchGoogle, searchGoogle, formatSearchResultsForFallback } = require("./googleSearchService");
@@ -461,13 +467,6 @@ function handleFoodAndNutritionQuery(message, context = {}) {
 
   const text = String(message || "").trim();
   const lower = text.toLowerCase();
-
-  // If user is asking open-ended menu questions (e.g. "มีเมนูอื่นไหม", "กินอะไรดี", "แนะนำอาหาร"),
-  // let it pass to Ollama so the AI answers freely with creative variety!
-  const isGeneralMenuIdea = /(มีเมนูอื่น|เมนูอื่น|กินไรดี|กินอะไรดี|เบื่ออกไก่|แนะนำเมนู|แนะนำอาหาร|เมนูแนะนำ|มีอะไรกินบ้าง)/i.test(lower);
-  if (isGeneralMenuIdea) {
-    return null; // Passes through to askOllama or dynamic fallback!
-  }
   const profile = context.profile || null;
   const foodLogs = Array.isArray(context.foodLogs) ? context.foodLogs : [];
 
@@ -486,7 +485,56 @@ function handleFoodAndNutritionQuery(message, context = {}) {
   const totalFat = foodLogs.reduce((sum, l) => sum + (Number(l.totalFat) || 0), 0);
   const remainingCal = Math.max(0, Math.round(targetCal - totalCal));
 
-  // --- SUB-CASE A: Recommend Muscle-Building Food Menu (แนะนำเมนูอาหารเสริมกล้ามเนื้อ / เพิ่มกล้าม) ---
+  // --- SUB-CASE 1: Substitute or Similar Food Request (กินอะไรแทน... / เบื่อ...กินอะไรดี / มีเมนูอะไรคล้าย...) ---
+  const isSubstituteQuery = /(?:กินอะไรแทน|ทานอะไรแทน|อะไรแทน|ทดแทน|เมนูแทน|เบื่อ|คล้ายกับ|เหมือนกับ|เมนูคล้าย|อาหารคล้าย|สไตล์เดียวกับ|อยากกิน.*แต่กลัวอ้วน|อยากกิน.*แต่แคลเยอะ)/i.test(lower);
+  if (isSubstituteQuery) {
+    let targetDish = text.replace(/^(?:อยากทราบว่า|ช่วยบอกหน่อย|แนะนำหน่อย|อยากรู้ว่า)?\s*(?:กินอะไรแทน|ทานอะไรแทน|อะไรแทน|ทดแทน|เมนูแทน|เบื่อ|อยากกิน|มีเมนูอะไรคล้าย|เมนูคล้าย|อาหารคล้าย|อาหารที่คล้าย)\s*/i, "");
+    targetDish = targetDish.replace(/(?:ดี|ได้บ้าง|บ้าง|ครับ|ค่ะ|คะ|หน่อย|มั่ง|กินดี|กินอะไร|แทนดี|แทนได้บ้าง|สไตล์เดียวกัน|แต่กลัวอ้วน|แต่แคลเยอะ)+$/gi, "").trim();
+
+    const knownEntry = findFoodEntry(targetDish);
+    const dishDisplayName = knownEntry ? knownEntry.name : (targetDish || "เมนูที่คุณสอบถาม");
+    const isBoredOfProtein = /อกไก่|ไก่|ไข่ต้ม|เวย์/i.test(targetDish);
+
+    let sims = findSimilarFoodEntries(dishDisplayName, 4, knownEntry?.id, dishDisplayName);
+    if (isBoredOfProtein) {
+      sims = sims.filter((s) => !/ไก่/i.test(s.name));
+      if (sims.length === 0) {
+        const altDishes = ["สเต็กปลาทูน่า", "แซลมอนย่าง", "ไข่ต้ม", "แกงจืดเต้าหู้หมูสับ"];
+        sims = loadDatabase().filter((d) => altDishes.includes(d.name)).slice(0, 3).map((d) => ({
+          ...d,
+          reason: "แหล่งโปรตีนชั้นดีทางเลือกทดแทนโปรตีนเดิม",
+        }));
+      }
+    }
+
+    if (sims.length > 0) {
+      let reply = `FitAI ขอแนะนำ **เมนูทางเลือกทดแทนสำหรับ "${dishDisplayName}"** ครับ 🥗✨\n\n`;
+      reply += `หากคุณต้องการเปลี่ยนบรรยากาศ หรือมองหาเมนูที่รสชาติใกล้เคียง/คุณค่าทางอาหารสมดุล นี่คือเมนูแนะนำครับ:\n\n`;
+
+      sims.slice(0, 3).forEach((item, idx) => {
+        const s = item.serving || { calories: item.per100g?.calories || 150, protein: 0, carbs: 0, fat: 0, unit: "จาน" };
+        reply += `### ${idx + 1}. **${item.name}**\n`;
+        reply += `- ⚡ พลังงาน: **${s.calories} kcal** (ต่อ 1 ${s.unit || "จาน"})\n`;
+        reply += `- 🍗 โปรตีน: **${s.protein} g** | 🍚 คาร์บ: **${s.carbs} g** | 🥑 ไขมัน: **${s.fat} g**\n`;
+        if (item.reason) reply += `- 💡 *เหตุผลที่แนะนำ:* ${item.reason}\n\n`;
+      });
+
+      const topItem = sims[0];
+      const logData = {
+        name: topItem.name,
+        calories: topItem.serving?.calories || 250,
+        protein: topItem.serving?.protein || 15,
+        carbs: topItem.serving?.carbs || 30,
+        fat: topItem.serving?.fat || 8,
+        unit: topItem.serving?.unit || "จาน",
+      };
+      reply += `[LOG_FOOD_ACTION:${JSON.stringify(logData)}]\n\n`;
+      reply += `💡 *คุณสามารถกดปุ่ม "บันทึกเมนูนี้ลงมื้ออาหาร" เพื่อบันทึกเข้าตารางแคลอรี่ประจำวันได้ทันทีครับ!*`;
+      return reply;
+    }
+  }
+
+  // --- SUB-CASE 2: Recommend Muscle-Building Food Menu (แนะนำเมนูอาหารเสริมกล้ามเนื้อ / เพิ่มกล้าม) ---
   if (/(เสริมกล้าม|สร้างกล้าม|เพิ่มกล้าม|กล้ามเนื้อ|protein|โปรตีนสูง)/i.test(lower) && /(เมนู|อาหาร|แนะนำ|กินอะไร|ควรทาน)/i.test(lower)) {
     const targetProteinMin = Math.round(weight * 1.6);
     const targetProteinMax = Math.round(weight * 2.0);
@@ -521,7 +569,7 @@ function handleFoodAndNutritionQuery(message, context = {}) {
     ].join("\n");
   }
 
-  // --- SUB-CASE B: Recommend Weight Loss / Low-Calorie Menu (แนะนำเมนูลดน้ำหนัก / คุมแคลอรี่ / อาหารคลีน) ---
+  // --- SUB-CASE 3: Recommend Weight Loss / Low-Calorie Menu (แนะนำเมนูลดน้ำหนัก / คุมแคลอรี่ / อาหารคลีน) ---
   if (/(ลดน้ำหนัก|ลดไขมัน|คุมแคล|คุมน้ำหนัก|อาหารคลีน|ผอม)/i.test(lower) && /(เมนู|อาหาร|แนะนำ|กินอะไร|ควรทาน)/i.test(lower)) {
     const deficitCal = Math.max(1200, targetCal - 400);
 
@@ -542,63 +590,76 @@ function handleFoodAndNutritionQuery(message, context = {}) {
     ].join("\n");
   }
 
-  // --- SUB-CASE C: Specific Food Calorie Query (ข้าวมันไก่กี่แคล / คำนวณแคล ...) ---
-  const extractResults = [];
-  try {
-    const db = require("../data/nutritionDatabase.json");
-    for (const item of db) {
-      for (const alias of [item.name, ...(item.aliases || [])]) {
-        if (alias && alias.length >= 2 && lower.includes(alias.toLowerCase())) {
-          if (!extractResults.some((f) => f.id === item.id)) {
-            extractResults.push(item);
-          }
-          break;
-        }
+  // --- SUB-CASE 4: Specific Food Calorie Query (ข้าวมันไก่กี่แคล / แกงส้มชะอมไข่กี่แคล / ต้มยำปลาแซลมอน ...) ---
+  const isCalorieQuery = /(?:กี่แคล|คำนวณแคล|แคลอรี่เท่า|พลังงานเท่า|กี่กิโลแคล|กี่แคลอรี่)/i.test(lower);
+  if (isCalorieQuery || /(?:กิน|ทาน).*(?:กี่แคล|เท่าไหร่)/i.test(lower)) {
+    let dishName = text.replace(/^(?:อยากทราบว่า|ช่วยบอกหน่อย|ช่วยคำนวณ|คำนวณ|บอกหน่อย|แนะนำ|อยากรู้ว่า|มีเมนู|กิน|ทาน)\s*/i, "");
+    dishName = dishName.replace(/(?:กี่แคลอรี่|กี่แคล|มีกี่แคล|แคลอรี่เท่าไร|แคลอรี่เท่าไหร่|พลังงานเท่าไร|พลังงานเท่าไหร่)[\s\S]*$/gi, "").trim();
+    dishName = dishName.replace(/[\s\?\,]+$/g, "").trim();
+
+    const knownEntry = findFoodEntry(dishName);
+
+    if (knownEntry) {
+      const s = knownEntry.serving || { calories: 200, protein: 10, carbs: 20, fat: 5, unit: "จาน" };
+      const sims = findSimilarFoodEntries(knownEntry.name, 2, knownEntry.id, knownEntry.name);
+
+      let reply = `FitAI คำนวณข้อมูลโภชนาการสำหรับ **${knownEntry.name}** ให้เรียบร้อยครับ 🍽️\n\n`;
+      reply += `- ⚡ พลังงาน: **${s.calories} kcal** (ต่อ 1 ${s.unit || "จาน"})\n`;
+      reply += `- 🍗 โปรตีน: **${s.protein} g** | 🍚 คาร์บ: **${s.carbs} g** | 🥑 ไขมัน: **${s.fat} g**\n\n`;
+
+      if (sims.length > 0) {
+        reply += `💡 **เมนูทางเลือกสุขภาพใกล้เคียง:**\n`;
+        sims.forEach((alt) => {
+          reply += `- **${alt.name}** (**${alt.serving?.calories} kcal**) — ${alt.reason || "เมนูใกล้เคียง"}\n`;
+        });
+        reply += `\n`;
       }
+
+      const logData = {
+        name: knownEntry.name,
+        calories: s.calories,
+        protein: s.protein,
+        carbs: s.carbs,
+        fat: s.fat,
+        unit: s.unit || "จาน",
+      };
+      reply += `[LOG_FOOD_ACTION:${JSON.stringify(logData)}]\n\n`;
+      reply += `💡 *คุณสามารถกดปุ่ม "บันทึกลงมื้ออาหาร" เพื่อบันทึกเข้าตารางแคลอรี่ประจำวันได้ทันทีครับ!*`;
+      return reply;
+    } else if (dishName.length >= 2) {
+      // Unknown dish! Recommend similar dishes from database!
+      const est = getNutrition({ name: dishName });
+      const sims = findSimilarFoodEntries(dishName, 3);
+
+      let reply = `FitAI ประมาณการข้อมูลโภชนาการสำหรับ **"${dishName}"** ให้เรียบร้อยครับ 🍽️\n\n`;
+      reply += `📊 **ค่าพลังงานและสารอาหารโดยประมาณ:**\n`;
+      reply += `- ⚡ พลังงาน: **~${est.calories} kcal** (ต่อ 1 ${est.unit})\n`;
+      reply += `- 🍗 โปรตีน: **~${est.protein} g** | 🍚 คาร์โบไฮเดรต: **~${est.carbs} g** | 🥑 ไขมัน: **~${est.fat} g**\n\n`;
+
+      if (sims.length > 0) {
+        reply += `💡 **แม้ในระบบจะยังไม่มีเมนู "${dishName}" โดยตรง แต่ FitAI ขอแนะนำเมนูใกล้เคียงหรือใช้ทดแทนกันได้ในระบบ ดังนี้ครับ:**\n`;
+        sims.forEach((item, idx) => {
+          const s = item.serving || { calories: 150, protein: 0, carbs: 0, fat: 0, unit: "จาน" };
+          reply += `${idx + 1}. **${item.name}** (**${s.calories} kcal**) — ${item.reason || "โภชนาการใกล้เคียง"}\n`;
+        });
+        reply += `\n`;
+      }
+
+      const logData = {
+        name: dishName,
+        calories: est.calories,
+        protein: est.protein,
+        carbs: est.carbs,
+        fat: est.fat,
+        unit: est.unit,
+      };
+      reply += `[LOG_FOOD_ACTION:${JSON.stringify(logData)}]\n\n`;
+      reply += `💡 *คุณสามารถกดปุ่มบันทึกด้านบนเพื่อบันทึก **${dishName}** หรือเลือกเมนูแนะนำเข้าสู่ตารางประจำวันได้ทันทีครับ!*`;
+      return reply;
     }
-  } catch (err) {
-    console.error("Failed to load nutritionDatabase in aiService:", err);
   }
 
-  if (extractResults.length > 0 && (lower.includes("แคล") || lower.includes("กี่") || lower.includes("คำนวณ") || lower.includes("กิน") || lower.includes("เท่าไหร่") || lower.includes("เท่าไร") || lower.includes("จาน"))) {
-    let responseText = `FitAI คำนวณข้อมูลโภชนาการและแคลอรี่ให้เรียบร้อยครับ 🍽️\n\n`;
-    let totalFoundCal = 0;
-    let totalFoundPro = 0;
-    let totalFoundCarb = 0;
-    let totalFoundFat = 0;
-
-    extractResults.forEach((item, idx) => {
-      const s = item.serving || { calories: item.per100g?.calories || 0, protein: 0, carbs: 0, fat: 0, unit: "จาน" };
-      totalFoundCal += Number(s.calories) || 0;
-      totalFoundPro += Number(s.protein) || 0;
-      totalFoundCarb += Number(s.carbs) || 0;
-      totalFoundFat += Number(s.fat) || 0;
-
-      responseText += `### ${idx + 1}. **${item.name}** (${item.nameEn || ""})\n`;
-      responseText += `- ⚡ พลังงาน: **${s.calories} kcal** (ต่อ 1 ${s.unit || "จาน"})\n`;
-      responseText += `- 🍗 โปรตีน: **${s.protein} g** | 🍚 คาร์บ: **${s.carbs} g** | 🥑 ไขมัน: **${s.fat} g**\n\n`;
-    });
-
-    if (extractResults.length > 1) {
-      responseText += `📊 **รวมทั้งหมด:** **${Math.round(totalFoundCal)} kcal** (โปรตีน ${Math.round(totalFoundPro * 10) / 10}g, คาร์บ ${Math.round(totalFoundCarb * 10) / 10}g, ไขมัน ${Math.round(totalFoundFat * 10) / 10}g)\n\n`;
-    }
-
-    const first = extractResults[0];
-    const logActionData = {
-      name: extractResults.map(i => i.name).join(" + "),
-      calories: Math.round(totalFoundCal),
-      protein: Math.round(totalFoundPro * 10) / 10,
-      carbs: Math.round(totalFoundCarb * 10) / 10,
-      fat: Math.round(totalFoundFat * 10) / 10,
-      unit: first.serving?.unit || "จาน",
-    };
-
-    responseText += `[LOG_FOOD_ACTION:${JSON.stringify(logActionData)}]\n\n`;
-    responseText += `💡 *คุณสามารถกดปุ่ม "บันทึกลงมื้ออาหาร" ด้านบนเพื่อบันทึกเข้าตารางแคลอรี่ประจำวันได้ทันทีครับ!*`;
-    return responseText;
-  }
-
-  // --- SUB-CASE D: Today's Summary & Remaining Calories (วันนี้กินไปกี่แคล / สรุปแคลอรี่ / เหลืออีกกี่แคล) ---
+  // --- SUB-CASE 5: Today's Summary & Remaining Calories (วันนี้กินไปกี่แคล / สรุปแคลอรี่ / เหลืออีกกี่แคล) ---
   if (lower.includes("วันนี้") || lower.includes("กินไป") || lower.includes("เหลือ") || lower.includes("สรุป")) {
     let msg = `วันนี้คุณรับประทานไปแล้วประมาณ **${Math.round(totalCal)} kcal** จากเป้าหมาย **${targetCal} kcal** (คงเหลือประมาณ **${remainingCal} kcal**) ครับ 🍽️\n\n`;
     msg += `**สรุปสารอาหารที่ได้รับ:**\n- 🍗 โปรตีน: **${Math.round(totalPro * 10) / 10} g**\n- 🍚 คาร์โบไฮเดรต: **${Math.round(totalCarb * 10) / 10} g**\n- 🥑 ไขมัน: **${Math.round(totalFat * 10) / 10} g**\n\n`;
@@ -615,7 +676,7 @@ function handleFoodAndNutritionQuery(message, context = {}) {
     return msg;
   }
 
-  // --- SUB-CASE E: BMR & TDEE Calculation ---
+  // --- SUB-CASE 6: BMR & TDEE Calculation ---
   if (lower.includes("bmr") || lower.includes("tdee") || lower.includes("ควรทานกี่แคล") || lower.includes("วันละกี่แคล")) {
     return [
       `FitAI คำนวณอัตราการเผาผลาญพลังงาน (BMR & TDEE) ให้คุณเรียบร้อยครับ 📊`,
@@ -634,7 +695,6 @@ function handleFoodAndNutritionQuery(message, context = {}) {
 
   return null;
 }
-
 async function generateAIResponse(message, context = {}) {
     let answer = "";
 

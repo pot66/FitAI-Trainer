@@ -105,6 +105,7 @@ function AIAssistant({
   const [loadingFoodToday, setLoadingFoodToday] = useState(false);
   const [foodSearchQuery, setFoodSearchQuery] = useState("");
   const [foodSearchResults, setFoodSearchResults] = useState([]);
+  const [foodSearchSuggestions, setFoodSearchSuggestions] = useState([]);
   const [isSearchingFood, setIsSearchingFood] = useState(false);
   const [selectedSearchItem, setSelectedSearchItem] = useState(null);
   const [searchMealType, setSearchMealType] = useState("LUNCH");
@@ -611,6 +612,7 @@ function AIAssistant({
     setFoodSearchQuery(q);
     if (!q || !q.trim()) {
       setFoodSearchResults([]);
+      setFoodSearchSuggestions([]);
       return;
     }
     try {
@@ -618,6 +620,7 @@ function AIAssistant({
       const res = await api.get(`/food/search?q=${encodeURIComponent(q.trim())}`);
       if (res.data?.success) {
         setFoodSearchResults(res.data.data || []);
+        setFoodSearchSuggestions(res.data.suggestions || []);
       }
     } catch (err) {
       console.error("Search food error:", err);
@@ -1219,6 +1222,7 @@ function AIAssistant({
     }
 
     speakText(text, {
+      context: "default",
       onStart: () => setIsSpeaking(true),
       onEnd: () => {
         setIsSpeaking(false);
@@ -1454,39 +1458,39 @@ function AIAssistant({
   // =====================================
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#eef2f5] text-[#1e293b] overflow-hidden font-sans">
       {/* =====================================
           Sidebar (Left)
           ===================================== */}
-      <aside className="w-64 sm:w-72 bg-zinc-950 border-r border-zinc-800/80 flex flex-col shrink-0">
+      <aside className="w-64 sm:w-72 bg-[#abbed2] border-r border-[#9bb0c4] flex flex-col shrink-0 text-[#1e293b]">
         <div className="p-3 flex flex-col gap-2">
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-200 border border-zinc-800 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+            className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#3b99e2] hover:bg-[#288ad4] text-white text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.99]"
             onClick={createNewChat}
           >
-            <Plus size={16} strokeWidth={2} />
+            <Plus size={16} strokeWidth={2.5} />
             <span>New Chat</span>
           </button>
 
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-600/15 hover:bg-red-600/25 text-red-400 border border-red-500/30 text-xs font-semibold transition-all cursor-pointer active:scale-[0.99]"
+            className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white/40 hover:bg-white/60 text-[#1e293b] border border-white/30 text-xs font-semibold transition-all cursor-pointer active:scale-[0.99]"
             onClick={startWorkoutMode}
           >
             <Dumbbell size={16} strokeWidth={2} />
-            <span>Mode 3D Coach</span>
+            <span>Mode 3D</span>
           </button>
         </div>
 
-        <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
-          ประวัติห้องแชท
+        <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-[#334155] uppercase tracking-wider">
+          ประวัติการแชท
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 flex flex-col gap-1 pb-4">
           {sessions.length === 0 ? (
-            <div className="text-xs text-zinc-500 text-center py-6">
-              ไม่มีประวัติการแชท
+            <div className="text-xs text-[#52667a] text-center py-6">
+              ยังไม่มีบทสนทนา
             </div>
           ) : (
             sessions.map((session) => (
@@ -1498,8 +1502,8 @@ function AIAssistant({
                   type="button"
                   className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-colors flex flex-col gap-0.5 truncate pr-8 cursor-pointer ${
                     selectedSessionId === session.id
-                      ? "bg-zinc-800/90 text-white font-semibold"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                      ? "bg-white/80 text-[#1e293b] font-bold shadow-sm"
+                      : "text-[#334155] hover:text-[#1e293b] hover:bg-white/40"
                   }`}
                   onClick={() => selectSession(session)}
                 >
@@ -1531,14 +1535,14 @@ function AIAssistant({
 
                   {openSessionMenu === session.id && (
                     <div
-                      className="absolute right-0 top-full mt-1 w-36 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-1 z-30 flex flex-col"
+                      className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200/80 rounded-xl shadow-lg py-1 z-30 flex flex-col"
                       role="menu"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         type="button"
-                        className="px-3 py-2 text-left text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="px-3 py-2 text-left text-xs text-[#1e293b] hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors"
                         onClick={() => {
                           setOpenSessionMenu(null);
                           renameChat(session);
@@ -1550,7 +1554,7 @@ function AIAssistant({
 
                       <button
                         type="button"
-                        className="px-3 py-2 text-left text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                         onClick={() => {
                           setOpenSessionMenu(null);
                           deleteChat(session);
@@ -1571,16 +1575,12 @@ function AIAssistant({
       {/* =====================================
           Main Area
           ===================================== */}
-      <div className="flex-1 flex flex-col min-w-0 bg-zinc-900/30 relative">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#eef2f5] relative">
         {/* Topbar */}
-        <div className="h-16 px-6 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/80 backdrop-blur-md shrink-0 relative z-50">
+        <div className="h-16 px-6 border-b border-[#9bb0c4] flex items-center justify-between bg-[#abbed2] shrink-0 relative z-50">
           <div>
-            <div className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-full mb-0.5 uppercase">
-              AI FITNESS ASSISTANT
-            </div>
-            <h1 className="text-sm font-bold text-white flex items-center gap-2">
+            <h1 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
               <span>FitAI Assistant</span>
-              <span className="text-xs font-normal text-zinc-400">· ผู้ช่วยวางแผนออกกำลังกายเฉพาะคุณ</span>
             </h1>
           </div>
 
@@ -1588,33 +1588,20 @@ function AIAssistant({
             <div className="relative z-50" ref={profileMenuRef}>
             <button
               type="button"
-              className="flex items-center gap-2.5 p-1.5 rounded-full hover:bg-zinc-800/60 transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-white text-[#1e293b] rounded-full text-xs font-bold shadow-sm hover:bg-slate-50 transition-colors cursor-pointer border border-white/60"
               onClick={() => setProfileMenuOpen((open) => !open)}
               title="Profile"
               aria-label="เปิดเมนู Profile"
             >
-              <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-red-600 to-amber-600 flex items-center justify-center text-xs font-bold text-white overflow-hidden shadow-sm">
-                {user?.avatarUrl || user?.profileImage || user?.image ? (
-                  <img
-                    src={user.avatarUrl || user.profileImage || user.image}
-                    alt={user?.name || "User"}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  (user?.name || "U").trim().charAt(0).toUpperCase()
-                )}
+              <span className="w-5 h-5 rounded-full bg-[#3b99e2] text-white flex items-center justify-center text-[10px] font-bold">
+                {(user?.name || "U").trim().charAt(0).toUpperCase()}
               </span>
-              <div className="text-left hidden sm:block">
-                <strong className="block text-xs text-zinc-200 font-semibold leading-tight">
-                  {user?.name || "Profile"}
-                </strong>
-                <small className="text-[10px] text-zinc-500">Profile</small>
-              </div>
+              <span>Profile</span>
             </button>
 
             {profileMenuOpen && (
               <div
-                className="absolute right-0 top-full mt-2 w-56 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-2xl p-2 z-[100] flex flex-col gap-1"
+                className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 text-[#1e293b] rounded-2xl shadow-2xl p-2 z-[100] flex flex-col gap-1"
                 role="menu"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
@@ -1706,13 +1693,17 @@ function AIAssistant({
             {/* Messages Scroll Area */}
             <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 flex flex-col gap-5">
               {messages.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3 my-auto">
-
-                  <h2 className="text-xl font-bold text-white">ยินดีต้อนรับ</h2>
-                  <p className="text-sm text-zinc-400">คุยกับ FitAI Trainer</p>
-                  <p className="text-xs text-zinc-500 max-w-md leading-relaxed">
-                    สอบถามคำแนะนำท่าออกกำลังกาย ตรวจสอบความถูกต้อง หรือปรับเปลี่ยนแผนฝึกประจำสัปดาห์ได้ทันที
-                  </p>
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4 my-auto">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-[#1e293b] tracking-tight">
+                    Where should we begin?
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setMessage("คุณสามารถช่วยอะไรได้บ้าง แนะนำฟังก์ชันเด่นของ FitAI ให้หน่อย")}
+                    className="px-5 py-2 rounded-full text-xs font-semibold text-[#1e293b] bg-white border border-slate-200/90 hover:border-slate-300 shadow-sm hover:shadow transition-all cursor-pointer"
+                  >
+                    What can you do?
+                  </button>
                 </div>
               ) : (
                 messages.map((item, index) => (
@@ -1743,7 +1734,7 @@ function AIAssistant({
                         item.content !== userImg;
 
                       return (
-                        <div className="bg-zinc-800 text-zinc-100 p-2.5 sm:p-3 rounded-2xl rounded-tr-sm text-sm leading-relaxed shadow-sm break-words flex flex-col gap-2 max-w-full sm:max-w-sm">
+                        <div className="bg-[#3b99e2] text-white p-3 sm:p-3.5 rounded-2xl rounded-tr-sm text-sm leading-relaxed shadow-sm break-words flex flex-col gap-2 max-w-full sm:max-w-sm">
                           {userImg && (
                             <div className="relative rounded-xl overflow-hidden bg-black/60 border border-zinc-700/60 shadow-md group">
                               <img
@@ -1771,7 +1762,7 @@ function AIAssistant({
                         </div>
                       );
                     })() : (
-                      <div className="bg-zinc-900/60 border border-zinc-800/60 text-zinc-100 px-4 py-3.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed shadow-sm w-full">
+                      <div className="bg-white border border-slate-200/80 text-[#1e293b] px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-relaxed shadow-sm w-full">
                         <ChatMessageContent content={item.content} onLogFood={(foodAction) => handleQuickLogFood(foodAction, "LUNCH", 1)} />
 
                         {/* Action Bar: Listen Aloud & Copy */}
@@ -1811,8 +1802,8 @@ function AIAssistant({
               )}
 
               {loading && (
-                <div className="flex items-center gap-2 text-xs text-zinc-400 bg-zinc-900/60 border border-zinc-800/60 px-4 py-3 rounded-2xl w-fit">
-                  <svg className="animate-spin h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2 text-xs text-[#1e293b] bg-white border border-slate-200/80 px-4 py-3 rounded-2xl w-fit shadow-sm">
+                  <svg className="animate-spin h-4 w-4 text-[#3b99e2]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                   </svg>
@@ -1837,7 +1828,7 @@ function AIAssistant({
                 <button
                   key={idx}
                   type="button"
-                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800 hover:border-red-500/50 hover:text-red-400 text-zinc-300 transition-all cursor-pointer shadow-sm"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-700 hover:border-[#3b99e2] hover:text-[#3b99e2] transition-all cursor-pointer shadow-sm"
                   onClick={() => {
                     setMessage(chip.replace(/^[^a-zA-Z0-9ก-๙]+/u, "").trim());
                   }}
@@ -1848,16 +1839,16 @@ function AIAssistant({
             </div>
 
             {/* Input Bar */}
-            <form className="px-4 sm:px-8 pb-2 pt-1" onSubmit={handleSubmit}>
-              <div className="relative bg-zinc-900/90 border border-zinc-800 focus-within:border-zinc-700 rounded-2xl p-3 flex items-end gap-2 shadow-xl backdrop-blur-sm">
+            <form className="px-4 sm:px-12 pb-3 pt-1 max-w-4xl w-full mx-auto" onSubmit={handleSubmit}>
+              <div className="relative bg-white border border-slate-200/90 focus-within:border-[#3b99e2] rounded-full sm:rounded-2xl px-4 py-2.5 flex items-center gap-2 shadow-md">
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleInputKeyDown}
-                  placeholder="พิมพ์คุยกับ FitAI Trainer..."
+                  placeholder="ถาม FitAI Trainer..."
                   disabled={loading}
                   rows={1}
-                  className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none max-h-32 min-h-[24px] py-1"
+                  className="w-full bg-transparent text-sm text-[#1e293b] placeholder-[#64748b] focus:outline-none resize-none max-h-32 min-h-[24px] py-1.5 pl-2"
                 />
 
                 <input
@@ -1874,9 +1865,9 @@ function AIAssistant({
                   disabled={loading}
                   title="ถ่ายรูปสแกนอาหารคำนวณแคลอรี่"
                   aria-label="ถ่ายรูปสแกนอาหาร"
-                  className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  <Camera size={16} strokeWidth={2} />
+                  <Camera size={18} strokeWidth={2} />
                 </button>
 
                 <button
@@ -1885,9 +1876,9 @@ function AIAssistant({
                   disabled={loading}
                   title="อัปโหลดภาพอาหาร"
                   aria-label="อัปโหลดภาพอาหาร"
-                  className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  <Upload size={16} strokeWidth={2} />
+                  <Upload size={18} strokeWidth={2} />
                 </button>
 
                 <button
@@ -1896,13 +1887,13 @@ function AIAssistant({
                   disabled={loading}
                   title={isListening ? "กำลังฟังเสียง" : "พูดคุยด้วยเสียง"}
                   aria-label={isListening ? "กำลังฟังเสียง" : "พูดคุยด้วยเสียง"}
-                  className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                  className={`p-1.5 rounded-full transition-colors cursor-pointer ${
                     isListening
-                      ? "bg-red-600 text-white animate-pulse"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                      ? "bg-[#3b99e2] text-white animate-pulse"
+                      : "text-slate-400 hover:text-[#3b99e2] hover:bg-slate-100"
                   }`}
                 >
-                  {isListening ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
+                  {isListening ? <Square size={18} strokeWidth={2} /> : <Mic size={18} strokeWidth={2} />}
                 </button>
 
                 <button
@@ -1910,13 +1901,16 @@ function AIAssistant({
                   disabled={loading || !message.trim()}
                   title="ส่งข้อความ"
                   aria-label="ส่งข้อความ"
-                  className="p-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md"
+                  className="w-9 h-9 rounded-full bg-[#3b99e2] hover:bg-[#288ad4] text-white font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
                 >
                   <Send size={16} strokeWidth={2} />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-zinc-500 px-2 pt-2">
+              <div className="text-center text-[11px] text-[#64748b] pt-2">
+                Enter เพื่อส่ง • Shift + Enter เพื่อขึ้นบรรทัดใหม่
+              </div>
+              <div className="hidden">
                 <div className="flex items-center gap-2">
                   {isListening && <span className="text-red-400 animate-pulse">● กำลังฟังเสียงของคุณ...</span>}
                   {isSpeaking && (
@@ -1941,19 +1935,19 @@ function AIAssistant({
           {/* =====================================
               Right Rail: ระบบคำนวณแคลอรี่ & แผนฝึก AI (Unified Side Panel)
               ===================================== */}
-          <aside className="w-full lg:w-[340px] xl:w-[380px] shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-800/80 bg-zinc-950/90 overflow-y-auto flex flex-col p-4 gap-4 shadow-2xl backdrop-blur-md">
+          <aside className="w-full lg:w-[340px] xl:w-[380px] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200/80 bg-[#edf1f4] overflow-y-auto flex flex-col p-4 gap-4 shadow-sm">
             {/* Tab Navigation: คำนวณแคลอรี่ vs แผนออกกำลังกาย AI */}
-            <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+            <div className="flex items-center gap-1.5 p-1.5 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
               <button
                 type="button"
                 onClick={() => setSidebarTab("calorie")}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   sidebarTab === "calorie"
-                    ? "bg-red-600 text-white shadow-md shadow-red-950/40"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
+                    ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25"
+                    : "text-[#64748b] hover:text-[#1e293b] hover:bg-slate-50"
                 }`}
               >
-                <Utensils size={13} className={sidebarTab === "calorie" ? "text-white" : "text-red-400"} />
+                <Utensils size={13} className={sidebarTab === "calorie" ? "text-white" : "text-[#3b99e2]"} />
                 <span>คำนวณแคลอรี่</span>
               </button>
               <button
@@ -1961,11 +1955,11 @@ function AIAssistant({
                 onClick={() => setSidebarTab("workout")}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   sidebarTab === "workout"
-                    ? "bg-red-600 text-white shadow-md shadow-red-950/40"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
+                    ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25"
+                    : "text-[#64748b] hover:text-[#1e293b] hover:bg-slate-50"
                 }`}
               >
-                <Dumbbell size={13} className={sidebarTab === "workout" ? "text-white" : "text-red-400"} />
+                <Dumbbell size={13} className={sidebarTab === "workout" ? "text-white" : "text-[#3b99e2]"} />
                 <span>แผนฝึก AI</span>
               </button>
             </div>
@@ -1985,21 +1979,21 @@ function AIAssistant({
               return (
                 <div className="flex flex-col gap-4">
                   {/* Calorie Card */}
-                  <div className="bg-gradient-to-br from-red-950/40 via-zinc-900 to-zinc-900 border border-red-500/30 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+                  <div className="bg-white border border-slate-200/80 rounded-[22px] p-4 shadow-sm flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Flame size={14} className="text-red-500" />
+                      <span className="text-[11px] font-extrabold text-[#3b99e2] uppercase tracking-wider flex items-center gap-1.5">
+                        <Flame size={14} className="text-[#3b99e2]" />
                         <span>แคลอรี่วันนี้</span>
                       </span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-600/20 text-red-300 border border-red-500/30">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#c4d7e6] text-[#1e293b] border border-slate-300">
                         เป้าหมาย: {targetCal} kcal
                       </span>
                     </div>
 
                     <div className="flex items-baseline justify-between mt-0.5">
                       <div>
-                        <span className="text-2xl font-black text-white">{Math.round(consumedCal)}</span>
-                        <span className="text-xs text-zinc-400 font-medium ml-1">/ {targetCal} kcal</span>
+                        <span className="text-2xl font-black text-[#1e293b]">{Math.round(consumedCal)}</span>
+                        <span className="text-xs text-[#64748b] font-medium ml-1">/ {targetCal} kcal</span>
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-zinc-400 block">คงเหลือ</span>
@@ -2010,24 +2004,24 @@ function AIAssistant({
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-500 rounded-full"
+                        className="h-full bg-[#3b99e2] transition-all duration-500 rounded-full shadow-sm shadow-[#3b99e2]/30"
                         style={{ width: `${calPercent}%` }}
                       />
                     </div>
 
                     {/* Macro Breakdown */}
                     <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-white/5 text-center">
-                      <div className="bg-zinc-900/90 rounded-xl p-1.5 border border-zinc-800/80">
+                      <div className="bg-[#f8fafc] rounded-xl p-2 border border-slate-200/80">
                         <span className="text-[10px] text-zinc-400 block font-medium">โปรตีน</span>
                         <span className="text-xs font-bold text-sky-400">{Math.round(consumedPro * 10) / 10}g</span>
                       </div>
-                      <div className="bg-zinc-900/90 rounded-xl p-1.5 border border-zinc-800/80">
+                      <div className="bg-[#f8fafc] rounded-xl p-2 border border-slate-200/80">
                         <span className="text-[10px] text-zinc-400 block font-medium">คาร์บ</span>
                         <span className="text-xs font-bold text-amber-400">{Math.round(consumedCarb * 10) / 10}g</span>
                       </div>
-                      <div className="bg-zinc-900/90 rounded-xl p-1.5 border border-zinc-800/80">
+                      <div className="bg-[#f8fafc] rounded-xl p-2 border border-slate-200/80">
                         <span className="text-[10px] text-zinc-400 block font-medium">ไขมัน</span>
                         <span className="text-xs font-bold text-emerald-400">{Math.round(consumedFat * 10) / 10}g</span>
                       </div>
@@ -2035,10 +2029,10 @@ function AIAssistant({
                   </div>
 
                   {/* Quick Food Search & Calculator */}
-                  <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3.5 flex flex-col gap-2.5">
+                  <div className="bg-white border border-slate-200/80 rounded-[22px] p-4 flex flex-col gap-2.5 shadow-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
-                        <Search size={13} className="text-red-400" />
+                      <span className="text-xs font-bold text-[#1e293b] flex items-center gap-1.5">
+                        <Search size={13} className="text-[#3b99e2]" />
                         <span>ค้นหา & คำนวณแคลอรี่</span>
                       </span>
                       <button
@@ -2057,7 +2051,7 @@ function AIAssistant({
                         value={foodSearchQuery}
                         onChange={(e) => handleSearchFood(e.target.value)}
                         placeholder="พิมพ์ชื่ออาหาร เช่น ข้าวมันไก่, ส้มตำ..."
-                        className="w-full bg-zinc-950 border border-zinc-800 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none transition-all"
+                        className="w-full bg-[#c4d7e6] border border-slate-300 focus:ring-2 focus:ring-[#3b99e2] rounded-xl px-3 py-2 text-xs text-[#1e293b] placeholder-[#64748b] font-medium focus:outline-none transition-all"
                       />
                       {isSearchingFood && (
                         <div className="absolute right-2.5 top-2.5 text-zinc-500 animate-spin text-xs">⟳</div>
@@ -2065,7 +2059,7 @@ function AIAssistant({
 
                       {/* Autocomplete Dropdown */}
                       {foodSearchResults.length > 0 && !selectedSearchItem && (
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-zinc-900/95 border border-zinc-700 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto divide-y divide-zinc-800 backdrop-blur-md">
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-48 overflow-y-auto divide-y divide-slate-100">
                           {foodSearchResults.map((dish) => (
                             <button
                               key={dish.id}
@@ -2073,25 +2067,69 @@ function AIAssistant({
                               onClick={() => {
                                 setSelectedSearchItem(dish);
                                 setFoodSearchResults([]);
+                                setFoodSearchSuggestions([]);
                               }}
-                              className="w-full text-left p-2.5 hover:bg-zinc-800/80 flex items-center justify-between text-xs transition-colors cursor-pointer"
+                              className="w-full text-left p-2.5 hover:bg-slate-50 flex items-center justify-between text-xs transition-colors cursor-pointer"
                             >
                               <div>
-                                <b className="text-zinc-200 block">{dish.name}</b>
-                                <small className="text-zinc-400 text-[10px]">1 {dish.serving?.unit || "จาน"} ({dish.serving?.weightGrams || 300}g)</small>
+                                <b className="text-[#1e293b] block">{dish.name}</b>
+                                <small className="text-[#64748b] text-[10px]">1 {dish.serving?.unit || "จาน"} ({dish.serving?.weightGrams || 300}g)</small>
                               </div>
-                              <span className="text-xs font-bold text-red-400 bg-red-950/40 px-2 py-0.5 rounded border border-red-900/30">
+                              <span className="text-xs font-bold text-[#3b99e2] bg-[#edf1f4] px-2 py-0.5 rounded border border-[#abbed2]/40">
                                 {dish.serving?.calories || 0} kcal
                               </span>
                             </button>
                           ))}
                         </div>
                       )}
+
+                      {/* Similar Foods Suggestions Dropdown */}
+                      {foodSearchResults.length === 0 && foodSearchSuggestions.length > 0 && !selectedSearchItem && foodSearchQuery.trim().length >= 2 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-[#edf1f4] border border-[#abbed2] rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto p-2">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#1e293b] px-1 py-1 mb-1 border-b border-[#c4d7e6]">
+                            <Sparkles className="w-3.5 h-3.5 text-[#3b99e2]" />
+                            <span>ไม่พบเมนูนี้ FitAI แนะนำเมนูใกล้เคียง:</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {foodSearchSuggestions.map((dish) => (
+                              <button
+                                key={dish.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSearchItem(dish);
+                                  setFoodSearchResults([]);
+                                  setFoodSearchSuggestions([]);
+                                }}
+                                className="w-full text-left p-2 rounded-lg bg-white/90 hover:bg-white border border-[#c4d7e6] hover:border-[#3b99e2] flex items-center justify-between transition-all cursor-pointer shadow-sm group"
+                              >
+                                <div className="pr-1">
+                                  <b className="text-xs font-bold text-[#1e293b] group-hover:text-[#3b99e2] block transition-colors">
+                                    {dish.name}
+                                  </b>
+                                  {dish.reason && (
+                                    <small className="text-[#64748b] text-[10px] block mt-0.5">
+                                      💡 {dish.reason}
+                                    </small>
+                                  )}
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="text-xs font-bold text-[#3b99e2] block">
+                                    {dish.serving?.calories || 0} kcal
+                                  </span>
+                                  <span className="text-[10px] text-[#64748b]">
+                                    โปรตีน {dish.serving?.protein || 0}g
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Selected Item Preview & Add Action */}
                     {selectedSearchItem && (
-                      <div className="bg-zinc-950/90 border border-zinc-700 rounded-xl p-3 flex flex-col gap-2 animate-fadeIn">
+                      <div className="bg-[#f8fafc] border border-slate-200 rounded-xl p-3 flex flex-col gap-2 animate-fadeIn">
                         <div className="flex items-start justify-between">
                           <div>
                             <b className="text-xs font-bold text-white block">{selectedSearchItem.name}</b>
@@ -2112,7 +2150,7 @@ function AIAssistant({
                           <select
                             value={searchMealType}
                             onChange={(e) => setSearchMealType(e.target.value)}
-                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none"
+                            className="flex-1 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-[#1e293b] font-bold focus:outline-none"
                           >
                             <option value="BREAKFAST">มื้อเช้า</option>
                             <option value="LUNCH">มื้อกลางวัน</option>
@@ -2161,7 +2199,7 @@ function AIAssistant({
                     </div>
 
                     {foodLogs.length === 0 ? (
-                      <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 text-center flex flex-col items-center gap-1 text-zinc-500">
+                      <div className="bg-[#f8fafc] border border-slate-200/80 rounded-xl p-4 text-center flex flex-col items-center gap-1 text-[#64748b]">
                         <span className="text-2xl">🍽️</span>
                         <span className="text-xs font-medium text-zinc-400">ยังไม่มีบันทึกอาหารวันนี้</span>
                         <p className="text-[10px] text-zinc-500">
@@ -2176,7 +2214,7 @@ function AIAssistant({
                           return (
                             <div
                               key={log.id}
-                              className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs transition-colors hover:border-zinc-700"
+                              className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs transition-colors hover:border-slate-300 shadow-sm text-[#1e293b]"
                             >
                               <div className="flex items-center gap-2 overflow-hidden">
                                 <span className="text-base">{getMealIcon(log.mealType)}</span>
@@ -2212,7 +2250,7 @@ function AIAssistant({
                   <button
                     type="button"
                     onClick={onFood}
-                    className="text-center text-xs text-zinc-400 hover:text-white py-2 px-3 rounded-xl border border-zinc-800/80 hover:border-zinc-700 bg-zinc-900/40 transition-colors cursor-pointer"
+                    className="text-center text-xs font-bold text-[#64748b] hover:text-[#1e293b] py-2.5 px-3 rounded-xl border border-slate-200/80 hover:border-slate-300 bg-white transition-colors cursor-pointer shadow-sm"
                   >
                     เปิดหน้า Food Tracker ประวัติแบบเต็ม ↗
                   </button>
@@ -2224,7 +2262,7 @@ function AIAssistant({
             {sidebarTab === "workout" && (
               <div className="flex flex-col gap-4">
               {/* Heading */}
-              <div className="flex items-start justify-between gap-2 pb-3 border-b border-zinc-800">
+              <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
@@ -2236,7 +2274,7 @@ function AIAssistant({
                       </span>
                     )}
                   </div>
-                  <strong className="block text-sm font-bold text-white mt-1">
+                  <strong className="block text-sm font-bold text-[#1e293b] mt-1">
                     {todayPlan ? `${todayPlan.focus} · ${todayPlan.exerciseName}` : planSummary}
                   </strong>
                 </div>
@@ -2247,7 +2285,7 @@ function AIAssistant({
                     e.stopPropagation();
                     setShowPlanDetails((v) => !v);
                   }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors cursor-pointer whitespace-nowrap"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#edf1f4] hover:bg-[#e2e8f0] text-[#1e293b] border border-slate-200/80 transition-colors cursor-pointer whitespace-nowrap shadow-sm"
                 >
                   {showPlanDetails ? "แผนวันนี้" : "ดูทั้งสัปดาห์"}
                 </button>
@@ -2262,8 +2300,8 @@ function AIAssistant({
                       key={day.key}
                       className={`p-3 rounded-xl border flex flex-col gap-1.5 text-xs transition-all ${
                         isToday
-                          ? "bg-red-950/25 border-red-500/40 shadow-sm"
-                          : "bg-zinc-900/60 border-zinc-800/80"
+                          ? "bg-white border-2 border-[#3b99e2] shadow-sm shadow-[#3b99e2]/20"
+                          : "bg-white border border-slate-200/80 shadow-sm"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -2302,7 +2340,7 @@ function AIAssistant({
               </div>
 
               {/* Helper Hint */}
-              <p className="text-[11px] text-zinc-500 leading-relaxed bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/60">
+              <p className="text-[11px] text-[#64748b] leading-relaxed bg-[#f8fafc] p-3 rounded-xl border border-slate-200/80">
                 ต้องการปรับแผน? พิมพ์หรือกดไมค์ เช่น “วันนี้เหนื่อยมาก” หรือ “ขอท่าแรงกระแทกต่ำ” แล้ว AI จะเลือกท่าทดแทนให้
               </p>
 
@@ -2314,19 +2352,19 @@ function AIAssistant({
                   </h3>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-2.5">
-                      <b className="block text-sm font-bold text-white">{planAnalytics?.totals?.sessions ?? "–"}</b>
+                    <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
+                      <b className="block text-sm font-bold text-[#1e293b]">{planAnalytics?.totals?.sessions ?? "–"}</b>
                       <span className="text-[10px] text-zinc-400">ครั้งที่ฝึก</span>
                     </div>
-                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-2.5">
+                    <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
                       <b className="block text-sm font-bold text-white">{planAnalytics?.totals?.repetitions ?? "–"}</b>
                       <span className="text-[10px] text-zinc-400">ครั้งรวม</span>
                     </div>
-                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-2.5">
+                    <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
                       <b className="block text-sm font-bold text-white">{planAnalytics?.totals?.uniqueDays ?? "–"}</b>
                       <span className="text-[10px] text-zinc-400">วันที่ฝึก</span>
                     </div>
-                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-2.5">
+                    <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
                       <b className="block text-sm font-bold text-red-400">{planAnalytics?.totals?.averageScore || "–"}</b>
                       <span className="text-[10px] text-zinc-400">คะแนนเฉลี่ย</span>
                     </div>
@@ -2338,7 +2376,7 @@ function AIAssistant({
 
                   <ul className="flex flex-col gap-1.5 text-xs text-zinc-400">
                     {(planAnalytics?.recent || []).slice(0, 4).map((workout) => (
-                      <li key={workout.id} className="flex items-center justify-between bg-zinc-900/50 p-2 rounded-lg border border-zinc-800/60">
+                      <li key={workout.id} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm text-[#1e293b]">
                         <span className="font-medium text-zinc-200">{workout.exercise?.name || "Exercise"}</span>
                         <small className="text-[10px] text-zinc-500">
                           {new Date(workout.startedAt).toLocaleDateString("th-TH")}
@@ -2388,7 +2426,7 @@ function AIAssistant({
             <img
               src={previewImage}
               alt="ภาพอาหารขนาดเต็ม"
-              className="w-auto h-auto max-w-full max-h-[80vh] object-contain rounded-2xl border border-zinc-800 shadow-2xl bg-zinc-950"
+              className="w-auto h-auto max-w-full max-h-[80vh] object-contain rounded-2xl border border-slate-200 shadow-2xl bg-slate-900"
             />
           </div>
         </div>
@@ -2404,16 +2442,16 @@ function AIAssistant({
           onClick={() => !renameModal.loading && setRenameModal((prev) => ({ ...prev, isOpen: false }))}
         >
           <div
-            className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 relative animate-in zoom-in-95 duration-150"
+            className="bg-white border border-slate-200/80 rounded-[28px] shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 relative animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-[#c4d7e6] text-[#3b99e2] border border-slate-300 flex items-center justify-center">
                   <Pencil size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white leading-tight">เปลี่ยนชื่อห้องแชท</h3>
+                  <h3 className="text-sm font-bold text-[#1e293b] leading-tight">เปลี่ยนชื่อห้องแชท</h3>
                   <p className="text-[11px] text-zinc-400 mt-0.5">กำหนดชื่อที่คุณต้องการสำหรับห้องแชทนี้</p>
                 </div>
               </div>
@@ -2444,7 +2482,7 @@ function AIAssistant({
                     }
                   }}
                   placeholder="เช่น ท่า Squat วันนี้, เมนูลดน้ำหนัก..."
-                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-red-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors"
+                  className="w-full bg-[#c4d7e6] border border-slate-300 focus:ring-2 focus:ring-[#3b99e2] rounded-xl px-4 py-2.5 text-sm text-[#1e293b] placeholder-[#64748b] font-medium outline-none transition-colors"
                   disabled={renameModal.loading}
                 />
                 {renameModal.error && (
@@ -2459,14 +2497,14 @@ function AIAssistant({
                   type="button"
                   onClick={() => setRenameModal((prev) => ({ ...prev, isOpen: false }))}
                   disabled={renameModal.loading}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#64748b] hover:text-[#1e293b] bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={renameModal.loading}
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 transition-colors cursor-pointer shadow-lg shadow-red-600/20 flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#3b99e2] hover:bg-[#288ad4] disabled:opacity-50 transition-colors cursor-pointer shadow-sm shadow-[#3b99e2]/25 flex items-center gap-1.5"
                 >
                   {renameModal.loading ? <span>กำลังบันทึก...</span> : <span>บันทึกชื่อใหม่</span>}
                 </button>
@@ -2485,7 +2523,7 @@ function AIAssistant({
           onClick={() => !deleteModal.loading && setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
         >
           <div
-            className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 relative animate-in zoom-in-95 duration-150"
+            className="bg-white border border-slate-200/80 rounded-[28px] shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 relative animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
@@ -2493,14 +2531,14 @@ function AIAssistant({
                 <Trash2 size={20} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">ยืนยันการลบห้องแชท</h3>
+                <h3 className="text-base font-bold text-[#1e293b]">ยืนยันการลบห้องแชท</h3>
                 <p className="text-xs text-zinc-400 mt-0.5">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
               </div>
             </div>
 
-            <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3.5 text-xs text-zinc-300 leading-relaxed">
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-800 leading-relaxed">
               คุณต้องการลบห้องแชท{" "}
-              <strong className="text-white font-semibold">
+              <strong className="text-rose-950 font-bold">
                 "{deleteModal.session?.title || "FitAI Assistant"}"
               </strong>{" "}
               ใช่หรือไม่? ข้อความทั้งหมดในห้องนี้จะถูกลบถาวร
@@ -2519,7 +2557,7 @@ function AIAssistant({
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={deleteModal.loading}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 transition-colors cursor-pointer shadow-lg shadow-red-600/20 flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 transition-colors cursor-pointer shadow-sm shadow-rose-600/20 flex items-center gap-1.5"
               >
                 {deleteModal.loading ? <span>กำลังลบ...</span> : <span>ลบห้องแชท</span>}
               </button>

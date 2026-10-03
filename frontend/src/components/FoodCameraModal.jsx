@@ -27,16 +27,8 @@ export default function FoodCameraModal({ isOpen, onClose, onCapture }) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
-      console.warn("Camera access failed, falling back to user facing:", err);
-      try {
-        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        streamRef.current = fallbackStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = fallbackStream;
-        }
-      } catch (fallbackErr) {
-        setCameraError("ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการเข้าถึงกล้องในเบราว์เซอร์");
-      }
+      console.error("Camera access error:", err);
+      setCameraError("ไม่สามารถเข้าถึงกล้องได้: " + (err.message || ""));
     }
   };
 
@@ -89,27 +81,27 @@ export default function FoodCameraModal({ isOpen, onClose, onCapture }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-zinc-950/60">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#9bb0c4] bg-[#abbed2]">
           <div className="flex items-center gap-2">
-            <Camera className="w-5 h-5 text-red-500" />
-            <h3 className="text-sm font-semibold text-zinc-100">ถ่ายรูปอาหารด้วยกล้อง</h3>
+            <Camera className="w-5 h-5 text-[#1e293b]" />
+            <h3 className="text-sm font-bold text-[#1e293b]">ถ่ายรูปอาหารด้วยกล้อง AI</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+            className="p-1.5 text-[#1e293b] hover:bg-white/40 rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Viewfinder / Preview */}
-        <div className="relative aspect-4/3 w-full bg-black flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-4/3 w-full bg-slate-900 flex items-center justify-center overflow-hidden">
           {cameraError ? (
-            <div className="p-6 text-center text-sm text-red-400 max-w-xs">{cameraError}</div>
+            <div className="p-6 text-center text-sm text-rose-400 max-w-xs">{cameraError}</div>
           ) : previewImage ? (
             <img src={previewImage} alt="Food snapshot" className="w-full h-full object-cover" />
           ) : (
@@ -122,8 +114,8 @@ export default function FoodCameraModal({ isOpen, onClose, onCapture }) {
                 className="w-full h-full object-cover"
               />
               {/* Overlay target frame */}
-              <div className="absolute inset-8 border-2 border-dashed border-red-500/60 rounded-2xl pointer-events-none flex items-center justify-center">
-                <span className="bg-black/60 px-3 py-1 rounded-full text-xs text-zinc-300 backdrop-blur-sm">
+              <div className="absolute inset-8 border-2 border-dashed border-[#3b99e2]/80 rounded-2xl pointer-events-none flex items-center justify-center">
+                <span className="bg-black/60 px-3 py-1 rounded-full text-xs text-white backdrop-blur-sm">
                   จัดอาหารให้อยู่ในกรอบ
                 </span>
               </div>
@@ -132,13 +124,13 @@ export default function FoodCameraModal({ isOpen, onClose, onCapture }) {
         </div>
 
         {/* Action Controls */}
-        <div className="p-4 bg-zinc-950/80 border-t border-white/10 flex items-center justify-between">
+        <div className="p-4 bg-white border-t border-slate-200 flex items-center justify-between">
           {previewImage ? (
             <>
               <button
                 type="button"
                 onClick={handleRetake}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-[#1e293b] bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>ถ่ายใหม่</span>
@@ -146,7 +138,7 @@ export default function FoodCameraModal({ isOpen, onClose, onCapture }) {
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-600/30 transition-all"
+                className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white bg-[#3b99e2] hover:bg-[#288ad4] rounded-xl shadow-md shadow-[#3b99e2]/25 transition-all cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>ใช้นี้ในการวิเคราะห์</span>
@@ -157,7 +149,7 @@ export default function FoodCameraModal({ isOpen, onClose, onCapture }) {
               <button
                 type="button"
                 onClick={toggleFacingMode}
-                className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+                className="p-2.5 text-[#475569] hover:text-[#1e293b] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 title="สลับกล้องหน้า/หลัง"
               >
                 <RefreshCw className="w-5 h-5" />
@@ -166,10 +158,10 @@ export default function FoodCameraModal({ isOpen, onClose, onCapture }) {
                 type="button"
                 onClick={capturePhoto}
                 disabled={Boolean(cameraError)}
-                className="flex items-center justify-center w-14 h-14 rounded-full bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/40 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                className="flex items-center justify-center w-14 h-14 rounded-full bg-[#3b99e2] hover:bg-[#288ad4] text-white shadow-lg shadow-[#3b99e2]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 title="กดถ่ายรูป"
               >
-                <div className="w-10 h-10 rounded-full border-2 border-white/80" />
+                <div className="w-10 h-10 rounded-full border-2 border-white/90" />
               </button>
               <div className="w-9" />
             </>

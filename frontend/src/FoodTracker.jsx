@@ -41,6 +41,7 @@ export default function FoodTracker({ onBack }) {
   const [manualModalOpen, setManualModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [manualForm, setManualForm] = useState({
     name: "",
     quantity: 1,
@@ -111,110 +112,112 @@ export default function FoodTracker({ onBack }) {
   };
 
   const analyzeBase64Image = async (base64) => {
+    setIsAnalyzing(true);
+    setFeedback({ type: "", message: "" });
+    setReviewImagePreview(base64);
+
     try {
-      setIsAnalyzing(true);
-      setFeedback({ type: "", message: "" });
-      setReviewImagePreview(base64);
-
-      const res = await api.post("/food/analyze", {
-        imageBase64: base64,
-      });
-
+      const res = await api.post("/food/analyze-image", { imageBase64: base64 });
       if (res.data?.success) {
         const data = res.data.data;
-        setReviewMealType(data.mealType || "LUNCH");
-        setReviewItems(data.items || []);
-        setReviewTotal(data.total || { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        const items = data.items || [];
+        setReviewItems(items);
+        setReviewTotal(
+          data.total || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        );
         setReviewWarning(data.warning || "");
+
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 10) setReviewMealType("BREAKFAST");
+        else if (hour >= 10 && hour < 15) setReviewMealType("LUNCH");
+        else if (hour >= 15 && hour < 21) setReviewMealType("DINNER");
+        else setReviewMealType("SNACK");
+
         setReviewModalOpen(true);
       } else {
         setFeedback({
           type: "error",
-          message: res.data?.message || "ไม่สามารถวิเคราะห์รูปอาหารได้ กรุณาลองใหม่อีกครั้ง",
+          message: res.data?.message || "ไม่สามารถวิเคราะห์ภาพได้",
         });
       }
     } catch (err) {
-      console.error("Analyze food error:", err);
+      console.error("Analyze image error:", err);
       setFeedback({
         type: "error",
-        message: err.response?.data?.message || "ไม่สามารถวิเคราะห์รูปอาหารได้ กรุณาลองถ่ายรูปใหม่",
+        message: err.response?.data?.message || "เกิดข้อผิดพลาดในการวิเคราะห์รูปภาพ",
       });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const updateReviewItem = async (index, field, value) => {
-    const updated = [...reviewItems];
-    updated[index] = { ...updated[index], [field]: value };
+  const updateReviewItem = (index, field, value) => {
+    const next = [...reviewItems];
+    next[index] = { ...next[index], [field]: value };
 
-    try {
-      const res = await api.post("/food/calculate", { items: updated });
-      if (res.data?.success) {
-        setReviewItems(res.data.data.items);
-        setReviewTotal(res.data.data.total);
-      } else {
-        setReviewItems(updated);
-      }
-    } catch {
-      setReviewItems(updated);
+    if (field === "quantity") {
+      const num = parseFloat(value) || 1;
+      const baseCal = next[index].baseCalories || (next[index].calories / (next[index].quantity || 1));
+      next[index].baseCalories = baseCal;
+      next[index].calories = Math.round(baseCal * num);
     }
+
+    setReviewItems(next);
+    recalcReviewTotal(next);
   };
 
-  const removeReviewItem = (index) => {
-    const updated = reviewItems.filter((_, i) => i !== index);
-    setReviewItems(updated);
-    if (updated.length > 0) {
-      api.post("/food/calculate", { items: updated }).then((res) => {
-        if (res.data?.success) setReviewTotal(res.data.data.total);
-      });
-    } else {
-      setReviewTotal({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const recalcReviewTotal = (items) => {
+    let cal = 0, p = 0, c = 0, f = 0;
+    for (const it of items) {
+      cal += Number(it.calories) || 0;
+      p += Number(it.protein) || 0;
+      c += Number(it.carbs) || 0;
+      f += Number(it.fat) || 0;
     }
+    setReviewTotal({ calories: cal, protein: p, carbs: c, fat: f });
   };
 
-  const addReviewItem = () => {
-    const newItem = {
-      name: "ข้าวสวย (ข้าวหอมมะลิ)",
-      quantity: 1,
-      unit: "จาน",
-      calories: 195,
-      protein: 4.1,
-      carbs: 42.3,
-      fat: 0.5,
-      confidence: 1.0,
-      isCustom: false,
-    };
-    const updated = [...reviewItems, newItem];
-    setReviewItems(updated);
-    api.post("/food/calculate", { items: updated }).then((res) => {
-      if (res.data?.success) setReviewTotal(res.data.data.total);
-    });
+  const removeReviewItem = (idx) => {
+    const next = reviewItems.filter((_, i) => i !== idx);
+    setReviewItems(next);
+    recalcReviewTotal(next);
   };
 
   const handleSaveLog = async () => {
-    if (!reviewItems.length) {
-      setFeedback({ type: "error", message: "กรุณาระบุรายการอาหารอย่างน้อย 1 รายการ" });
+    if (reviewItems.length === 0) {
+      setFeedback({ type: "error", message: "ต้องมีรายการอาหารอย่างน้อย 1 อย่าง" });
       return;
     }
+
     try {
       setSavingLog(true);
       const res = await api.post("/food/logs", {
         mealType: reviewMealType,
-        items: reviewItems,
-        imageUrl: reviewImagePreview ? reviewImagePreview.slice(0, 2000) : null,
+        items: reviewItems.map((item) => ({
+          name: item.name,
+          quantity: Number(item.quantity) || 1,
+          unit: item.unit || "จาน",
+          calories: Number(item.calories) || 0,
+          protein: Number(item.protein) || 0,
+          carbs: Number(item.carbs) || 0,
+          fat: Number(item.fat) || 0,
+          confidence: item.confidence || 0.8,
+        })),
+        imageKey: reviewImagePreview ? "uploaded_food" : null,
       });
 
       if (res.data?.success) {
         setReviewModalOpen(false);
-        setFeedback({ type: "success", message: "บันทึกข้อมูลอาหารเรียบร้อยแล้ว!" });
+        setReviewItems([]);
+        setReviewImagePreview(null);
+        setFeedback({ type: "success", message: "บันทึกข้อมูลอาหารสำเร็จเรียบร้อย!" });
         loadTodaySummary();
       }
     } catch (err) {
       console.error("Save log error:", err);
       setFeedback({
         type: "error",
-        message: err.response?.data?.message || "บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+        message: err.response?.data?.message || "ไม่สามารถบันทึกรายการอาหารได้",
       });
     } finally {
       setSavingLog(false);
@@ -237,12 +240,14 @@ export default function FoodTracker({ onBack }) {
     setSearchQuery(q);
     if (!q.trim()) {
       setSearchResults([]);
+      setSearchSuggestions([]);
       return;
     }
     try {
       const res = await api.get("/food/search?q=" + encodeURIComponent(q));
       if (res.data?.success) {
         setSearchResults(res.data.data || []);
+        setSearchSuggestions(res.data.suggestions || []);
       }
     } catch (err) {
       console.error("Search foods error:", err);
@@ -257,6 +262,7 @@ export default function FoodTracker({ onBack }) {
       quantity: 1,
     });
     setSearchResults([]);
+    setSearchSuggestions([]);
     setSearchQuery(food.name);
   };
 
@@ -305,34 +311,35 @@ export default function FoodTracker({ onBack }) {
   const fat = todayData?.consumed?.fat || 0;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      <header className="sticky top-0 z-30 bg-zinc-900/90 backdrop-blur-md border-b border-white/10 px-4 py-3">
+    <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex flex-col font-sans">
+      <header className="sticky top-0 z-30 bg-[#abbed2] border-b border-[#9bb0c4] px-4 py-3 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onBack}
-              className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+              className="px-4 py-1.5 bg-white hover:bg-slate-50 text-[#1e293b] border border-white/60 rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
               title="ย้อนกลับ"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
+              <span>กลับ</span>
             </button>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-zinc-100 flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold text-[#1e293b] flex items-center gap-2">
                 <span>AI Food Tracker</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-500/30">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/70 text-[#1e293b] border border-white/80 shadow-sm">
                   Calorie & Nutrition
                 </span>
               </h1>
-              <p className="text-xs text-zinc-400">วิเคราะห์อาหารและคำนวณแคลอรีด้วย AI</p>
+              <p className="text-xs text-[#475569]">วิเคราะห์อาหารและคำนวณแคลอรีด้วย AI</p>
             </div>
           </div>
 
-          <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-white/10">
+          <div className="flex items-center bg-white/40 p-1 rounded-xl border border-white/60">
             <button
               type="button"
               onClick={() => setActiveTab("today")}
-              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer " + (activeTab === "today" ? "bg-red-600 text-white shadow-md shadow-red-600/30" : "text-zinc-400 hover:text-white")}
+              className={"flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer " + (activeTab === "today" ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25" : "text-[#1e293b] hover:bg-white/40")}
             >
               <Flame className="w-3.5 h-3.5" />
               <span>วันนี้</span>
@@ -340,7 +347,7 @@ export default function FoodTracker({ onBack }) {
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer " + (activeTab === "history" ? "bg-red-600 text-white shadow-md shadow-red-600/30" : "text-zinc-400 hover:text-white")}
+              className={"flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer " + (activeTab === "history" ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25" : "text-[#1e293b] hover:bg-white/40")}
             >
               <History className="w-3.5 h-3.5" />
               <span>ประวัติ</span>
@@ -352,20 +359,20 @@ export default function FoodTracker({ onBack }) {
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
         {feedback.message && (
           <div
-            className={"flex items-center justify-between p-3.5 rounded-xl border text-sm animate-in fade-in duration-200 " + (feedback.type === "error" ? "bg-red-950/40 border-red-500/30 text-red-300" : "bg-emerald-950/40 border-emerald-500/30 text-emerald-300")}
+            className={"flex items-center justify-between p-3.5 rounded-2xl border text-sm shadow-sm animate-in fade-in duration-200 " + (feedback.type === "error" ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-emerald-50 border-emerald-200 text-emerald-700")}
           >
             <div className="flex items-center gap-2">
               {feedback.type === "error" ? (
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               ) : (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               )}
-              <span>{feedback.message}</span>
+              <span className="font-medium">{feedback.message}</span>
             </div>
             <button
               type="button"
               onClick={() => setFeedback({ type: "", message: "" })}
-              className="text-zinc-400 hover:text-white p-1 cursor-pointer"
+              className="text-[#64748b] hover:text-[#1e293b] p-1 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -373,13 +380,13 @@ export default function FoodTracker({ onBack }) {
         )}
 
         {isAnalyzing && (
-          <div className="p-8 rounded-2xl bg-zinc-900/90 border border-red-500/40 flex flex-col items-center justify-center gap-3 text-center shadow-xl animate-pulse">
-            <div className="w-12 h-12 rounded-full bg-red-600/20 border border-red-500 flex items-center justify-center text-red-500">
+          <div className="p-8 rounded-[24px] bg-white border border-[#3b99e2]/40 flex flex-col items-center justify-center gap-3 text-center shadow-lg animate-pulse">
+            <div className="w-12 h-12 rounded-full bg-[#c4d7e6] border border-[#3b99e2]/30 flex items-center justify-center text-[#3b99e2]">
               <Sparkles className="w-6 h-6 animate-spin" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-zinc-100">AI กำลังวิเคราะห์รูปภาพอาหาร...</h3>
-              <p className="text-xs text-zinc-400 mt-1">
+              <h3 className="text-base font-bold text-[#1e293b]">AI กำลังวิเคราะห์รูปภาพอาหาร...</h3>
+              <p className="text-xs text-[#64748b] mt-1">
                 ระบบกำลังตรวจจับประเภทอาหาร ประมาณขนาด และคำนวณสารอาหาร
               </p>
             </div>
@@ -388,24 +395,24 @@ export default function FoodTracker({ onBack }) {
 
         {activeTab === "today" ? (
           loadingToday ? (
-            <div className="p-12 text-center text-sm text-zinc-500 bg-zinc-900/60 rounded-2xl border border-white/5 animate-pulse">
+            <div className="p-12 text-center text-sm text-[#64748b] bg-white rounded-2xl border border-slate-200/80 animate-pulse shadow-sm">
               กำลังโหลดข้อมูลโภชนาการประจำวัน...
             </div>
           ) : (
           <>
-            <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <section className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <button
                 type="button"
                 onClick={() => setCameraOpen(true)}
                 disabled={isAnalyzing}
-                className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-white/10 hover:border-red-500/40 transition-all group cursor-pointer text-left shadow-lg"
+                className="flex items-center justify-center gap-3.5 p-4.5 rounded-[22px] bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 transition-all group cursor-pointer text-left shadow-sm active:scale-[0.99]"
               >
-                <div className="w-11 h-11 rounded-xl bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-600 group-hover:text-white transition-all shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-[#c4d7e6] border border-slate-300 flex items-center justify-center text-[#3b99e2] group-hover:scale-110 group-hover:bg-[#3b99e2] group-hover:text-white transition-all shrink-0">
                   <Camera className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-zinc-100">ถ่ายรูปอาหาร</h4>
-                  <p className="text-xs text-zinc-400">สแกนด้วยกล้องมือถือ/คอม</p>
+                  <h4 className="text-sm font-bold text-[#1e293b]">ถ่ายรูปอาหาร</h4>
+                  <p className="text-xs text-[#64748b]">สแกนด้วยกล้องมือถือ/คอม</p>
                 </div>
               </button>
 
@@ -413,14 +420,14 @@ export default function FoodTracker({ onBack }) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isAnalyzing}
-                className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-white/10 hover:border-red-500/40 transition-all group cursor-pointer text-left shadow-lg"
+                className="flex items-center justify-center gap-3.5 p-4.5 rounded-[22px] bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 transition-all group cursor-pointer text-left shadow-sm active:scale-[0.99]"
               >
-                <div className="w-11 h-11 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-110 group-hover:bg-sky-500 group-hover:text-white transition-all shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-[#c4d7e6] border border-slate-300 flex items-center justify-center text-[#3b99e2] group-hover:scale-110 group-hover:bg-[#3b99e2] group-hover:text-white transition-all shrink-0">
                   <Upload className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-zinc-100">อัปโหลดรูปภาพ</h4>
-                  <p className="text-xs text-zinc-400">เลือกรูปจากคลังภาพ</p>
+                  <h4 className="text-sm font-bold text-[#1e293b]">อัปโหลดรูปภาพ</h4>
+                  <p className="text-xs text-[#64748b]">เลือกรูปจากคลังภาพ</p>
                 </div>
               </button>
               <input
@@ -435,83 +442,83 @@ export default function FoodTracker({ onBack }) {
                 type="button"
                 onClick={() => setManualModalOpen(true)}
                 disabled={isAnalyzing}
-                className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-white/10 hover:border-red-500/40 transition-all group cursor-pointer text-left shadow-lg"
+                className="flex items-center justify-center gap-3.5 p-4.5 rounded-[22px] bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-[#3b99e2]/60 transition-all group cursor-pointer text-left shadow-sm active:scale-[0.99]"
               >
-                <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-[#c4d7e6] border border-slate-300 flex items-center justify-center text-[#3b99e2] group-hover:scale-110 group-hover:bg-[#3b99e2] group-hover:text-white transition-all shrink-0">
                   <Plus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-zinc-100">กรอกอาหารเอง</h4>
-                  <p className="text-xs text-zinc-400">ค้นหาหรือระบุชื่ออาหาร</p>
+                  <h4 className="text-sm font-bold text-[#1e293b]">กรอกอาหารเอง</h4>
+                  <p className="text-xs text-[#64748b]">ค้นหาหรือระบุชื่ออาหาร</p>
                 </div>
               </button>
             </section>
 
-            <section className="bg-zinc-900/90 border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
+            <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex flex-col gap-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#3b99e2] uppercase tracking-wider">
                     Today's Nutrition
                   </span>
-                  <h2 className="text-xl font-extrabold text-zinc-100 mt-0.5">สรุปแคลอรีประจำวัน</h2>
+                  <h2 className="text-xl font-extrabold text-[#1e293b] mt-0.5">สรุปแคลอรีประจำวัน</h2>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-zinc-400">เป้าหมาย TDEE</span>
-                  <p className="text-base font-bold text-zinc-200">{target} kcal</p>
+                  <span className="text-xs text-[#64748b]">เป้าหมาย TDEE</span>
+                  <p className="text-base font-bold text-[#1e293b]">{target} kcal</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 p-4 rounded-xl bg-zinc-950/60 border border-white/5 text-center">
+              <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/80 text-center">
                 <div>
-                  <span className="text-xs text-zinc-400">รับประทานแล้ว</span>
-                  <p className="text-xl sm:text-2xl font-black text-red-500 mt-1">{consumed}</p>
-                  <span className="text-[11px] text-zinc-500">kcal</span>
+                  <span className="text-xs text-[#64748b] font-medium">รับประทานแล้ว</span>
+                  <p className="text-xl sm:text-2xl font-black text-[#3b99e2] mt-1">{consumed}</p>
+                  <span className="text-[11px] text-[#64748b]">kcal</span>
                 </div>
-                <div className="border-x border-white/10">
-                  <span className="text-xs text-zinc-400">เป้าหมายประจำวัน</span>
-                  <p className="text-xl sm:text-2xl font-black text-zinc-100 mt-1">{target}</p>
-                  <span className="text-[11px] text-zinc-500">kcal</span>
+                <div className="border-x border-slate-200">
+                  <span className="text-xs text-[#64748b] font-medium">เป้าหมายประจำวัน</span>
+                  <p className="text-xl sm:text-2xl font-black text-[#1e293b] mt-1">{target}</p>
+                  <span className="text-[11px] text-[#64748b]">kcal</span>
                 </div>
                 <div>
-                  <span className="text-xs text-zinc-400">คงเหลือ</span>
-                  <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-1">{remaining}</p>
-                  <span className="text-[11px] text-zinc-500">kcal</span>
+                  <span className="text-xs text-[#64748b] font-medium">คงเหลือ</span>
+                  <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{remaining}</p>
+                  <span className="text-[11px] text-[#64748b]">kcal</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between text-xs text-zinc-400">
+                <div className="flex justify-between text-xs text-[#64748b] font-semibold">
                   <span>ความคืบหน้าแคลอรี</span>
                   <span>{percentCal}%</span>
                 </div>
-                <div className="w-full h-3 rounded-full bg-zinc-800 overflow-hidden">
+                <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
                   <div
-                    className={"h-full transition-all duration-500 rounded-full " + (consumed > target ? "bg-amber-500" : "bg-red-600 shadow-sm shadow-red-600/50")}
+                    className={"h-full transition-all duration-500 rounded-full " + (consumed > target ? "bg-amber-500" : "bg-[#3b99e2] shadow-sm shadow-[#3b99e2]/30")}
                     style={{ width: percentCal + "%" }}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/10">
-                <div className="flex flex-col gap-1">
+              <div className="grid grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+                <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400">โปรตีน</span>
-                    <strong className="text-zinc-200">{protein}g</strong>
+                    <span className="text-[#64748b]">โปรตีน</span>
+                    <strong className="text-[#1e293b]">{protein}g</strong>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                     <div
-                      className="h-full bg-red-500 rounded-full"
+                      className="h-full bg-[#3b99e2] rounded-full"
                       style={{ width: Math.min(100, (protein / 120) * 100) + "%" }}
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400">คาร์บ</span>
-                    <strong className="text-zinc-200">{carbs}g</strong>
+                    <span className="text-[#64748b]">คาร์บ</span>
+                    <strong className="text-[#1e293b]">{carbs}g</strong>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                     <div
                       className="h-full bg-sky-500 rounded-full"
                       style={{ width: Math.min(100, (carbs / 250) * 100) + "%" }}
@@ -519,12 +526,12 @@ export default function FoodTracker({ onBack }) {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400">ไขมัน</span>
-                    <strong className="text-zinc-200">{fat}g</strong>
+                    <span className="text-[#64748b]">ไขมัน</span>
+                    <strong className="text-[#1e293b]">{fat}g</strong>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                     <div
                       className="h-full bg-amber-500 rounded-full"
                       style={{ width: Math.min(100, (fat / 65) * 100) + "%" }}
@@ -535,7 +542,7 @@ export default function FoodTracker({ onBack }) {
             </section>
 
             <section className="flex flex-col gap-4">
-              <h3 className="text-base font-bold text-zinc-200">มื้ออาหารของวันนี้</h3>
+              <h3 className="text-base font-bold text-[#1e293b]">มื้ออาหารของวันนี้</h3>
 
               {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map((mealKey) => {
                 const mealData = todayData?.mealBreakdown?.[mealKey];
@@ -545,28 +552,32 @@ export default function FoodTracker({ onBack }) {
                 return (
                   <div
                     key={mealKey}
-                    className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 flex flex-col gap-3"
+                    className="bg-white border border-slate-200/80 rounded-[22px] p-5 flex flex-col gap-3 shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{getMealIcon(mealKey)}</span>
-                        <h4 className="text-sm font-bold text-zinc-100">{getMealLabel(mealKey)}</h4>
+                        <span className="text-xl">{getMealIcon(mealKey)}</span>
+                        <h4 className="text-sm font-bold text-[#1e293b]">{getMealLabel(mealKey)}</h4>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-bold text-red-400">{mealCalories}</span>
-                        <span className="text-xs text-zinc-500 ml-1">kcal</span>
+                        <span className="text-sm font-extrabold text-[#3b99e2]">{mealCalories}</span>
+                        <span className="text-xs text-[#64748b] ml-1">kcal</span>
                       </div>
                     </div>
 
-                    {mealLogs.length > 0 ? (
-                      <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-                        {mealLogs.map((log) => (
-                          <FoodLogItem key={log.id} log={log} onDelete={handleDeleteLog} />
-                        ))}
+                    {mealLogs.length === 0 ? (
+                      <div className="py-3 text-center text-xs text-[#64748b]">
+                        ยังไม่มีรายการอาหารในมื้อนี้
                       </div>
                     ) : (
-                      <div className="py-2 text-center text-xs text-zinc-500 italic">
-                        ยังไม่มีรายการอาหารในมื้อนี้
+                      <div className="flex flex-col gap-2.5">
+                        {mealLogs.map((log) => (
+                          <FoodLogItem
+                            key={log.id}
+                            log={log}
+                            onDelete={handleDeleteLog}
+                          />
+                        ))}
                       </div>
                     )}
                   </div>
@@ -574,19 +585,30 @@ export default function FoodTracker({ onBack }) {
               })}
             </section>
           </>
-        )) : (
-          <section className="flex flex-col gap-4">
-            <h3 className="text-base font-bold text-zinc-200">ประวัติการรับประทานอาหาร</h3>
+          )
+        ) : (
+          <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex flex-col gap-4">
+            <h3 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
+              <History className="w-5 h-5 text-[#3b99e2]" />
+              <span>ประวัติการรับประทานอาหาร</span>
+            </h3>
+
             {loadingHistory ? (
-              <div className="p-8 text-center text-sm text-zinc-500">กำลังโหลดประวัติ...</div>
+              <div className="py-12 text-center text-xs text-[#64748b]">
+                กำลังโหลดประวัติ...
+              </div>
             ) : historyLogs.length === 0 ? (
-              <div className="p-12 text-center text-zinc-500 bg-zinc-900/60 rounded-2xl border border-white/5">
-                ยังไม่มีประวัติการบันทึกอาหาร
+              <div className="py-12 text-center text-xs text-[#64748b]">
+                ยังไม่มีข้อมูลประวัติอาหาร
               </div>
             ) : (
               <div className="flex flex-col gap-3">
                 {historyLogs.map((log) => (
-                  <FoodLogItem key={log.id} log={log} onDelete={handleDeleteLog} />
+                  <FoodLogItem
+                    key={log.id}
+                    log={log}
+                    onDelete={handleDeleteLog}
+                  />
                 ))}
               </div>
             )}
@@ -594,110 +616,98 @@ export default function FoodTracker({ onBack }) {
         )}
       </main>
 
+      {/* Review Modal */}
       {reviewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col my-8">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-zinc-950/80">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#9bb0c4] bg-[#abbed2]">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-red-500" />
-                <h3 className="text-base font-bold text-zinc-100">ผลการวิเคราะห์อาหาร (AI Review)</h3>
+                <Sparkles className="w-5 h-5 text-[#1e293b]" />
+                <h3 className="text-base font-bold text-[#1e293b]">ผลการวิเคราะห์อาหารด้วย AI</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setReviewModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 cursor-pointer"
+                className="p-1.5 text-[#1e293b] hover:bg-white/40 rounded-full cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+            <div className="p-5 overflow-y-auto flex flex-col gap-4">
               {reviewWarning && (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-300">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>{reviewWarning}</span>
                 </div>
               )}
 
+              {reviewImagePreview && (
+                <div className="w-full h-44 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
+                  <img src={reviewImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-                  เลือกมื้ออาหาร (Meal Type)
-                </label>
-                <div className="grid grid-cols-4 gap-1.5">
+                <label className="block text-xs font-bold text-[#475569] mb-1.5">เลือกมื้ออาหาร:</label>
+                <div className="grid grid-cols-4 gap-2">
                   {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map((m) => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => setReviewMealType(m)}
-                      className={"px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer " + (reviewMealType === m ? "bg-red-600 text-white shadow-md shadow-red-600/30" : "bg-zinc-800/80 text-zinc-400 hover:text-white")}
+                      className={"px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer " + (reviewMealType === m ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25" : "bg-[#edf1f4] text-[#475569] hover:bg-[#e2e8f0]")}
                     >
-                      {m}
+                      {getMealLabel(m)}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-zinc-400">รายการอาหารที่ตรวจพบ:</span>
-                  <button
-                    type="button"
-                    onClick={addReviewItem}
-                    className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>เพิ่มรายการ</span>
-                  </button>
-                </div>
-
+              <div className="flex flex-col gap-2.5">
+                <span className="text-xs font-bold text-[#475569]">รายการอาหารที่ตรวจพบ (แก้ไขได้):</span>
                 {reviewItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-zinc-950/70 border border-white/10 rounded-xl p-3 flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
+                  <div key={idx} className="p-3.5 rounded-2xl bg-[#f8fafc] border border-slate-200/80 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
                       <input
                         type="text"
                         value={item.name}
                         onChange={(e) => updateReviewItem(idx, "name", e.target.value)}
-                        className="bg-transparent text-sm font-bold text-zinc-100 border-b border-transparent hover:border-zinc-600 focus:border-red-500 focus:outline-none flex-1"
-                        placeholder="ชื่ออาหาร"
+                        className="bg-white border border-slate-300 rounded-xl px-2.5 py-1 text-xs font-bold text-[#1e293b] flex-1 mr-2"
                       />
                       <button
                         type="button"
                         onClick={() => removeReviewItem(idx)}
-                        className="p-1 text-zinc-500 hover:text-red-400 cursor-pointer"
-                        title="ลบ"
+                        className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                        title="ลบรายการนี้"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-xs">
                       <div className="flex items-center gap-1">
-                        <label className="text-xs text-zinc-500">จำนวน:</label>
+                        <span className="text-[#64748b]">จำนวน:</span>
                         <input
                           type="number"
-                          step="0.1"
+                          step="0.5"
                           min="0.1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateReviewItem(idx, "quantity", parseFloat(e.target.value) || 1)
-                          }
-                          className="w-16 bg-zinc-800 border border-white/10 rounded px-2 py-1 text-xs text-zinc-100 text-center"
+                          value={item.quantity || 1}
+                          onChange={(e) => updateReviewItem(idx, "quantity", e.target.value)}
+                          className="w-14 bg-white border border-slate-300 rounded-xl px-2 py-1 text-xs text-[#1e293b] text-center font-bold"
                         />
                       </div>
                       <div className="flex items-center gap-1">
-                        <label className="text-xs text-zinc-500">หน่วย:</label>
+                        <span className="text-[#64748b]">หน่วย:</span>
                         <input
                           type="text"
                           value={item.unit || "จาน"}
                           onChange={(e) => updateReviewItem(idx, "unit", e.target.value)}
-                          className="w-16 bg-zinc-800 border border-white/10 rounded px-2 py-1 text-xs text-zinc-100 text-center"
+                          className="w-16 bg-white border border-slate-300 rounded-xl px-2 py-1 text-xs text-[#1e293b] text-center font-bold"
                         />
                       </div>
                       <div className="ml-auto text-right">
-                        <span className="text-xs font-bold text-zinc-200">
+                        <span className="text-xs font-extrabold text-[#3b99e2]">
                           {Math.round(item.calories)} kcal
                         </span>
                       </div>
@@ -706,24 +716,24 @@ export default function FoodTracker({ onBack }) {
                 ))}
               </div>
 
-              <div className="p-3.5 rounded-xl bg-red-950/20 border border-red-500/20 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-[#edf1f4] border border-slate-200 flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-zinc-400">พลังงานรวม:</span>
-                  <p className="text-xl font-extrabold text-red-400">{Math.round(reviewTotal.calories)} kcal</p>
+                  <span className="text-xs text-[#64748b]">พลังงานรวม:</span>
+                  <p className="text-xl font-black text-[#3b99e2]">{Math.round(reviewTotal.calories)} kcal</p>
                 </div>
-                <div className="text-right text-xs text-zinc-300">
-                  <span>โปรตีน: <strong>{Math.round(reviewTotal.protein)}g</strong></span> ·{" "}
-                  <span>คาร์บ: <strong>{Math.round(reviewTotal.carbs)}g</strong></span> ·{" "}
-                  <span>ไขมัน: <strong>{Math.round(reviewTotal.fat)}g</strong></span>
+                <div className="text-right text-xs text-[#475569]">
+                  <span>โปรตีน: <strong className="text-[#1e293b]">{Math.round(reviewTotal.protein)}g</strong></span> ·{" "}
+                  <span>คาร์บ: <strong className="text-[#1e293b]">{Math.round(reviewTotal.carbs)}g</strong></span> ·{" "}
+                  <span>ไขมัน: <strong className="text-[#1e293b]">{Math.round(reviewTotal.fat)}g</strong></span>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-zinc-950/90 border-t border-white/10 flex items-center justify-end gap-2.5">
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setReviewModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-[#64748b] hover:text-[#1e293b] rounded-xl bg-slate-200 hover:bg-slate-300 transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -731,7 +741,7 @@ export default function FoodTracker({ onBack }) {
                 type="button"
                 onClick={handleSaveLog}
                 disabled={savingLog}
-                className="flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-600/30 transition-all cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white bg-[#3b99e2] hover:bg-[#288ad4] rounded-xl shadow-md shadow-[#3b99e2]/25 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{savingLog ? "กำลังบันทึก..." : "ยืนยันและบันทึก (Confirm & Save)"}</span>
@@ -741,15 +751,16 @@ export default function FoodTracker({ onBack }) {
         </div>
       )}
 
+      {/* Manual Input Modal */}
       {manualModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-zinc-950/80">
-              <h3 className="text-base font-bold text-zinc-100">กรอกข้อมูลอาหารด้วยตนเอง</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#9bb0c4] bg-[#abbed2]">
+              <h3 className="text-base font-bold text-[#1e293b]">กรอกข้อมูลอาหารด้วยตนเอง</h3>
               <button
                 type="button"
                 onClick={() => setManualModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 cursor-pointer"
+                className="p-1.5 text-[#1e293b] hover:bg-white/40 rounded-full cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -757,7 +768,7 @@ export default function FoodTracker({ onBack }) {
 
             <form onSubmit={handleManualSubmit} className="p-5 flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                <label className="block text-xs font-bold text-[#475569] mb-1.5">
                   ค้นหาหรือพิมพ์ชื่ออาหาร
                 </label>
                 <div className="relative">
@@ -766,65 +777,103 @@ export default function FoodTracker({ onBack }) {
                     value={searchQuery}
                     onChange={(e) => handleSearchFoods(e.target.value)}
                     placeholder="เช่น ข้าวกะเพราไก่, ไข่ต้ม, อกไก่..."
-                    className="w-full bg-zinc-800 border border-white/10 rounded-xl px-3 py-2 pl-9 text-sm text-zinc-100 focus:border-red-500 focus:outline-none"
+                    className="w-full bg-[#c4d7e6] border border-slate-300 rounded-xl px-3 py-2.5 pl-9 text-sm text-[#1e293b] placeholder-[#64748b] font-medium focus:outline-none focus:ring-2 focus:ring-[#3b99e2]"
                     required
                   />
-                  <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
+                  <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-3.5" />
                 </div>
 
                 {searchResults.length > 0 && (
-                  <div className="mt-1.5 bg-zinc-950 border border-white/10 rounded-xl max-h-48 overflow-y-auto divide-y divide-white/5 shadow-xl">
+                  <div className="mt-2 bg-white border border-slate-200 rounded-xl max-h-48 overflow-y-auto divide-y divide-slate-100 shadow-xl">
                     {searchResults.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => handleSelectSearchResult(item)}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between transition-colors cursor-pointer"
+                        className="w-full text-left px-3 py-2.5 text-xs hover:bg-slate-50 flex items-center justify-between transition-colors cursor-pointer"
                       >
-                        <span className="font-semibold text-zinc-200">{item.name}</span>
-                        <span className="text-zinc-500">{item.serving?.calories} kcal</span>
+                        <span className="font-bold text-[#1e293b]">{item.name}</span>
+                        <span className="text-[#3b99e2] font-semibold">{item.serving?.calories} kcal</span>
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {searchResults.length === 0 && searchSuggestions.length > 0 && searchQuery.trim().length >= 2 && (
+                  <div className="mt-2.5 bg-[#edf1f4] border border-[#abbed2] rounded-xl p-3 shadow-md animate-fadeIn">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#1e293b] mb-2">
+                      <Sparkles className="w-4 h-4 text-[#3b99e2]" />
+                      <span>ไม่พบเมนูที่ค้นหา แต่ FitAI แนะนำเมนูที่ใกล้เคียง:</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-0.5">
+                      {searchSuggestions.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleSelectSearchResult(item)}
+                          className="w-full text-left p-2.5 rounded-lg bg-white/90 hover:bg-white border border-[#c4d7e6] hover:border-[#3b99e2] transition-all flex items-center justify-between group cursor-pointer shadow-sm"
+                        >
+                          <div className="pr-2">
+                            <div className="font-bold text-xs text-[#1e293b] group-hover:text-[#3b99e2] transition-colors">
+                              {item.name}
+                            </div>
+                            {item.reason && (
+                              <div className="text-[11px] text-[#64748b] mt-0.5">
+                                💡 {item.reason}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right flex flex-col items-end shrink-0">
+                            <span className="text-xs font-extrabold text-[#3b99e2]">
+                              {item.serving?.calories} kcal
+                            </span>
+                            <span className="text-[10px] text-[#64748b]">
+                              โปรตีน {item.serving?.protein || 0}g
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 mb-1">ปริมาณ</label>
+                  <label className="block text-xs font-bold text-[#475569] mb-1.5">ปริมาณ</label>
                   <input
                     type="number"
                     step="0.5"
                     min="0.1"
                     value={manualForm.quantity}
                     onChange={(e) => setManualForm({ ...manualForm, quantity: e.target.value })}
-                    className="w-full bg-zinc-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-zinc-100 text-center focus:border-red-500 focus:outline-none"
+                    className="w-full bg-[#c4d7e6] border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-[#1e293b] text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#3b99e2]"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 mb-1">หน่วย</label>
+                  <label className="block text-xs font-bold text-[#475569] mb-1.5">หน่วย</label>
                   <input
                     type="text"
                     value={manualForm.unit}
                     onChange={(e) => setManualForm({ ...manualForm, unit: e.target.value })}
-                    className="w-full bg-zinc-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-zinc-100 text-center focus:border-red-500 focus:outline-none"
+                    className="w-full bg-[#c4d7e6] border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-[#1e293b] text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#3b99e2]"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">มื้ออาหาร</label>
-                <div className="grid grid-cols-4 gap-1.5">
+                <label className="block text-xs font-bold text-[#475569] mb-1.5">มื้ออาหาร</label>
+                <div className="grid grid-cols-4 gap-2">
                   {["BREAKFAST", "LUNCH", "DINNER", "SNACK"].map((m) => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => setManualForm({ ...manualForm, mealType: m })}
-                      className={"px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer " + (manualForm.mealType === m ? "bg-red-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white")}
+                      className={"px-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer " + (manualForm.mealType === m ? "bg-[#3b99e2] text-white shadow-sm shadow-[#3b99e2]/25" : "bg-[#edf1f4] text-[#475569] hover:bg-[#e2e8f0]")}
                     >
-                      {m}
+                      {getMealLabel(m)}
                     </button>
                   ))}
                 </div>
@@ -833,7 +882,7 @@ export default function FoodTracker({ onBack }) {
               <button
                 type="submit"
                 disabled={savingLog}
-                className="w-full mt-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-600/30 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full mt-2 py-3 rounded-2xl bg-[#3b99e2] hover:bg-[#288ad4] text-white font-bold text-sm shadow-md shadow-[#3b99e2]/25 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
               >
                 {savingLog ? "กำลังบันทึก..." : "บันทึกอาหาร"}
               </button>

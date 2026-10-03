@@ -7,7 +7,7 @@ import { AppRoutes, LoadingScreen } from "./routes";
 function App() {
   const { isAuthenticated, loading: authLoading } = useAuth();
 
-  const [theme, setTheme] = useState(() => localStorage.getItem("fitai-theme") || "dark");
+  const [theme, setTheme] = useState(() => localStorage.getItem("fitai-theme") || "light");
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;

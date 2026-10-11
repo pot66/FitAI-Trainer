@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 @import 'tailwindcss';
 
 :root {
@@ -32,16 +32,24 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
+html {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
   padding: 0;
-}
-
-body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
   background-color: var(--canvas);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -49,7 +57,29 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Sleek Scrollbar */
+#root {
+  min-width: 320px;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure images, videos, canvases never overflow their parent containers */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Hide scrollbar for clean horizontal swipe on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Sleek Scrollbar for standard scrollables */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -63,4 +93,57 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.45);
+}
+
+/* Safe area padding for mobile notches / gestures */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* AI Coach Video Call Animations */
+@keyframes coachBreathe {
+  0%, 100% {
+    transform: scale(1.0);
+  }
+  50% {
+    transform: scale(1.015);
+  }
+}
+
+.animate-coach-breathe {
+  animation: coachBreathe 7s ease-in-out infinite;
+}
+
+@keyframes speakingHalo {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25), inset 0 0 25px rgba(56, 189, 248, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(56, 189, 248, 0.65), inset 0 0 45px rgba(56, 189, 248, 0.35);
+  }
+}
+
+.animate-speaking-halo {
+  animation: speakingHalo 1.8s ease-in-out infinite;
+}
+
+@keyframes soundWaveBar {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 16px;
+  }
+}
+
+.animate-soundwave-1 {
+  animation: soundWaveBar 0.9s ease-in-out infinite 0.1s;
+}
+.animate-soundwave-2 {
+  animation: soundWaveBar 0.9s ease-in-out infinite 0.35s;
+}
+.animate-soundwave-3 {
+  animation: soundWaveBar 0.9s ease-in-out infinite 0.2s;
 }

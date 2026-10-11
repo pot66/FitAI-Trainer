@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Play, ExternalLink, X } from 'lucide-react';
 
 export function extractYouTubeId(url = '') {
@@ -20,10 +20,26 @@ export function extractPlaylistId(url = '') {
   return match ? match[1] : null;
 }
 
+const DEFAULT_FITNESS_IMAGE = 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80';
+
 export default function YouTubeCard({ url, title }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoId = extractYouTubeId(url);
   const playlistId = extractPlaylistId(url);
+
+  const initialThumb = videoId
+    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+    : DEFAULT_FITNESS_IMAGE;
+
+  const [thumbSrc, setThumbSrc] = useState(initialThumb);
+
+  useEffect(() => {
+    setThumbSrc(
+      videoId
+        ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+        : DEFAULT_FITNESS_IMAGE
+    );
+  }, [videoId]);
 
   if (!videoId && !playlistId) {
     return (
@@ -39,10 +55,6 @@ export default function YouTubeCard({ url, title }) {
       </a>
     );
   }
-
-  const thumbnailUrl = videoId
-    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-    : 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd';
 
   const embedUrl = videoId
     ? `https://www.youtube.com/embed/${videoId}?autoplay=1`
@@ -78,11 +90,20 @@ export default function YouTubeCard({ url, title }) {
         </div>
       ) : (
         <div className='flex flex-col h-full cursor-pointer group' onClick={() => setIsPlaying(true)}>
-          <div
-            className='relative w-full aspect-video bg-cover bg-center flex items-center justify-center overflow-hidden'
-            style={{ backgroundImage: `url(${thumbnailUrl})` }}
-          >
-            <div className='absolute inset-0 bg-gradient-to-b from-black/10 to-black/60 group-hover:from-black/10 group-hover:to-black/40 transition-colors' />
+          <div className='relative w-full aspect-video bg-slate-900 flex items-center justify-center overflow-hidden'>
+            <img
+              src={thumbSrc}
+              alt={displayTitle}
+              onError={() => {
+                if (videoId && !thumbSrc.includes('mqdefault')) {
+                  setThumbSrc(`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`);
+                } else {
+                  setThumbSrc(DEFAULT_FITNESS_IMAGE);
+                }
+              }}
+              className='absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
+            />
+            <div className='absolute inset-0 bg-gradient-to-b from-black/15 to-black/65 group-hover:from-black/10 group-hover:to-black/45 transition-colors' />
             <button
               type='button'
               className='relative z-10 w-12 h-12 rounded-full bg-[#3b99e2] border-0 flex items-center justify-center pl-0.5 cursor-pointer shadow-lg shadow-[#3b99e2]/40 group-hover:scale-110 group-hover:bg-[#288ad4] transition-all'
@@ -110,7 +131,7 @@ export default function YouTubeCard({ url, title }) {
                 }}
               >
                 <Play size={12} fill='currentColor' />
-                <span>ดูในแชท</span>
+                <span>เล่นวิดีโอ</span>
               </button>
               <a
                 href={url}

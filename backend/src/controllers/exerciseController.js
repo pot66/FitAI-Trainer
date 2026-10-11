@@ -3,6 +3,11 @@ const prisma = require("../services/prisma");
 async function getExercises(req, res) {
   try {
     const exercises = await prisma.exercise.findMany({
+      include: {
+        videos: {
+          where: { isActive: true },
+        },
+      },
       orderBy: {
         id: "asc",
       },
@@ -36,6 +41,11 @@ async function getExerciseById(req, res) {
     const exercise = await prisma.exercise.findUnique({
       where: {
         id: exerciseId,
+      },
+      include: {
+        videos: {
+          where: { isActive: true },
+        },
       },
     });
 

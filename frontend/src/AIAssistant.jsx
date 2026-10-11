@@ -1,4 +1,4 @@
-﻿import {
+import {
   useEffect,
   useRef,
   useState,
@@ -29,6 +29,11 @@ import {
   Upload,
   X,
   RefreshCw,
+  ChevronDown,
+  Calendar,
+  Play,
+  MessageSquare,
+  Menu,
 } from "lucide-react";
 
 import api from "./services/api";
@@ -42,6 +47,12 @@ import {
 import ChatMessageContent from "./components/ChatMessageContent";
 import FoodCameraModal from "./components/FoodCameraModal";
 import { calculateBMRAndTDEE, getMealIcon } from "./utils/nutritionCalculator";
+import {
+  getTodayCompletedExercises,
+  syncTodayCompletedFromWorkouts,
+  isExerciseCompletedToday,
+  toggleExerciseCompletedToday,
+} from "./utils/workoutCompletionUtils";
 import { speakText, stopSpeech, isSpeakingNow } from "./utils/speechUtils";
 
 function AIAssistant({
@@ -90,6 +101,36 @@ function AIAssistant({
 
   // Weekly Plan
   const [weeklyPlan, setWeeklyPlan] = useState([]);
+  const [todayCompleted, setTodayCompleted] = useState(() => getTodayCompletedExercises(user?.id));
+
+  // Listen for workout completion events & sync from API workouts (per-user)
+  useEffect(() => {
+    const onCompleted = (e) => {
+      if (!e.detail?.userId || !user?.id || e.detail.userId === user.id) {
+        setTodayCompleted(getTodayCompletedExercises(user?.id));
+      }
+    };
+    window.addEventListener("fitai-workout-completed", onCompleted);
+
+    // Initial load for this user
+    setTodayCompleted(getTodayCompletedExercises(user?.id));
+
+    if (user?.id) {
+      api
+        .get("/workouts")
+        .then((res) => {
+          if (res.data?.data && Array.isArray(res.data.data)) {
+            const synced = syncTodayCompletedFromWorkouts(res.data.data, user.id);
+            setTodayCompleted(synced);
+          }
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      window.removeEventListener("fitai-workout-completed", onCompleted);
+    };
+  }, [user?.id]);
   const [planProfile, setPlanProfile] = useState(null);
   const [planExercises, setPlanExercises] = useState([]);
   const [planSummary, setPlanSummary] = useState("");
@@ -99,6 +140,9 @@ function AIAssistant({
 
   // Dual-mode Right Sidebar ("calorie" or "workout")
   const [sidebarTab, setSidebarTab] = useState("calorie");
+  const [incompleteGoalModal, setIncompleteGoalModal] = useState(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileRightPanelOpen, setMobileRightPanelOpen] = useState(false);
 
   // Calorie & Food Data
   const [todayFoodData, setTodayFoodData] = useState(null);
@@ -236,10 +280,10 @@ function AIAssistant({
               exercises
             );
 
-          const saved =
-            localStorage.getItem(
-              "fitai-weekly-plan"
-            );
+          const userPlanKey = user?.id ? `fitai-weekly-plan-user-${user.id}` : "fitai-weekly-plan";
+          const userSigKey = user?.id ? `fitai-plan-signature-user-${user.id}` : "fitai-plan-signature";
+
+          const saved = localStorage.getItem(userPlanKey);
 
           let savedPlan = null;
 
@@ -259,7 +303,7 @@ function AIAssistant({
           );
 
           const profileSignature = `${profile.id || profile.userId || ""}_${profile.height || ""}_${profile.weight || ""}_${profile.age || ""}_${profile.gender || ""}`;
-          const savedSignature = localStorage.getItem("fitai-plan-signature");
+          const savedSignature = localStorage.getItem(userSigKey);
           const isSameProfile = Boolean(savedSignature && savedSignature === profileSignature);
 
           const sanitizedSaved = Array.isArray(savedPlan) ? sanitizePlan(savedPlan) : null;
@@ -283,11 +327,11 @@ function AIAssistant({
           setWeeklyPlan(planToUse);
 
           localStorage.setItem(
-            "fitai-weekly-plan",
+            userPlanKey,
             JSON.stringify(planToUse)
           );
           localStorage.setItem(
-            "fitai-plan-signature",
+            userSigKey,
             profileSignature
           );
         }
@@ -334,6 +378,16 @@ function AIAssistant({
   // Today Plan
   // =====================================
 
+  const dayNamesThai = {
+    sunday: "วันอาทิตย์",
+    monday: "วันจันทร์",
+    tuesday: "วันอังคาร",
+    wednesday: "วันพุธ",
+    thursday: "วันพฤหัสบดี",
+    friday: "วันศุกร์",
+    saturday: "วันเสาร์",
+  };
+
   const todayKey =
     [
       "sunday",
@@ -354,6 +408,34 @@ function AIAssistant({
   // =====================================
   // Start Workout Mode
   // =====================================
+
+  const startWorkoutWithExercise = (exerciseName, exerciseData = {}) => {
+    const matched = todayPlan?.exercises?.find(
+      (e) => cleanExerciseName(e.name).toLowerCase() === cleanExerciseName(exerciseName).toLowerCase()
+    );
+    startWorkoutMode({
+      name: exerciseName,
+      sets: exerciseData?.sets || matched?.sets || todayPlan?.sets || 3,
+      repetitions: exerciseData?.repetitions || matched?.repetitions || todayPlan?.repetitions || "10-12 ครั้ง",
+    });
+  };
+
+  // ตรวจเช็คเป้าหมายของท่าออกกำลังกายก่อนขึ้นสถานะว่าออกแล้ว
+  const handleToggleOrCheckGoal = (exercise, day) => {
+    const isDone = isExerciseCompletedToday(exercise.name, todayCompleted);
+    if (isDone) {
+      // ผู้ใช้ออกครบตามเป้าหมายแล้ว หากคลิกซ้ำอนุญาตให้ยกเลิกสถานะได้
+      toggleExerciseCompletedToday(exercise.name, user?.id);
+    } else {
+      // ผู้ใช้ยังออกไม่ครบตามเป้าหมาย -> ห้ามขึ้นสถานะว่าออกแล้ว และแสดง Modal แจ้งเตือนพร้อมเป้าหมายที่ต้องทำให้ครบ
+      setIncompleteGoalModal({
+        exercise,
+        day,
+        targetSets: exercise.sets || 3,
+        targetReps: exercise.repetitions || "10-12 ครั้ง",
+      });
+    }
+  };
 
   const startWorkoutMode = (targetExercise = null) => {
     if (
@@ -891,12 +973,15 @@ function AIAssistant({
     // Local Plan Adjustment
     // =====================================
 
+    // Guard: Self-introduction / Capabilities query must never alter workout plans
+    const isSelfIntroOrCapabilities = /(แนะนำตัว|คุณคือใคร|คุณเป็นใคร|ช่วยอะไรได้บ้าง|ทำอะไรได้บ้าง|ฟังก์ชันเด่น|ฟังก์ชันของ|ความสามารถ|ระบบทำอะไร|แนะนำ.*fitai|fitai.*คืออะไร|มีฟังก์ชันอะไร|แนะนำระบบ|ฟังก์ชัน.*มีอะไร)/i.test(userMessage);
+
     // Guard: Food & Nutrition queries must not alter workout plans
     const isFoodQuery = /(อาหาร|เมนู|กิน|ทาน|แดก|แคล|แคลอรี่|กี่แคล|calorie|calories|nutrition|โภชนาการ|โปรตีน|คาร์บ|ไขมัน|ข้าว|อกไก่|สลัด|กะเพรา|ก๋วยเตี๋ยว|ส้มตำ|มื้อ|diet|food|bmr|tdee|น้ำหนักเกิน|ลดความอ้วน|เพิ่มกล้าม|สร้างกล้าม|คลีน)/i.test(userMessage);
     const isExplicitPlanRequest = /(เปลี่ยนท่า|เปลี่ยนตาราง|ปรับตาราง|แก้ตาราง|ขอเปลี่ยนตาราง|ตารางออกกำลังกาย|ท่าออกกำลังกาย)/i.test(userMessage);
 
     let adjustment = { plan: weeklyPlan, changed: false };
-    if (!isFoodQuery || isExplicitPlanRequest) {
+    if (!isSelfIntroOrCapabilities && (!isFoodQuery || isExplicitPlanRequest)) {
       const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant")?.content || "";
       adjustment = applyPlanAdjustment(
         weeklyPlan,
@@ -919,7 +1004,8 @@ function AIAssistant({
     // =====================================
 
     const asksForAiPlan =
-      /(à¹à¸™à¸°à¸™à¸³.*(à¸—à¹ˆà¸²|à¹à¸œà¸™|à¸­à¸­à¸à¸à¸³à¸¥à¸±à¸‡)|à¹€à¸¥à¸·à¸­à¸.*à¸—à¹ˆà¸²|à¸ˆà¸±à¸”.*à¹à¸œà¸™|suggest.*exercise|recommend.*exercise|à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™|à¸›à¸£à¸±à¸š|à¹à¸à¹‰à¹„à¸‚|à¸à¸´à¸ˆà¸à¸£à¸£à¸¡|à¹à¸—à¸™|à¸ªà¸¥à¸±à¸š|à¸‚à¸­à¸¥à¸”|à¸‚à¸­à¹€à¸‹à¹‡à¸•)/i.test(
+      !isSelfIntroOrCapabilities &&
+      /(แนะนำ.*(ท่า|แผน|ออกกำลัง)|เลือก.*ท่า|จัด.*แผน|suggest.*exercise|recommend.*exercise|เปลี่ยน.*ท่า|ปรับ.*ตาราง|แก้ไข.*ตาราง|ขอลด.*เซ็ต|ขอเซ็ต)/i.test(
         userMessage
       );
 
@@ -981,8 +1067,9 @@ function AIAssistant({
       const sanitized = sanitizePlan(adjustment.plan);
       setWeeklyPlan(sanitized);
 
+      const userPlanKey = user?.id ? `fitai-weekly-plan-user-${user.id}` : "fitai-weekly-plan";
       localStorage.setItem(
-        "fitai-weekly-plan",
+        userPlanKey,
         JSON.stringify(sanitized)
       );
 
@@ -1462,7 +1549,10 @@ function AIAssistant({
       {/* =====================================
           Sidebar (Left)
           ===================================== */}
-      <aside className="w-64 sm:w-72 bg-[#abbed2] border-r border-[#9bb0c4] flex flex-col shrink-0 text-[#1e293b]">
+            {/* =====================================
+          Sidebar (Left) - Desktop Version (แบบเดิม 100% ก่อนเพิ่มปุ่ม)
+          ===================================== */}
+      <aside className="hidden lg:flex w-64 sm:w-72 bg-[#abbed2] border-r border-[#9bb0c4] flex-col shrink-0 text-[#1e293b]">
         <div className="p-3 flex flex-col gap-2">
           <button
             type="button"
@@ -1500,17 +1590,17 @@ function AIAssistant({
               >
                 <button
                   type="button"
-                  className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-colors flex flex-col gap-0.5 truncate pr-8 cursor-pointer ${
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer truncate pr-8 ${
                     selectedSessionId === session.id
-                      ? "bg-white/80 text-[#1e293b] font-bold shadow-sm"
-                      : "text-[#334155] hover:text-[#1e293b] hover:bg-white/40"
+                      ? "bg-white text-[#1e293b] font-bold shadow-xs border border-white/60"
+                      : "text-[#1e293b] hover:bg-white/50"
                   }`}
                   onClick={() => selectSession(session)}
                 >
-                  <strong className="truncate block">
+                  <strong className="truncate block text-xs">
                     {session.title || "FitAI Assistant"}
                   </strong>
-                  <small className="text-[10px] text-zinc-500">
+                  <small className="text-[10px] text-[#64748b]">
                     {session.messages?.length || 0} ข้อความ
                   </small>
                 </button>
@@ -1521,7 +1611,7 @@ function AIAssistant({
                 >
                   <button
                     type="button"
-                    className="p-1 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     title="ตัวเลือกห้องแชท"
                     aria-label="ตัวเลือกห้องแชท"
                     onMouseDown={(e) => e.stopPropagation()}
@@ -1530,7 +1620,7 @@ function AIAssistant({
                       setOpenSessionMenu((curr) => (curr === session.id ? null : session.id));
                     }}
                   >
-                    <MoreHorizontal size={16} strokeWidth={2} />
+                    <MoreHorizontal size={14} strokeWidth={2} />
                   </button>
 
                   {openSessionMenu === session.id && (
@@ -1573,15 +1663,325 @@ function AIAssistant({
       </aside>
 
       {/* =====================================
+          Mobile Drawer (Left) - สไตล์ ChatGPT แสดงเฉพาะบนหน้าจอขนาดเล็ก/มือถือ (< lg)
+          ===================================== */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[300px] sm:w-[320px] bg-[#abbed2] border-r border-[#9bb0c4] flex lg:hidden flex-col shrink-0 text-[#1e293b] shadow-2xl transition-transform duration-300 ease-in-out ${
+        mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      }`}>
+        {/* Drawer Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-white/20">
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col justify-center items-start gap-[4px] p-1">
+              <span className="w-4 h-[2px] bg-[#1e293b] rounded-full"></span>
+              <span className="w-4 h-[2px] bg-[#1e293b] rounded-full"></span>
+            </div>
+            <span className="font-bold text-sm text-[#1e293b] tracking-wide">FitAI Assistant</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(false)}
+            className="p-1.5 rounded-xl bg-white/40 hover:bg-white text-[#1e293b] transition-all cursor-pointer"
+            aria-label="ปิดเมนู"
+          >
+            <X size={17} />
+          </button>
+        </div>
+
+        {/* Action: + New Chat Button */}
+        <div className="p-3 pb-2 flex flex-col gap-2">
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#3b99e2] hover:bg-[#288ad4] active:scale-[0.99] text-white text-xs font-bold transition-all cursor-pointer shadow-sm shadow-[#3b99e2]/25"
+            onClick={() => { createNewChat(); setMobileSidebarOpen(false); }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            <span>New Chat</span>
+          </button>
+        </div>
+
+        {/* Scrollable Drawer Body */}
+        <div className="flex-1 overflow-y-auto px-3 flex flex-col gap-3 pb-4">
+          {/* SECTION 1: โหมดการทำงาน (Modes Switcher: Chatbot vs 3D) */}
+          <div className="flex flex-col gap-1.5 pt-1">
+            <div className="px-1 text-[11px] font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles size={12} className="text-[#3b99e2]" />
+              <span>เลือกโหมดการทำงาน</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-1.5">
+              {/* โหมดแชทบอท AI */}
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="w-full p-2.5 rounded-2xl bg-white/90 border-2 border-[#3b99e2] text-left transition-all cursor-pointer shadow-xs flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#3b99e2]/15 text-[#3b99e2] flex items-center justify-center shrink-0">
+                    <MessageSquare size={16} />
+                  </div>
+                  <div>
+                    <strong className="block text-xs font-bold text-[#1e293b]">โหมดแชทบอท (AI Coach)</strong>
+                    <span className="text-[10px] text-[#64748b]">คุย ปรึกษาโภชนาการ และวางแผน</span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  ใช้งานอยู่
+                </span>
+              </button>
+
+              {/* โหมด 3D ออกกำลังกาย */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  startWorkoutMode();
+                }}
+                className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-white/90 to-blue-50/90 hover:from-white hover:to-blue-100/90 border border-white/60 text-left transition-all cursor-pointer shadow-xs flex items-center justify-between group active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#3b99e2] text-white flex items-center justify-center shrink-0 shadow-sm shadow-[#3b99e2]/30">
+                    <Dumbbell size={16} />
+                  </div>
+                  <div>
+                    <strong className="block text-xs font-bold text-[#1e293b] flex items-center gap-1">
+                      <span>โหมด 3D Workout</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] bg-[#3b99e2] text-white font-bold">AI</span>
+                    </strong>
+                    <span className="text-[10px] text-[#64748b]">เทรนเนอร์ 3D + กล้องจับฟอร์ม</span>
+                  </div>
+                </div>
+                <ArrowRight size={14} className="text-[#3b99e2] transform group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* SECTION 2: ตารางออกกำลังกายของวันนี้ (Today's Workout Plan Widget) */}
+          <div className="bg-white/90 border border-white/80 rounded-2xl p-3 shadow-xs flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Calendar size={13} className="text-[#3b99e2]" />
+                <span className="text-xs font-bold text-[#1e293b]">ตารางออกกำลังกายวันนี้</span>
+              </div>
+              <span className="text-[10px] font-semibold text-[#64748b] bg-[#edf1f4] px-2 py-0.5 rounded-full">
+                {dayNamesThai[todayKey] || "วันนี้"}
+              </span>
+            </div>
+
+            {todayPlan && todayPlan.exerciseName !== "Rest" ? (
+              <div className="flex flex-col gap-2 pt-1 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <strong className="text-sm font-black text-[#1e293b] block">
+                      {todayPlan.exerciseName}
+                    </strong>
+                    <span className="text-[11px] text-[#64748b] flex items-center gap-1">
+                      <span>เป้าหมาย:</span>
+                      <span className="font-bold text-[#1e293b]">
+                        {todayPlan.sets || 3} เซ็ต × {todayPlan.reps || "10-12"} ครั้ง
+                      </span>
+                    </span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#3b99e2]/10 text-[#3b99e2] font-bold">
+                    ช่วงล่าง
+                  </span>
+                </div>
+
+                {/* Quick Action: เริ่มฝึกท่านี้ทันทีในโหมด 3D */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileSidebarOpen(false);
+                    startWorkoutWithExercise(todayPlan.exerciseName);
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-[#3b99e2] hover:bg-[#288ad4] active:scale-[0.99] text-white text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <Play size={13} className="fill-current" />
+                  <span>เริ่มฝึกท่านี้ในโหมด 3D</span>
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-2 text-xs text-[#64748b]">
+                วันนี้เป็นวันพักฟื้นกล้ามเนื้อ (Rest Day) 🌿
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileSidebarOpen(false);
+                setSidebarTab("workout");
+                setMobileRightPanelOpen(true);
+              }}
+              className="text-[10px] text-[#3b99e2] hover:underline font-bold text-center pt-1"
+            >
+              ดูแผนฝึกประจำสัปดาห์ทั้งหมด ›
+            </button>
+          </div>
+
+          {/* SECTION 3: ประวัติการแชท (Chat History) */}
+          <div className="flex flex-col gap-1">
+            <div className="px-1 text-[11px] font-bold text-[#334155] uppercase tracking-wider flex items-center justify-between">
+              <span>ประวัติการแชท</span>
+              <span className="text-[10px] text-[#64748b] font-normal">{sessions.length} ห้อง</span>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              {sessions.length === 0 ? (
+                <div className="text-xs text-[#52667a] text-center py-4 bg-white/40 rounded-xl">
+                  ยังไม่มีประวัติการสนทนา
+                </div>
+              ) : (
+                sessions.map((session) => (
+                  <div
+                    className="relative group flex items-center w-full"
+                    key={session.id}
+                  >
+                    <button
+                      type="button"
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all cursor-pointer truncate pr-8 ${
+                        selectedSessionId === session.id
+                          ? "bg-white text-[#1e293b] font-bold shadow-xs border border-white/60"
+                          : "text-[#1e293b] hover:bg-white/50"
+                      }`}
+                      onClick={() => {
+                        selectSession(session);
+                        setMobileSidebarOpen(false);
+                      }}
+                    >
+                      <strong className="truncate block text-xs">
+                        {session.title || "FitAI Assistant"}
+                      </strong>
+                      <small className="text-[10px] text-[#64748b]">
+                        {session.messages?.length || 0} ข้อความ
+                      </small>
+                    </button>
+
+                    <div
+                      className="absolute right-2 top-1/2 -translate-y-1/2"
+                      ref={openSessionMenu === session.id ? sessionMenuRef : null}
+                    >
+                      <button
+                        type="button"
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        title="ตัวเลือกห้องแชท"
+                        aria-label="ตัวเลือกห้องแชท"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenSessionMenu((curr) => (curr === session.id ? null : session.id));
+                        }}
+                      >
+                        <MoreHorizontal size={14} strokeWidth={2} />
+                      </button>
+
+                      {openSessionMenu === session.id && (
+                        <div
+                          className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200/80 rounded-xl shadow-lg py-1 z-30 flex flex-col"
+                          role="menu"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className="px-3 py-2 text-left text-xs text-[#1e293b] hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setOpenSessionMenu(null);
+                              renameChat(session);
+                            }}
+                          >
+                            <Pencil size={14} strokeWidth={2} />
+                            <span>เปลี่ยนชื่อ</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setOpenSessionMenu(null);
+                              deleteChat(session);
+                            }}
+                          >
+                            <Trash2 size={14} strokeWidth={2} />
+                            <span>ลบห้องแชท</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Drawer Footer: เมนูลัด (แดชบอร์ด และ บันทึกอาหาร) */}
+        <div className="p-3 border-t border-white/20 bg-white/30 grid grid-cols-2 gap-2 text-[#334155]">
+          <button
+            type="button"
+            onClick={() => { setMobileSidebarOpen(false); onDashboard?.(); }}
+            className="py-2 px-3 rounded-xl bg-white/50 hover:bg-white/80 hover:text-[#1e293b] transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-semibold shadow-xs"
+            title="แดชบอร์ด"
+          >
+            <span className="text-sm">📊</span>
+            <span>แดชบอร์ด</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMobileSidebarOpen(false); onFood?.(); }}
+            className="py-2 px-3 rounded-xl bg-white/50 hover:bg-white/80 hover:text-[#1e293b] transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-semibold shadow-xs"
+            title="แคลอรี่ & อาหาร"
+          >
+            <span className="text-sm">🥗</span>
+            <span>อาหาร</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* =====================================
           Main Area
           ===================================== */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#eef2f5] relative">
-        {/* Topbar */}
-        <div className="h-16 px-6 border-b border-[#9bb0c4] flex items-center justify-between bg-[#abbed2] shrink-0 relative z-50">
-          <div>
-            <h1 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
+        {/* Topbar: บนจอเล็กแสดงปุ่ม 2 ขีดสไตล์ ChatGPT (บนจอใหญ่จะแสดงตามแบบเดิมก่อนเพิ่มปุ่ม) */}
+        <div className="h-16 px-3 sm:px-6 border-b border-[#9bb0c4] flex items-center justify-between bg-[#abbed2] shrink-0 relative z-50">
+          <div className="flex items-center gap-2">
+            {/* ChatGPT 2-Lines Button: แสดงเฉพาะบนหน้าจอขนาดเล็ก/มือถือ (< lg) เท่านั้น */}
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="flex lg:hidden p-2 -ml-1 text-[#1e293b] hover:text-[#3b99e2] rounded-xl hover:bg-black/5 active:bg-black/10 transition-all cursor-pointer flex-col justify-center items-start gap-[5px]"
+              aria-label="เปิดเมนู GPT"
+              title="เปิดเมนูโหมดและตารางออกกำลังกาย"
+            >
+              <span className="w-5 h-[2.5px] bg-[#1e293b] rounded-full"></span>
+              <span className="w-5 h-[2.5px] bg-[#1e293b] rounded-full"></span>
+            </button>
+
+            {/* Title บนหน้าจอขนาดเล็ก/มือถือ (สไตล์ ChatGPT ⌵ กดเปิดเมนูได้) */}
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="flex lg:hidden items-center gap-1.5 text-base sm:text-lg font-bold text-[#1e293b] hover:opacity-80 transition-opacity cursor-pointer group"
+              title="เปิดเมนูโหมดและตารางออกกำลังกาย"
+            >
               <span>FitAI Assistant</span>
-            </h1>
+              <ChevronDown size={15} className="text-[#475569] group-hover:text-[#1e293b] transition-transform duration-200" />
+            </button>
+
+            {/* Desktop Title: แบบเดิม 100% ก่อนเพิ่มปุ่ม (แสดงบนหน้าจอขนาดใหญ่ >= lg) */}
+            <div className="hidden lg:flex items-center gap-2">
+              <h1 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
+                <span>FitAI Assistant</span>
+              </h1>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -1608,7 +2008,7 @@ function AIAssistant({
               >
                 <button
                   type="button"
-                  className="w-full p-2 rounded-xl hover:bg-zinc-800 flex items-center justify-between text-left cursor-pointer transition-colors"
+                  className="w-full p-2 rounded-xl hover:bg-slate-100 flex items-center justify-between text-left cursor-pointer transition-colors"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => {
                     setProfileMenuOpen(false);
@@ -1616,17 +2016,17 @@ function AIAssistant({
                   }}
                 >
                   <div>
-                    <strong className="block text-xs text-white font-bold">{user?.name || "FitAI User"}</strong>
-                    <small className="text-[11px] text-zinc-400 truncate block">{user?.email || "บัญชีผู้ใช้"}</small>
+                    <strong className="block text-xs text-[#1e293b] font-bold">{user?.name || "FitAI User"}</strong>
+                    <small className="text-[11px] text-[#64748b] truncate block">{user?.email || "บัญชีผู้ใช้"}</small>
                   </div>
-                  <ArrowRight size={14} className="text-zinc-500" />
+                  <ArrowRight size={14} className="text-[#64748b]" />
                 </button>
 
-                <div className="h-px bg-zinc-800 my-1" />
+                <div className="h-px bg-slate-100 my-1" />
 
                 <button
                   type="button"
-                  className="w-full px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 rounded-xl text-xs text-[#334155] hover:text-[#1e293b] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => {
                     setProfileMenuOpen(false);
@@ -1639,7 +2039,7 @@ function AIAssistant({
 
                 <button
                   type="button"
-                  className="w-full px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 rounded-xl text-xs text-[#334155] hover:text-[#1e293b] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => {
                     setProfileMenuOpen(false);
@@ -1653,7 +2053,7 @@ function AIAssistant({
 
                 <button
                   type="button"
-                  className="w-full px-3 py-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 rounded-xl text-xs text-[#334155] hover:text-[#1e293b] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => {
                     setProfileMenuOpen(false);
@@ -1664,11 +2064,11 @@ function AIAssistant({
                   <span>การตั้งค่า</span>
                 </button>
 
-                <div className="h-px bg-zinc-800 my-1" />
+                <div className="h-px bg-slate-100 my-1" />
 
                 <button
                   type="button"
-                  className="w-full px-3 py-2 rounded-xl text-xs text-red-400 hover:text-red-300 hover:bg-red-950/50 flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 rounded-xl text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => {
                     setProfileMenuOpen(false);
@@ -1687,7 +2087,7 @@ function AIAssistant({
         {/* =====================================
             Container: Chat (Center) + Plan (Right)
             ===================================== */}
-        <div className="flex-1 min-h-0 flex flex-col lg:flex-row relative overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row relative z-10 overflow-hidden">
           {/* Chat Column */}
           <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             {/* Messages Scroll Area */}
@@ -1815,7 +2215,7 @@ function AIAssistant({
             </div>
 
             {/* Suggestion Chips */}
-            <div className="flex flex-wrap gap-2 px-4 sm:px-8 pb-2">
+            <div className="flex items-center gap-2 px-3 sm:px-8 pb-2 overflow-x-auto no-scrollbar py-1">
               {[
                 "🥗 แนะนำเมนูอาหารเสริมกล้ามเนื้อ",
                 "🔥 วันนี้กินไปกี่แคลแล้ว",
@@ -1828,7 +2228,7 @@ function AIAssistant({
                 <button
                   key={idx}
                   type="button"
-                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-700 hover:border-[#3b99e2] hover:text-[#3b99e2] transition-all cursor-pointer shadow-sm"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-700 hover:border-[#3b99e2] hover:text-[#3b99e2] transition-all cursor-pointer shadow-sm shrink-0 whitespace-nowrap"
                   onClick={() => {
                     setMessage(chip.replace(/^[^a-zA-Z0-9ก-๙]+/u, "").trim());
                   }}
@@ -1839,8 +2239,8 @@ function AIAssistant({
             </div>
 
             {/* Input Bar */}
-            <form className="px-4 sm:px-12 pb-3 pt-1 max-w-4xl w-full mx-auto" onSubmit={handleSubmit}>
-              <div className="relative bg-white border border-slate-200/90 focus-within:border-[#3b99e2] rounded-full sm:rounded-2xl px-4 py-2.5 flex items-center gap-2 shadow-md">
+            <form className="px-2 sm:px-8 md:px-12 pb-3 pt-1 max-w-4xl w-full mx-auto" onSubmit={handleSubmit}>
+              <div className="relative bg-white border border-slate-200/90 focus-within:border-[#3b99e2] rounded-full sm:rounded-2xl px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center gap-1.5 sm:gap-2 shadow-md">
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -1935,7 +2335,29 @@ function AIAssistant({
           {/* =====================================
               Right Rail: ระบบคำนวณแคลอรี่ & แผนฝึก AI (Unified Side Panel)
               ===================================== */}
-          <aside className="w-full lg:w-[340px] xl:w-[380px] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200/80 bg-[#edf1f4] overflow-y-auto flex flex-col p-4 gap-4 shadow-sm">
+          {/* Mobile Backdrop for Right Panel */}
+          {mobileRightPanelOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+              onClick={() => setMobileRightPanelOpen(false)}
+            />
+          )}
+
+          {/* Right Rail: ระบบคำนวณแคลอรี่ & แผนฝึก AI */}
+          <aside className={`fixed lg:static inset-y-0 right-0 z-40 lg:z-auto w-full sm:w-[380px] lg:w-[340px] xl:w-[380px] shrink-0 border-l border-slate-200/80 bg-[#edf1f4] overflow-y-auto flex flex-col p-4 gap-4 shadow-2xl lg:shadow-sm transition-transform duration-300 ease-in-out ${
+            mobileRightPanelOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+          }`}>
+            {/* Mobile Close Button for Right Rail */}
+            <div className="lg:hidden flex items-center justify-between pb-2 border-b border-slate-200">
+              <span className="font-bold text-sm text-[#1e293b]">เครื่องมือ AI & โภชนาการ</span>
+              <button
+                type="button"
+                onClick={() => setMobileRightPanelOpen(false)}
+                className="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#1e293b] cursor-pointer border border-slate-200"
+              >
+                <X size={16} />
+              </button>
+            </div>
             {/* Tab Navigation: คำนวณแคลอรี่ vs แผนออกกำลังกาย AI */}
             <div className="flex items-center gap-1.5 p-1.5 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
               <button
@@ -2311,7 +2733,7 @@ function AIAssistant({
                         <strong className="text-zinc-200 text-xs truncate">{day.focus}</strong>
                       </div>
 
-                      <ol className="flex flex-col gap-1 pt-1 border-t border-zinc-800/60">
+                      <ol className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-100">
                         {(
                           day.exercises || [
                             {
@@ -2320,19 +2742,62 @@ function AIAssistant({
                               repetitions: day.repetitions,
                             },
                           ]
-                        ).map((exercise, index) => (
-                          <li
-                            key={`${day.key}-${exercise.name}-${index}`}
-                            className="flex items-center justify-between text-xs"
-                          >
-                            <b className="font-semibold text-zinc-300">{cleanExerciseName(exercise.name)}</b>
-                            <small className="text-[11px] text-zinc-400">
-                              {exercise.sets
-                                ? `${exercise.sets} เซ็ต · ${exercise.repetitions}`
-                                : exercise.repetitions}
-                            </small>
-                          </li>
-                        ))}
+                        ).map((exercise, index) => {
+                          const isDone = isExerciseCompletedToday(exercise.name, todayCompleted);
+                          return (
+                            <li
+                              key={`${day.key}-${exercise.name}-${index}`}
+                              className={`flex items-center justify-between text-xs py-1.5 px-2 rounded-xl transition-all ${
+                                isDone
+                                  ? "bg-emerald-50/70 border border-emerald-200/80"
+                                  : "hover:bg-slate-50/80 border border-transparent"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleOrCheckGoal(exercise, day);
+                                  }}
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 transition-all cursor-pointer border ${
+                                    isDone
+                                      ? "bg-emerald-500 text-white border-emerald-600 shadow-xs"
+                                      : "border-slate-300 hover:border-sky-400 bg-white text-transparent hover:text-sky-500"
+                                  }`}
+                                  title={
+                                    isDone
+                                      ? "ออกกำลังกายครบตามเป้าหมายแล้ววันนี้ (คลิกเพื่อยกเลิก)"
+                                      : "ยังออกไม่ครบตามเป้าหมาย (คลิกเพื่อตรวจสอบเป้าหมายและเริ่มฝึก)"
+                                  }
+                                >
+                                  {isDone ? "✓" : "○"}
+                                </button>
+                                <span
+                                  onClick={() => handleToggleOrCheckGoal(exercise, day)}
+                                  className={`font-semibold truncate cursor-pointer transition-colors ${
+                                    isDone
+                                      ? "text-emerald-900"
+                                      : "text-[#1e293b] hover:text-[#3b99e2]"
+                                  }`}
+                                  title={isDone ? "ออกกำลังกายครบตามเป้าหมายแล้ว" : "คลิกเพื่อดูเป้าหมายและเริ่มออกกำลังกาย"}
+                                >
+                                  {cleanExerciseName(exercise.name)}
+                                </span>
+                                {isDone && (
+                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                    ออกแล้ววันนี้
+                                  </span>
+                                )}
+                              </div>
+                              <small className="text-[11px] text-[#64748b] shrink-0 ml-1.5">
+                                {exercise.sets
+                                  ? `${exercise.sets} เซ็ต · ${exercise.repetitions}`
+                                  : exercise.repetitions}
+                              </small>
+                            </li>
+                          );
+                        })}
                       </ol>
                     </div>
                   );
@@ -2392,6 +2857,79 @@ function AIAssistant({
               </div>
             )}
           </aside>
+
+          {/* Exercise Goal Incomplete Modal (ตรวจสอบเป้าหมายก่อนขึ้นสถานะออกแล้ว) */}
+          {incompleteGoalModal && (
+            <div
+              className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+              onClick={() => setIncompleteGoalModal(null)}
+            >
+              <div
+                className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header Icon */}
+                <div className="w-14 h-14 rounded-full bg-amber-50 border border-amber-200/80 mx-auto flex items-center justify-center text-amber-500 shadow-sm">
+                  <AlertCircle className="w-7 h-7" />
+                </div>
+
+                <div>
+                  <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 mb-2">
+                    ยังออกไม่ครบตามเป้าหมาย
+                  </div>
+                  <h3 className="text-base font-extrabold text-[#1e293b]">
+                    {cleanExerciseName(incompleteGoalModal.exercise?.name)}
+                  </h3>
+                  <p className="text-xs text-[#64748b] mt-1.5 leading-relaxed">
+                    ระบบตรวจจับท่า (AI Pose Detection) ตรวจพบว่าคุณยังออกท่านี้ไม่ครบตามเป้าหมาย ระบบจึงยังไม่ขึ้นสถานะว่า <strong>"ออกแล้ว"</strong> ให้ครับ
+                  </p>
+                </div>
+
+                {/* Target Breakdown Card */}
+                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 text-left text-xs flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                    <span className="font-medium">เป้าหมายตามแผน AI:</span>
+                    <strong className="text-[#3b99e2] font-bold">
+                      {incompleteGoalModal.targetSets} เซ็ต · {incompleteGoalModal.targetReps}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                    <span className="font-medium">สถานะในระบบ:</span>
+                    <span className="font-bold text-amber-600 flex items-center gap-1">
+                      <span>⚠️</span> ยังไม่สำเร็จ
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 bg-white p-2.5 rounded-xl border border-slate-200/60 leading-normal">
+                    💡 คำแนะนำ: เมื่อคุณเปิดกล้องและออกท่าจนครบตามจำนวนเซ็ตหรือจำนวนครั้งที่กำหนด ระบบจะบันทึกและขึ้นสถานะออกแล้วให้โดยอัตโนมัติ
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ex = incompleteGoalModal.exercise;
+                      setIncompleteGoalModal(null);
+                      startWorkoutWithExercise(ex.name, ex);
+                    }}
+                    className="w-full py-3 bg-[#3b99e2] hover:bg-[#3286c7] active:scale-95 text-white font-bold rounded-xl text-xs shadow-md shadow-[#3b99e2]/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Dumbbell className="w-4 h-4" />
+                    <span>เริ่มออกกำลังกายท่านี้ทันที</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIncompleteGoalModal(null)}
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    ปิด
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Food Camera Modal */}
           <FoodCameraModal

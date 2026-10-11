@@ -462,6 +462,12 @@ export function sanitizePlan(plan) {
 export function applyPlanAdjustment(plan, profile, exercises = [], request, lastAssistantMessage = "") {
   const text = String(request || "").toLowerCase();
 
+  // Guard: Self-introduction / Capabilities query must never alter workout plan
+  const isSelfIntroOrCapabilities = /(แนะนำตัว|คุณคือใคร|คุณเป็นใคร|ช่วยอะไรได้บ้าง|ทำอะไรได้บ้าง|ฟังก์ชันเด่น|ฟังก์ชันของ|ความสามารถ|ระบบทำอะไร|แนะนำ.*fitai|fitai.*คืออะไร|มีฟังก์ชันอะไร|แนะนำระบบ|ฟังก์ชัน.*มีอะไร)/i.test(text);
+  if (isSelfIntroOrCapabilities) {
+    return { plan, changed: false, message: "" };
+  }
+
   // Food & Nutrition query guard: Do not hijack food inquiries as workout plan modifications
   const isFoodQuery = /(อาหาร|เมนู|กิน|ทาน|แดก|แคล|แคลอรี่|กี่แคล|calorie|calories|nutrition|โภชนาการ|โปรตีน|คาร์บ|ไขมัน|ข้าว|อกไก่|สลัด|กะเพรา|ก๋วยเตี๋ยว|ส้มตำ|มื้อ|diet|food|bmr|tdee)/i.test(text);
   const isExplicitPlanRequest = /(เปลี่ยนท่า|เปลี่ยนตาราง|ปรับตาราง|แก้ตาราง|ขอเปลี่ยนตาราง|ตารางออกกำลังกาย|ท่าออกกำลังกาย)/i.test(text);
@@ -500,8 +506,17 @@ export function applyPlanAdjustment(plan, profile, exercises = [], request, last
     }
   }
 
-  const wantsChange = /(เปลี่ยน|ปรับ|แก้ไข|กิจกรรม|แนะนำ|เลือก|จัด|ขอ|สลับ|แทน|อยาก|ช่วย|ท่า|ตาราง|แผน|วันนี้|เหนื่อย|ล้า|เจ็บ|ปวด|เบา|พัก|rest|tired|change|adjust|edit|นำท่านี้|เอาท่านี้)/i.test(text);
-  if (!wantsChange) {
+  // Wants change must specifically target workout/plan/pose modifications or recovery
+  const isPlanOrExerciseTarget = /(ท่า|ตาราง|แผน|เซ็ต|ครั้ง|โปรแกรม|วันพัก|workout|routine|exercise)/i.test(text);
+  const isBodyTarget = /(แขน|ขา|อก|หลัง|หน้าท้อง|แกนกลาง|พุง|ก้น|ไหล่|คาร์ดิโอ|บอดี้เวท|ดัมเบล|กล้าม)/i.test(text);
+  const isRecoverySignal = /(พัก|เหนื่อย|ล้า|เจ็บ|ปวด|เมื่อย|ไม่ไหว|rest|tired|sore|pain)/i.test(text);
+  const isExplicitAction = /(เปลี่ยน|ปรับ|แก้ไข|สลับ|แทน|ขอลด|ขอเพิ่ม|แก้ตาราง|ปรับแผน|เปลี่ยนท่า|ขอท่า|ขอตาราง|ขอแผน|อยากได้|อยากเล่น|เน้น|จัดตาราง|อัปเดตตาราง|นำท่านี้|เอาท่านี้)/i.test(text);
+
+  const wantsChange = !isSelfIntroOrCapabilities && (
+    (isExplicitAction && (isPlanOrExerciseTarget || isBodyTarget)) ||
+    isRecoverySignal
+  );
+  if (!wantsChange && !isAnaphoric) {
     return { plan, changed: false, message: "" };
   }
 
@@ -681,5 +696,350 @@ export function applyPlanAdjustment(plan, profile, exercises = [], request, last
     plan: next,
     changed: true,
     message: messageText,
+  };
+}
+
+
+const HIGH_IMPACT_EXERCISES_SET = new Set([
+  "Jumping Jack", "Burpee", "Squat Jump", "High Knees", "Jump Rope",
+  "Jogging", "Skater", "Shuffle Dance Workout", "Zumba", "Aerobic Dance",
+  "Football", "Basketball", "Badminton", "Tennis", "Volleyball"
+]);
+
+const KNEE_SAFE_EXERCISES_SET = new Set([
+  "Chair Squat", "Glute Bridge", "Wall Push Up", "Calf Raise", "Standing Calf Raise",
+  "Donkey Kick", "Fire Hydrant", "Bird Dog", "Dead Bug", "Side Plank",
+  "Plank", "Arm Circles", "Cat Cow", "March In Place", "Leg Press",
+  "Seated Row", "Bench Press", "Biceps Curl", "Triceps Dip", "Incline Push-up"
+]);
+
+const DUMBBELL_EXERCISES_SET = new Set([
+  "Biceps Curl", "Hammer Curl", "Concentration Curl", "Arnold Press", "Shoulder Press",
+  "Lateral Raise", "Front Raise", "Reverse Fly", "Chest Fly", "Dumbbell Skull Crusher",
+  "Romanian Deadlift", "Single-leg Romanian Deadlift", "Triceps Kickback",
+  "Overhead Triceps Extension", "Upright Row"
+]);
+
+export function customizeWeeklyPlanByPrompt(prompt, profile = {}, exercises = []) {
+  const text = String(prompt || "").toLowerCase();
+
+  const DAYS_OF_WEEK = [
+    { key: "monday", label: "วันจันทร์" },
+    { key: "tuesday", label: "วันอังคาร" },
+    { key: "wednesday", label: "วันพุธ" },
+    { key: "thursday", label: "วันพฤหัสบดี" },
+    { key: "friday", label: "วันศุกร์" },
+    { key: "saturday", label: "วันเสาร์" },
+    { key: "sunday", label: "วันอาทิตย์" },
+  ];
+
+  const specificDays = [];
+  if (/(จันทร์|mon)/i.test(text)) specificDays.push("monday");
+  if (/(อังคาร|tue)/i.test(text)) specificDays.push("tuesday");
+  if (/(พุธ|wed)/i.test(text)) specificDays.push("wednesday");
+  if (/(พฤหัส|thu)/i.test(text)) specificDays.push("thursday");
+  if (/(ศุกร์|fri)/i.test(text)) specificDays.push("friday");
+  if (/(เสาร์|sat)/i.test(text)) specificDays.push("saturday");
+  if (/(อาทิตย์|sun)/i.test(text)) specificDays.push("sunday");
+
+  let trainingDays = null;
+  const restMatch = text.match(/พัก\s*(\d+)\s*(?:วัน|day)/i);
+  const daysMatch = text.match(/(\d+)\s*(?:วัน|day)/i);
+
+  if (restMatch) {
+    const restCount = parseInt(restMatch[1], 10);
+    trainingDays = Math.max(1, Math.min(6, 7 - restCount));
+  } else if (daysMatch && !/(15|20|30|40|45|50|60)\s*นาที/i.test(daysMatch[0])) {
+    trainingDays = Math.max(1, Math.min(7, parseInt(daysMatch[1], 10)));
+  } else if (/(สองวัน|2 วัน)/i.test(text)) {
+    trainingDays = 2;
+  } else if (/(สามวัน|3 วัน)/i.test(text)) {
+    trainingDays = 3;
+  } else if (/(สี่วัน|4 วัน)/i.test(text)) {
+    trainingDays = 4;
+  } else if (/(ห้าวัน|5 วัน)/i.test(text)) {
+    trainingDays = 5;
+  } else if (/(หกวัน|6 วัน)/i.test(text)) {
+    trainingDays = 6;
+  } else if (/(ทุกวัน|7 วัน)/i.test(text)) {
+    trainingDays = 7;
+  } else if (/(เสาร์\s*อาทิตย์|วันหยุด)/i.test(text) && !/(จันทร์|อังคาร|พุธ|พฤหัส|ศุกร์)/i.test(text)) {
+    trainingDays = 2;
+    if (specificDays.length === 0) specificDays.push("saturday", "sunday");
+  } else if (specificDays.length > 0) {
+    trainingDays = specificDays.length;
+  }
+
+  const hasKneePain = /(เข่า|เจ็บเข่า|ปวดเข่า|ข้อเข่า|ไม่กระโดด|ห้ามกระโดด|เลี่ยงกระโดด|เซฟเข่า|low\s*impact|แรงกระแทกต่ำ)/i.test(text);
+  const hasBackPain = /(หลัง|เจ็บหลัง|ปวดหลัง|หลังล่าง|lower\s*back)/i.test(text);
+  const hasWristPain = /(ข้อมือ|เจ็บข้อมือ|ปวดข้อมือ)/i.test(text);
+  const isBeginner = /(มือใหม่|เพิ่งเริ่ม|ไม่เคยออก|เหนื่อยง่าย|beginner)/i.test(text);
+  const isAdvanced = /(แอดวานซ์|ระดับสูง|หนักๆ|หนักหน่วง|advanced)/i.test(text);
+
+  const isFatLoss = /(ลดไขมัน|ลดน้ำหนัก|เบิร์น|คาร์ดิโอ|ผอม|ลีน|burn|fat\s*loss|cardio|hiit|weight\s*loss)/i.test(text);
+  const isMuscle = /(สร้างกล้าม|เพิ่มกล้าม|กล้ามเนื้อ|เพิ่มขนาด|ยกเวท|เวทเทรนนิ่ง|hypertrophy|muscle|strength|bulk)/i.test(text);
+  const isTone = /(กระชับ|เฟิร์ม|ฟิต|สัดส่วน|tone|shape)/i.test(text);
+  const isMobility = /(ยืดเหยียด|ฟื้นฟู|โยคะ|mobility|stretch|flexibility)/i.test(text);
+
+  const targetChest = /(อก|หน้าอก|chest)/i.test(text);
+  const targetArm = /(แขน|ต้นแขน|ไทรเซป|ไบเซป|arm|bicep|tricep)/i.test(text);
+  const targetBack = /(หลัง|ปีกหลัง|back|lat)/i.test(text);
+  const targetShoulder = /(ไหล่|หัวไหล่|shoulder)/i.test(text);
+  const targetLower = /(ขา|ก้น|สะโพก|ต้นขา|lower|leg|glute|butt|thigh)/i.test(text);
+  const targetCore = /(หน้าท้อง|พุง|เอว|แกนกลาง|core|abs|sixpack|เบิร์นพุง)/i.test(text);
+  const targetFullBody = /(ทั่วตัว|ทั้งตัว|full\s*body)/i.test(text);
+
+  const hasDumbbell = /(ดัมเบล|dumbbell|เวท)/i.test(text);
+  const isBodyweightOnly = /(บอดี้เวท|bodyweight|ไม่ใช้อุปกรณ์|ไม่มีอุปกรณ์|ที่บ้าน)/i.test(text);
+
+  let targetMinutes = 30;
+  const timeMatch = text.match(/(\d+)\s*นาที/i);
+  if (timeMatch) {
+    targetMinutes = parseInt(timeMatch[1], 10);
+  }
+
+  const bmi = Number(profile?.bmi || 0);
+  const age = Number(profile?.age || 0);
+  const autoLowImpact = hasKneePain || bmi >= 28 || age >= 55;
+
+  if (!trainingDays) {
+    if (isBeginner) trainingDays = 3;
+    else if (isFatLoss) trainingDays = 4;
+    else if (isMuscle) trainingDays = 5;
+    else trainingDays = 4;
+  }
+
+  const validDbNames = new Set(exercises.map((e) => e.name).filter(Boolean));
+
+  let activeDayKeys = [];
+  if (specificDays && specificDays.length > 0) {
+    activeDayKeys = DAYS_OF_WEEK.map((d) => d.key).filter((k) => specificDays.includes(k));
+  } else {
+    switch (trainingDays) {
+      case 1: activeDayKeys = ["wednesday"]; break;
+      case 2: activeDayKeys = ["tuesday", "friday"]; break;
+      case 3: activeDayKeys = ["monday", "wednesday", "friday"]; break;
+      case 4: activeDayKeys = ["monday", "tuesday", "thursday", "friday"]; break;
+      case 5: activeDayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday"]; break;
+      case 6: activeDayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]; break;
+      case 7: activeDayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]; break;
+      default: activeDayKeys = ["monday", "tuesday", "thursday", "friday"]; break;
+    }
+  }
+
+  const focusPlans = [];
+  if (targetChest || targetArm) {
+    focusPlans.push({ focus: "อกและไหล่ (Upper Push)", category: "upper_push" });
+    focusPlans.push({ focus: "หลังและแขน (Upper Pull)", category: "upper_pull" });
+    focusPlans.push({ focus: "ช่วงล่างและสะโพก (Lower Body)", category: "lower" });
+    focusPlans.push({ focus: "แขนและหน้าท้อง (Arm & Core)", category: "arm" });
+    focusPlans.push({ focus: "ทั่วร่างกายเผาผลาญ (Full Body)", category: "full" });
+    focusPlans.push({ focus: "แกนกลางและความทนทาน (Core & Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ฟื้นฟูและยืดเหยียด (Active Recovery)", category: "mobility" });
+  } else if (targetLower) {
+    focusPlans.push({ focus: "ต้นขาและสะโพก (Legs & Glutes)", category: "lower" });
+    focusPlans.push({ focus: "แกนกลางและหน้าท้อง (Core & Abs)", category: "core" });
+    focusPlans.push({ focus: "ช่วงบนและแขน (Upper Body)", category: "upper_push" });
+    focusPlans.push({ focus: "ช่วงล่างและน่อง (Lower Power)", category: "lower" });
+    focusPlans.push({ focus: "คาร์ดิโอเผาผลาญ (Fat Burn Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกาย (Full Body)", category: "full" });
+    focusPlans.push({ focus: "ฟื้นฟูและยืดเหยียด (Mobility)", category: "mobility" });
+  } else if (targetCore) {
+    focusPlans.push({ focus: "แกนกลางและหน้าท้อง (Core & Six-pack)", category: "core" });
+    focusPlans.push({ focus: "ช่วงบนและอก (Upper Push)", category: "upper_push" });
+    focusPlans.push({ focus: "ช่วงล่างและขา (Lower Body)", category: "lower" });
+    focusPlans.push({ focus: "เอวและหน้าท้องส่วนลึก (Deep Core)", category: "core" });
+    focusPlans.push({ focus: "คาร์ดิโอเผาผลาญพุง (Fat Burn Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกาย (Full Body)", category: "full" });
+    focusPlans.push({ focus: "ฟื้นฟูกล้ามเนื้อ (Mobility)", category: "mobility" });
+  } else if (isFatLoss) {
+    focusPlans.push({ focus: "คาร์ดิโอและช่วงล่าง (Cardio & Lower Burn)", category: "cardio" });
+    focusPlans.push({ focus: "ช่วงบนและแกนกลางลำตัว (Upper & Core)", category: "upper_push" });
+    focusPlans.push({ focus: "คาร์ดิโอความทนทาน (Endurance Burn)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกายสลายไขมัน (Full Body Circuit)", category: "full" });
+    focusPlans.push({ focus: "แกนกลางและหน้าท้อง (Core Burn)", category: "core" });
+    focusPlans.push({ focus: "คาร์ดิโอเบิร์นต่อเนื่อง (HIIT Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ยืดเหยียดและฟื้นฟู (Active Recovery)", category: "mobility" });
+  } else if (isMuscle) {
+    focusPlans.push({ focus: "กล้ามเนื้ออกและไหล่ (Chest & Shoulders)", category: "upper_push" });
+    focusPlans.push({ focus: "กล้ามเนื้อหลังและแขน (Back & Arms)", category: "upper_pull" });
+    focusPlans.push({ focus: "กล้ามเนื้อขาและสะโพก (Quads & Glutes)", category: "lower" });
+    focusPlans.push({ focus: "ไหล่และแกนกลางลำตัว (Shoulders & Core)", category: "upper_push" });
+    focusPlans.push({ focus: "ทั่วร่างกายสร้างพลัง (Full Body Power)", category: "full" });
+    focusPlans.push({ focus: "แขนและหน้าท้อง (Arms & Abs)", category: "arm" });
+    focusPlans.push({ focus: "ยืดเหยียดกล้ามเนื้อ (Mobility)", category: "mobility" });
+  } else {
+    focusPlans.push({ focus: "กล้ามเนื้อช่วงล่าง (Lower Body)", category: "lower" });
+    focusPlans.push({ focus: "กล้ามเนื้อช่วงบน (Upper Body)", category: "upper_push" });
+    focusPlans.push({ focus: "แกนกลางลำตัว (Core & Abs)", category: "core" });
+    focusPlans.push({ focus: "คาร์ดิโอและความทนทาน (Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกาย (Full Body)", category: "full" });
+    focusPlans.push({ focus: "ฟื้นฟูและยืดเหยียด (Mobility)", category: "mobility" });
+    focusPlans.push({ focus: "แอโรบิกและฟื้นฟู (Active Recovery)", category: "cardio" });
+  }
+
+  const isRestrictedImpact = autoLowImpact || hasKneePain;
+
+  function filterSafe(list) {
+    let res = [...list];
+    if (isRestrictedImpact) {
+      res = res.filter((name) => !HIGH_IMPACT_EXERCISES_SET.has(name));
+      if (res.length < 3) {
+        res = [...res, ...Array.from(KNEE_SAFE_EXERCISES_SET).filter((e) => !res.includes(e))];
+      }
+    }
+    if (hasBackPain) {
+      res = res.filter((name) => !["Good Morning", "Deadlift", "Burpee"].includes(name));
+    }
+    if (hasDumbbell) {
+      res.sort((a, b) => (DUMBBELL_EXERCISES_SET.has(b) ? 1 : 0) - (DUMBBELL_EXERCISES_SET.has(a) ? 1 : 0));
+    } else if (isBodyweightOnly) {
+      res = res.filter((name) => !DUMBBELL_EXERCISES_SET.has(name));
+    }
+    const existing = res.filter((name) => validDbNames.has(name));
+    return existing.length >= 3 ? existing : res;
+  }
+
+  const categoryExerciseMap = {
+    lower: filterSafe([
+      "Chair Squat", "Glute Bridge", "Squat", "Lunges", "Bulgarian Split Squat",
+      "Calf Raise", "Sumo Squat", "Hip Thrust", "Donkey Kick", "Step Up",
+      "Leg Press", "Standing Calf Raise", "Romanian Deadlift"
+    ]),
+    upper_push: filterSafe([
+      "Push Up", "Chest Fly", "Shoulder Press", "Wall Push Up", "Incline Push-up",
+      "Lateral Raise", "Arnold Press", "Decline Push-up", "Diamond Push-up"
+    ]),
+    upper_pull: filterSafe([
+      "Seated Row", "Bodyweight Row", "Superman", "Reverse Fly", "Lat Pulldown",
+      "Inverted Row", "Pull-up", "Biceps Curl", "Upright Row"
+    ]),
+    arm: filterSafe([
+      "Biceps Curl", "Hammer Curl", "Concentration Curl", "Triceps Dip",
+      "Overhead Triceps Extension", "Triceps Kickback", "Arm Circles",
+      "Wall Push Up", "Dumbbell Skull Crusher"
+    ]),
+    core: filterSafe([
+      "Plank", "Bird Dog", "Dead Bug", "Glute Bridge", "Side Plank",
+      "Crunch", "Bicycle Crunch", "Russian Twist", "Leg Raise", "Reverse Crunch"
+    ]),
+    cardio: filterSafe(
+      isRestrictedImpact
+        ? ["March In Place", "Stationary Bike", "Walking", "Step Up", "Elliptical", "Chair Squat"]
+        : ["Jumping Jack", "High Knees", "Burpee", "March In Place", "Squat Jump", "Skater", "Jump Rope", "Stationary Bike"]
+    ),
+    full: filterSafe([
+      "Squat", "Push Up", "Glute Bridge", "Plank", "Lunges", "Bird Dog",
+      "Chair Squat", "Wall Push Up", "March In Place"
+    ]),
+    mobility: filterSafe([
+      "Cat Cow", "Arm Circles", "Bird Dog", "Dead Bug", "Glute Bridge"
+    ]),
+  };
+
+  const usedPrimaryNames = new Set();
+  let activeIndex = 0;
+
+  const plan = DAYS_OF_WEEK.map((day, dayIndex) => {
+    const isActive = activeDayKeys.includes(day.key);
+
+    if (!isActive) {
+      return {
+        key: day.key,
+        label: day.label,
+        focus: "พักผ่อนและฟื้นฟู",
+        exerciseName: "Rest",
+        exercises: [],
+        sets: "",
+        repetitions: "พักผ่อน / ยืดเหยียดเบา ๆ",
+        reason: isRestrictedImpact
+          ? "วันพักฟื้นฟูข้อต่อและกล้ามเนื้อตามหลักวิทยาศาสตร์การกีฬาเพื่อป้องกันการบาดเจ็บ"
+          : "วันพักผ่อนเพื่อให้เส้นใยกล้ามเนื้อซ่อมแซมและเติบโตอย่างเต็มที่",
+        dayIndex,
+        isRest: true,
+      };
+    }
+
+    const planConfig = focusPlans[activeIndex % focusPlans.length];
+    activeIndex++;
+
+    const pool = categoryExerciseMap[planConfig.category] || categoryExerciseMap.lower;
+    const exerciseCount = targetMinutes <= 20 ? 3 : targetMinutes <= 35 ? 4 : 5;
+
+    let primaryName = pool.find((name) => !usedPrimaryNames.has(name)) || pool[0] || "Squat";
+    usedPrimaryNames.add(primaryName);
+
+    const remainingInPool = pool.filter((name) => name !== primaryName);
+    const selectedExerciseNames = [primaryName, ...remainingInPool.slice(0, exerciseCount - 1)];
+
+    const defaultSets = isBeginner ? 2 : isMuscle ? (targetChest || targetArm ? 4 : 3) : 3;
+    const defaultReps =
+      planConfig.category === "cardio"
+        ? isRestrictedImpact ? "30–45 วินาที" : "45–60 วินาที"
+        : planConfig.category === "mobility"
+        ? "8–10 นาที"
+        : isMuscle
+        ? "8–10 ครั้ง"
+        : isFatLoss
+        ? "12–15 ครั้ง"
+        : "10–12 ครั้ง";
+
+    const dailyExercises = selectedExerciseNames.map((name) => {
+      const isTimeBased = /(Plank|Dead Bug|Bird Dog|March In Place|Cat Cow|Stationary Bike)/i.test(name);
+      return {
+        name,
+        sets: defaultSets,
+        repetitions: isTimeBased ? "30–45 วินาที" : defaultReps,
+      };
+    });
+
+    let reason = `AI คำนวณตารางเน้นกลุ่ม ${planConfig.focus}`;
+    if (isRestrictedImpact) {
+      reason += " โดยคัดกรองเฉพาะท่าที่ปลอดภัยต่อข้อเข่า (Low Impact)";
+    }
+    if (hasDumbbell) {
+      reason += " พร้อมเพิ่มท่าฝึกด้วยดัมเบล";
+    }
+
+    return {
+      key: day.key,
+      label: day.label,
+      focus: planConfig.focus,
+      exerciseName: primaryName,
+      exercises: dailyExercises,
+      sets: defaultSets,
+      repetitions: dailyExercises[0]?.repetitions || defaultReps,
+      reason,
+      dayIndex,
+      isRest: false,
+    };
+  });
+
+  const workoutDaysCount = activeDayKeys.length;
+  const restDaysCount = 7 - workoutDaysCount;
+
+  const badges = [
+    `ฝึก ${workoutDaysCount} วัน / สัปดาห์`,
+    `พัก ${restDaysCount} วัน ฟื้นฟูกล้ามเนื้อ`,
+  ];
+  if (isRestrictedImpact) badges.push("เซฟข้อเข่า (Low Impact)");
+  if (isFatLoss) badges.push("เป้าหมาย: เผาผลาญไขมัน");
+  if (isMuscle) badges.push("เป้าหมาย: สร้างกล้ามเนื้อ");
+  if (hasDumbbell) badges.push("อุปกรณ์: ดัมเบล");
+  if (isBeginner) badges.push("ระดับ: เริ่มต้น (ปลอดภัย)");
+  badges.push(`เวลา: ${targetMinutes} นาที / วัน`);
+
+  const activeDayNamesThai = activeDayKeys.map((k) => DAYS_OF_WEEK.find((d) => d.key === k)?.label).join(", ");
+  const summary = `${isFatLoss ? "แผนลดไขมัน" : isMuscle ? "แผนสร้างกล้ามเนื้อ" : "แผนออกกำลังกายเฉพาะบุคคล"} ${workoutDaysCount} วัน ${isRestrictedImpact ? "(Low Impact เซฟข้อเข่า)" : ""}`;
+
+  const strategy = `AI คำนวณและจัดตารางสัปดาห์นี้ตามความต้องการของคุณเรียบร้อยแล้ว: จัดโปรแกรมฝึก ${workoutDaysCount} วัน (${activeDayNamesThai}) สลับวันพัก ${restDaysCount} วัน ${isRestrictedImpact ? "โดยคัดกรองท่ากระโดดและแรงกระแทกออกทั้งหมดเพื่อความปลอดภัยสูงสุดของข้อเข่า " : ""}${hasDumbbell ? "พร้อมเสริมท่าดัมเบลตามที่ต้องการ " : ""}คุมระดับความหนักและเวลาฝึก ${targetMinutes} นาทีต่อวัน`;
+
+  return {
+    plan,
+    summary,
+    strategy,
+    trainingDaysCount: workoutDaysCount,
+    restDaysCount,
+    badges,
   };
 }

@@ -9,7 +9,7 @@ function Dashboard({ profile, error }) {
     <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex flex-col font-sans">
       {/* Header Bar */}
       <header className="border-b border-[#9bb0c4] bg-[#abbed2] sticky top-0 z-20 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <img src="/ai-trainer-logo.png" alt="Logo" className="w-8 h-8 rounded-full shadow-sm" />
             <span className="text-base font-extrabold text-[#1e293b] tracking-wide">

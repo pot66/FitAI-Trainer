@@ -9,15 +9,19 @@ from PIL import Image
 
 MODEL_PATH = os.getenv("EXERCISE_YOLO_MODEL", "/app/models/best.pt")
 YOLO_CONF = float(os.getenv("EXERCISE_YOLO_CONF", "0.45"))
-YOLO_IMGSZ = int(os.getenv("EXERCISE_YOLO_IMGSZ", "640"))
+YOLO_IMGSZ = int(os.getenv("EXERCISE_YOLO_IMGSZ", "416"))
 
-_CLASS_NAMES = [
-    "Bird Dog",
-    "Knee Push up",
-    "Plank",
-    "Push up",
-    "Revese Lunge",
-    "Squat",
+_FALLBACK_CLASS_NAMES = [
+    "JumpingJacks_End",
+    "JumpingJacks_Start",
+    "Lunges_End",
+    "Lunges_Start",
+    "Push-up_End",
+    "Push-up_Start",
+    "Sit-ups_End",
+    "Sit-ups_Start",
+    "Squats_End",
+    "Squats_Start",
 ]
 
 _model = None
@@ -41,14 +45,23 @@ def _load_model():
         return None
 
 
+def get_class_names() -> List[str]:
+    model = _load_model()
+    if model is not None and hasattr(model, "names") and model.names:
+        return [str(model.names[i]) for i in sorted(model.names.keys())]
+    return _FALLBACK_CLASS_NAMES
+
+
 def status() -> Dict[str, Any]:
+    names = get_class_names()
     return {
         "enabled": os.getenv("ENABLE_EXERCISE_YOLO", "true").lower() == "true",
         "modelPath": MODEL_PATH,
         "modelExists": Path(MODEL_PATH).exists(),
         "loaded": _model is not None,
         "error": _load_error,
-        "classes": _CLASS_NAMES,
+        "totalClasses": len(names),
+        "classes": names,
     }
 
 
@@ -80,14 +93,28 @@ def predict(image_base64: str, conf: Optional[float] = None) -> Dict[str, Any]:
     detections: List[Dict[str, Any]] = []
     boxes = result.boxes
     keypoints = getattr(result, "keypoints", None)
+    class_names = get_class_names()
 
     for i in range(len(boxes)):
         cls_id = int(boxes.cls[i].item())
         score = float(boxes.conf[i].item())
         xyxy = boxes.xyxy[i].tolist()
+        class_label = class_names[cls_id] if 0 <= cls_id < len(class_names) else str(cls_id)
+
+        # Parse base exercise name and rep phase (Start/End)
+        base_exercise = class_label
+        phase = None
+        if "_" in class_label:
+            parts = class_label.rsplit("_", 1)
+            if parts[1].lower() in {"start", "end"}:
+                base_exercise = parts[0].replace("-", " ")
+                phase = parts[1].capitalize()
+
         item: Dict[str, Any] = {
             "classId": cls_id,
-            "exercise": _CLASS_NAMES[cls_id] if 0 <= cls_id < len(_CLASS_NAMES) else str(cls_id),
+            "exercise": base_exercise,
+            "label": class_label,
+            "phase": phase,
             "confidence": round(score, 4),
             "box": [round(float(v), 2) for v in xyxy],
         }

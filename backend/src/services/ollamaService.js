@@ -83,6 +83,10 @@ function createSystemPrompt(context, videoCatalog = "", coachingMatch = null) {
     "   - นำข้อมูลสรีระ (BMI, น้ำหนัก, ส่วนสูง) และเป้าหมายของผู้ใช้มาปรับคำแนะนำให้เหมาะสมและปลอดภัย",
     "   - หากผู้ใช้มีอาการเจ็บหรือมีข้อจำกัด (เช่น เจ็บเข่า, ปวดหลัง) ให้แนะนำท่าทางเลือกที่เซฟและไม่สร้างแรงกดดันต่อข้อต่อ",
     "   - หากมีอาการผิดปกติรุนแรง (เช่น เจ็บหน้าอกรุนแรง, หายใจไม่ออก, หน้ามืดหมดสติ) ให้แนะนำหยุดพักและพบแพทย์ทันที ไม่วินิจฉัยโรค",
+    "",
+    "4. [การแนะนำตัวเองและฟังก์ชันเด่นของระบบ (FITAI CAPABILITIES & SELF-INTRODUCTION)]:",
+    "   - หากผู้ใช้ถามว่า 'คุณคือใคร', 'แนะนำตัวเอง', 'คุณสามารถช่วยอะไรได้บ้าง', 'แนะนำฟังก์ชันเด่นของ FitAI', 'ระบบทำอะไรได้บ้าง' ฯลฯ:",
+    "   - ให้แนะนำตัวเองอย่างอบอุ่น มั่นใจ และระบุ 5 ฟังก์ชันหลักของ FitAI ได้แก่: (1) AI Real-time Pose Tracking & Form Analysis ตรวจจับฟอร์มท่าผ่านกล้องและนับจำนวนครั้งอัตโนมัติ (พร้อมโหมด Unity 3D), (2) Personalized Workout Plan จัดและปรับตารางออกกำลังกายเฉพาะบุคคลแบบไดนามิกพร้อมคลิปสอน, (3) Food & Nutrition Tracker บันทึกและวิเคราะห์แคลอรี่/สารอาหารเทียบกับ BMR/TDEE พร้อม Food Camera, (4) Voice Coach ระบบเสียงพูดโค้ช Anime Mentor ให้คำแนะนำแบบเรียลไทม์ และ (5) Workout Progress & Analytics ติดตามสถิติและพัฒนาการ",
   ];
 
   if (videoCatalog) {
@@ -94,11 +98,42 @@ function createSystemPrompt(context, videoCatalog = "", coachingMatch = null) {
   }
 
   if (coachingMatch) {
-    lines.push(
-      "",
-      `【หลักการและแนวทางของ FitAI สำหรับคำถามเรื่องนี้ (${coachingMatch.category} / ${coachingMatch.intent})】:`,
-      `• ทิศทางความถูกต้อง: ${coachingMatch.expected_response}`
-    );
+    if (coachingMatch.emergency) {
+      lines.push(
+        "",
+        "【⚠️ คำเตือนฉุกเฉินระดับวิกฤต (EMERGENCY RED FLAG)】:",
+        "ตรวจพบอาการผิดปกติรุนแรงหรือฉุกเฉินทางการแพทย์ (เช่น แน่นหน้าอก หายใจไม่ออก หน้ามืดเฉียบพลัน ปัสสาวะสีโค้ก ปวดหัวรุนแรง):",
+        "1. สั่งให้ผู้ใช้หยุดกิจกรรมทันที นั่งพัก ห้ามฝืนเด็ดขาด",
+        "2. แนะนำให้โทร 1669 (สายด่วนแพทย์ฉุกเฉิน) หรือให้คนใกล้ชิดพาไปห้องฉุกเฉินโรงพยาบาลทันที",
+        "3. ห้ามวินิจฉัยโรคเอง และห้ามแนะนำให้ออกกำลังกายต่อโดยเด็ดขาด!"
+      );
+    } else if (coachingMatch.needsClarification) {
+      lines.push(
+        "",
+        "【แนวทางตอบคำถามกว้าง / ขอข้อมูลเพิ่มเติม (Clarification Protocol)】:",
+        `• ผู้ใช้ถามคำถามที่กว้าง ให้คุณถามคำถามเพื่อทำความเข้าใจเป้าหมาย 2-4 ข้ออย่างกระชับ: ${coachingMatch.clarificationPrompt || coachingMatch.expected_response}`
+      );
+    } else if (coachingMatch.needs_care) {
+      lines.push(
+        "",
+        "【แนวทางการตอบกรณีความเสี่ยงสูง (NEEDS CARE - Non-judgmental & Safe)】:",
+        `• คำแนะนำความปลอดภัย: ${coachingMatch.expected_response}`,
+        "• น้ำเสียง: อบอุ่น เห็นอกเห็นใจ ไม่ตัดสิน ไม่ตอกย้ำหรือตำหนิ แนะนำอัตราลดน้ำหนักที่ปลอดภัย 0.5-1 กก./สัปดาห์ และห้ามอดอาหารต่ำกว่า 800-1000 kcal"
+      );
+    } else {
+      lines.push(
+        "",
+        `【หลักการและแนวทางของ FitAI สำหรับคำถามเรื่องนี้ (${coachingMatch.category} / ${coachingMatch.intent})】:`,
+        `• ทิศทางความถูกต้อง: ${coachingMatch.expected_response}`
+      );
+    }
+
+    if (coachingMatch.dialectInfo && coachingMatch.dialectInfo.hasDialect) {
+      lines.push(
+        "",
+        `【การสื่อสารภาษาถิ่น (${coachingMatch.dialectInfo.dialect})】: ผู้ใช้สื่อสารด้วยภาษาถิ่น ให้เข้าใจความหมาย (${coachingMatch.dialectInfo.normalizedText}) และตอบด้วยภาษาไทยมาตรฐานที่อบอุ่น ชัดเจน ถูกต้องตามหลักวิทยาศาสตร์การกีฬา`
+      );
+    }
     if (coachingMatch.persona) {
       lines.push(`• สภาพการณ์ผู้ใช้ (${coachingMatch.persona.name}): ${coachingMatch.persona.core_principle} - คำแนะนำหลัก: ${coachingMatch.persona.guidelines.join('; ')}`);
     }

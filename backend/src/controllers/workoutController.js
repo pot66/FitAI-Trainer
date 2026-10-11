@@ -153,8 +153,108 @@ async function getWorkoutById(req, res) {
   }
 }
 
+/**
+ * ลบประวัติการออกกำลังกายของวันนี้ตาม exerciseId (กรณีผู้ใช้กดยกเลิกสถานะทำแล้วในตารางการฝึก)
+ */
+async function deleteTodayWorkoutByExercise(req, res) {
+  try {
+    const exerciseId = Number(req.params.exerciseId);
+
+    if (!Number.isInteger(exerciseId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid exercise ID",
+      });
+    }
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const latest = await prisma.workoutSession.findFirst({
+      where: {
+        userId: req.user.userId,
+        exerciseId: exerciseId,
+        startedAt: { gte: startOfDay },
+      },
+      orderBy: { startedAt: "desc" },
+    });
+
+    if (latest) {
+      await prisma.workoutSession.delete({
+        where: { id: latest.id },
+      });
+
+      return res.json({
+        success: true,
+        message: "Workout session deleted successfully",
+        data: latest,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "No workout session found for today",
+    });
+  } catch (error) {
+    console.error("Delete today workout error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+/**
+ * ลบประวัติการออกกำลังกายตาม ID (ต้องเป็นของ user ที่ล็อกอินอยู่)
+ */
+async function deleteWorkout(req, res) {
+  try {
+    const workoutId = Number(req.params.id);
+
+    if (!Number.isInteger(workoutId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid workout ID",
+      });
+    }
+
+    const existing = await prisma.workoutSession.findFirst({
+      where: {
+        id: workoutId,
+        userId: req.user.userId,
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Workout not found",
+      });
+    }
+
+    await prisma.workoutSession.delete({
+      where: { id: workoutId },
+    });
+
+    return res.json({
+      success: true,
+      message: "Workout deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete workout error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   createWorkout,
   getMyWorkouts,
   getWorkoutById,
+  deleteTodayWorkoutByExercise,
+  deleteWorkout,
 };

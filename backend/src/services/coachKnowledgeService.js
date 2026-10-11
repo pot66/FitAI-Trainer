@@ -21,6 +21,99 @@ try {
   console.warn('Could not load lifestyle_coaching_dataset.json:', err.message);
 }
 
+
+// 4. Load 200,000 Trained Exercise Knowledge Dataset (20 Categories)
+let exerciseTrainingKnowledge = { categories: {} };
+try {
+  const trainingPath = path.join(__dirname, '../data/exercise_training_knowledge.json');
+  if (fs.existsSync(trainingPath)) {
+    exerciseTrainingKnowledge = JSON.parse(fs.readFileSync(trainingPath, 'utf8'));
+  }
+} catch (err) {
+  console.warn('Could not load exercise_training_knowledge.json:', err.message);
+}
+
+// 3. Load Finetuned Knowledge & Safety Dataset (Dialects, Red Flags, Clarification, Needs Care)
+let finetunedData = {
+  dialectLexicon: {},
+  emergencyRedFlags: [],
+  clarificationTemplates: {},
+  needsCareRules: {}
+};
+try {
+  const finetunedPath = path.join(__dirname, '../data/coaching_finetuned_knowledge.json');
+  if (fs.existsSync(finetunedPath)) {
+    finetunedData = JSON.parse(fs.readFileSync(finetunedPath, 'utf8'));
+  }
+} catch (err) {
+  console.warn('Could not load coaching_finetuned_knowledge.json:', err.message);
+}
+
+// Helper: Normalize Dialect (North, Isan, South, Slang)
+function detectAndNormalizeDialect(text) {
+  if (!text) return { hasDialect: false, normalizedText: text, dialect: null };
+  let normalized = text;
+  const matchCounts = { 'อีสาน': 0, 'เหนือ': 0, 'ใต้': 0, 'สแลง/แชท': 0 };
+
+  const dialects = [
+    { name: 'อีสาน', dict: finetunedData.dialectLexicon?.isan || {} },
+    { name: 'เหนือ', dict: finetunedData.dialectLexicon?.north || {} },
+    { name: 'ใต้', dict: finetunedData.dialectLexicon?.south || {} },
+    { name: 'สแลง/แชท', dict: finetunedData.dialectLexicon?.slang || {} }
+  ];
+
+  for (const { name, dict } of dialects) {
+    // Sort keys by descending length so compound phrases match first
+    const sortedKeys = Object.keys(dict).sort((a, b) => b.length - a.length);
+    for (const slang of sortedKeys) {
+      if (normalized.includes(slang)) {
+        matchCounts[name] += slang.length;
+        normalized = normalized.split(slang).join(dict[slang]);
+      }
+    }
+  }
+
+  let bestDialect = null;
+  let maxScore = 0;
+  for (const [name, score] of Object.entries(matchCounts)) {
+    if (score > maxScore) {
+      maxScore = score;
+      bestDialect = name;
+    }
+  }
+
+  return {
+    hasDialect: maxScore > 0,
+    dialect: bestDialect,
+    normalizedText: normalized
+  };
+}
+
+// Helper: Detect Emergency Red Flags (1669 Triage)
+function detectEmergencyRedFlags(text) {
+  if (!text || !finetunedData.emergencyRedFlags) return null;
+  for (const flag of finetunedData.emergencyRedFlags) {
+    if (flag.patterns && flag.patterns.some(p => text.includes(p))) {
+      return flag;
+    }
+  }
+  return null;
+}
+
+// Helper: Detect Clarification Needed (Broad Questions)
+function detectClarificationNeeded(text) {
+  if (!text || !finetunedData.clarificationTemplates) return null;
+  const isShortOrBroad = text.length < 50;
+  if (!isShortOrBroad) return null;
+
+  for (const [key, item] of Object.entries(finetunedData.clarificationTemplates)) {
+    if (item.triggers && item.triggers.some(t => text.toLowerCase().includes(t.toLowerCase()))) {
+      return { key, ...item };
+    }
+  }
+  return null;
+}
+
 // Helper detection functions
 function detectPersona(text) {
   if (!text || !lifestyleData.personas) return null;
@@ -52,57 +145,28 @@ function detectFoodHack(text) {
   return null;
 }
 
-// Build intent map
+// Map dataset items for fast lookup by intent
 const intentMap = new Map();
 for (const item of dataset) {
   if (!intentMap.has(item.intent)) {
-    intentMap.set(item.intent, {
-      intent: item.intent,
-      category: item.category,
-      expected_response: item.expected_response,
-      examples: []
-    });
+    intentMap.set(item.intent, item);
   }
-  intentMap.get(item.intent).examples.push(item.example_question);
 }
 
-// Intent rule matchers (flexible regex keywords)
+// Intent matching rules with regexes
 const INTENT_RULES = [
-  // 14. Safety First (Priority)
-  { intent: 'safety_chest_pain', regex: /(เจ็บหน้าอก|แน่นหน้าอก|ปวดหน้าอก|หายใจไม่ออกตอนวิ่ง|หัวใจเต้นผิดจังหวะ)/i },
-  { intent: 'safety_dizziness', regex: /(เวียนหัว|มึนหัว|หน้ามืด|จะเป็นลม|ตาลาย)/i },
-  { intent: 'safety_back_pain', regex: /(เจ็บหลัง|ปวดหลัง|หลังเดี้ยง|หลังยอก|หลังเจ็บ|deadlift.*ปวดหลัง|ปวดเอว.*ยก)/i },
-  { intent: 'safety_joint_pain', regex: /(เจ็บเข่า|ปวดเข่า|เข่าลั่น|ปวดข้อ|ข้อเท้าเจ็บ|squat.*เจ็บเข่า)/i },
-  { intent: 'safety_shoulder_pain', regex: /(เจ็บไหล่|ปวดไหล่|ไหล่ติด|ยกแขนแล้วเจ็บ|bench press.*เจ็บไหล่)/i },
-  { intent: 'safety_stop_signs', regex: /(เมื่อไหร่ควรหยุด|อาการ.*หยุดทันที|อันตรายไหม|ไม่ควรฝืน|สัญญาณอันตราย)/i },
-  { intent: 'safety_medical_clearance', regex: /(โรคประจำตัว|ปรึกษาหมอ|ความดัน|เบาหวาน|หัวใจ.*ออกกำลัง|ปัญหาสุขภาพ)/i },
-  { intent: 'safety_injury_return', regex: /(กลับมาออกกำลัง.*บาดเจ็บ|หายเจ็บแล้ว|หลังบาดเจ็บ|เคยเจ็บ)/i },
-  { intent: 'safety_overexertion', regex: /(หมดแรงผิดปกติ|เหนื่อยมากเกิน|ฝึกหนักเกิน|overtrain|หอบมาก)/i },
-  { intent: 'safety_muscle_soreness', regex: /(ปวดกล้าม.*หยุดไหม|เมื่อยมาก.*ฝึกเบา|doms.*ออกกำลังได้ไหม)/i },
+  // 0. App Capabilities & Self-Introduction
+  { intent: 'app_introduction_capabilities', regex: /(แนะนำตัว|คุณคือใคร|คุณเป็นใคร|ช่วยอะไรได้บ้าง|ทำอะไรได้บ้าง|ฟังก์ชันเด่น|ฟังก์ชันของ|ความสามารถ|ระบบทำอะไร|แนะนำ.*fitai|fitai.*คืออะไร|มีฟังก์ชันอะไร|แนะนำระบบ|ฟังก์ชัน.*มีอะไร)/i },
 
-  // Thai Food & Street Food Hacks (Synthesized from 10k Dataset)
-  { intent: 'food_substitution', regex: /(ไข่ต้มแทนไข่ดาว|เปลี่ยนเป็นไข่ต้ม|แทนไข่ดาว|ส้มตำไทยไข่ต้ม|ข้าวมันไก่ไม่เอาหนัง|ต้มยำกุ้งน้ำใส|เปลี่ยนเมนู|แทนของทอด)/i },
-  { intent: 'food_calorie_question', regex: /(ข้าวมันไก่กี่แคล|กะเพรากี่แคล|ไข่ดาวกี่แคล|ส้มตำกี่แคล|ก๋วยเตี๋ยวกี่แคล|จานนี้กี่แคล|แคลอรี่เท่าไร)/i },
-  { intent: 'calculate_macro', regex: /(คำนวณสารอาหาร|คำนวณมาโคร|กี่กรัมโปรตีน|สัดส่วนโปรตีน.*คาร์บ|macro)/i },
-  { intent: 'calculate_calories', regex: /(คำนวณ bmr|คำนวณ tdee|ต้องการพลังงานกี่แคล|เผาผลาญวันละเท่าไร)/i },
-  { intent: 'create_meal_plan', regex: /(จัดตารางอาหาร|แพลนอาหารคลีน|เมนูอาหาร 7 วัน|ตารางกินอาหาร)/i },
-  { intent: 'recommend_food', regex: /(อาหารเซเว่น|ของกิน 7-11|ของกินเซเว่น|อาหารตามสั่งคลีน|สั่งก๋วยเตี๋ยว.*คลีน)/i },
+  // 1. Safety Priority (Handled by detectEmergencyRedFlags first, but kept for general injuries)
+  { intent: 'safety_chest_pain', regex: /(เจ็บหน้าอก|แน่นหน้าอก|หายใจไม่ออก|หน้ามืด|วิงเวียนรุนแรง)/i },
+  { intent: 'safety_back_pain', regex: /(ปวดหลังล่าง|เจ็บหลัง|หลังโก่ง|แปล๊บที่หลัง)/i },
+  { intent: 'safety_knee_pain', regex: /(เจ็บเข่า|ปวดเข่า|เข่าดังก๊อบ|เสียวเข่า)/i },
+  { intent: 'safety_dizziness', regex: /(หน้ามืด|ตาลาย|วิงเวียน|จะเป็นลม|มึนหัว)/i },
+  { intent: 'safety_joint_pain', regex: /(เจ็บข้อมือ|เจ็บข้อเท้า|เจ็บหัวไหล่|เอ็นอักเสบ)/i },
 
-  // 1. Goals & Specific Body Targets
-  { intent: 'goal_fat_loss', regex: /(ลดไขมัน|เบิร์นไขมัน|fat loss|ลดพุง|อยากผอม|ลดสัดส่วน)/i },
-  { intent: 'goal_weight_loss', regex: /(ลดน้ำหนัก|คุมน้ำหนัก|ชั่งน้ำหนัก|น้ำหนักตัวเยอะ)/i },
-  { intent: 'goal_muscle_gain', regex: /(สร้างกล้าม|เพิ่มกล้าม|bulk|อยากตัวใหญ่|กล้ามโต|hypertrophy)/i },
-  { intent: 'goal_strength', regex: /(เพิ่มแรง|ยกได้หนักขึ้น|strength|พลังกำลัง)/i },
-  { intent: 'goal_endurance', regex: /(เพิ่มความอึด|ไม่เหนื่อยง่าย|endurance|ความทนทาน)/i },
-  { intent: 'goal_body_part', regex: /(อยากเน้นแขน|อยากเน้นอก|อยากเน้นก้น|อยากเน้นขา|อยากเน้นหลัง|อยากมีซิกแพค|ลดต้นขา|เล่นแขน|เล่นอก|เล่นหลัง|เล่นขา|เล่นไหล่|เล่นท้อง)/i },
-  { intent: 'fat_loss', regex: /(วิธีลดไขมัน|หลักการลดไขมัน|แฟตเบิร์น)/i },
-  { intent: 'muscle_gain', regex: /(หลักการสร้างกล้าม|อาหารสร้างกล้าม|โปรแกรมสร้างกล้าม)/i },
-
-  // 2. Workout Planning & Splits
-  { intent: 'create_workout_plan', regex: /(จัดตารางออกกำลังกาย|สร้างตารางฝึก|วางตารางเวท|จัดโปรแกรมออกกำลัง)/i },
-  { intent: 'modify_workout_plan', regex: /(ปรับตาราง|แก้ตาราง|เปลี่ยนวันเล่น|สลับวันออกกำลัง)/i },
-  { intent: 'plan_create_week', regex: /(จัดตาราง 1 สัปดาห์|ตาราง 7 วัน|วางแผนทั้งอาทิตย์|ตารางประจำสัปดาห์)/i },
-  { intent: 'plan_push_pull_legs', regex: /(push pull legs|ppl|ตาราง ppl)/i },
+  // 2. Training Plans & Routines
+  { intent: 'plan_push_pull_legs', regex: /(push pull legs|ppl|ดัน ดึง ขา|พุช พูล เลก)/i },
   { intent: 'plan_upper_lower', regex: /(upper lower|บนล่าง|ตารางบนล่าง)/i },
   { intent: 'plan_full_body', regex: /(full body|ฟูลบอดี้|เล่นทั้งตัว)/i },
   { intent: 'plan_home_no_equipment', regex: /(ออกกำลังกายที่บ้าน.*ไม่ใช้อุปกรณ์|บอดี้เวทที่บ้าน|อยู่คอนโด.*ไม่มีอุปกรณ์)/i },
@@ -164,17 +228,414 @@ const INTENT_RULES = [
   { intent: 'beginner_guidance', regex: /(เริ่มต้นออกกำลังกาย|คำแนะนำสำหรับมือใหม่|ไม่เคยออกกำลังมาก่อน)/i }
 ];
 
+
+// ========================================================
+// 200K DATASET TRAINED KNOWLEDGE RULES (20 CORE CATEGORIES)
+// ========================================================
+
+const TRAINING_200K_RULES = [
+  {
+    category: 'คำศัพท์เฉพาะยิมและตัวชี้วัด (PR, 1RM, RPE)',
+    intent: 'gym_slang_metrics',
+    regex: /(ทำ\s*pr|สถิติ\s*pr|1rm|one\s*rep\s*max|pr\s*คืออะไร|ความหมายของ\s*pr|rpe\s*คือ|ค่า\s*rpe|rpe\s*ในตาราง|rir\s*คือ|reps\s*in\s*reserve)/i,
+    response: '📊 **ถอดรหัสคำศัพท์ยิมยอดฮิต (PR, 1RM, RPE & RIR):**\n\n' +
+      '1. **PR (Personal Record):** สถิติส่วนตัวที่ดีที่สุด เช่น ยกน้ำหนักได้หนักที่สุดในชีวิต หรือทำจำนวนครั้งได้มากที่สุดในน้ำหนักเดิม\n' +
+      '2. **1RM (One-Rep Max):** น้ำหนักสูงสุดที่คุณสามารถยกได้เพียง **1 ครั้งถ้วน** ด้วยฟอร์มที่ถูกต้อง ใช้เป็นเกณฑ์คำนวณ % ความหนักในตารางเวท\n' +
+      '3. **RPE (Rate of Perceived Exertion):** ระดับความเหนื่อย/ความเข้มข้น ประเมินจาก 1-10 (เช่น RPE 8 = หนักมาก ยังเหลือแรงยกต่อได้อีก 2 ครั้ง)\n' +
+      '4. **RIR (Reps in Reserve):** จำนวนครั้งสำรองที่เหลืออยู่ก่อนหมดแรง (เช่น RIR 2 แปลว่าถ้าฝืนจะยกได้อีกแค่ 2 ครั้งก็หมดแรงสนิท)\n\n' +
+      '💡 **เทคนิค:** การซ้อมเวทเพื่อสร้างกล้ามเนื้อที่ดีที่สุด ควรให้อยู่ที่ **RPE 7-9 (RIR 1-3)** ครับ ไม่จำเป็นต้องยกจน Failure ทุกเซ็ต!'
+  },
+  {
+    category: 'คำศัพท์เป้าหมายรูปร่าง (Bulk vs Cut)',
+    intent: 'bulk_vs_cut',
+    regex: /(บัล์ก.*คัต|bulk.*cut|ลีนกับบัล์ก|ช่วงบัล์ก|ช่วงคัต|bulk\s*คือ|cut\s*คือ|การบัล์ก|การคัต)/i,
+    response: '⚖️ **ความแตกต่างระหว่าง Bulk (บัล์ก) กับ Cut (คัต):**\n\n' +
+      '1. **Bulk (การเพิ่มขนาดกล้ามเนื้อ):**\n' +
+      '   • **การกิน:** ทานพลังงานเกินกว่าที่ร่างกายใช้ (Calorie Surplus +200 ถึง +400 kcal/วัน) พร้อมโปรตีน 1.6-2.2 กรัม/กก.\n' +
+      '   • **การฝึก:** เน้น Progressive Overload ยกหนักขึ้นเรื่อยๆ เพื่อกระตุ้นการสร้างกล้ามเนื้อเต็มที่ (อาจมีไขมันเพิ่มขึ้นเล็กน้อย)\n\n' +
+      '2. **Cut (การลดไขมันเพื่อความคมชัด):**\n' +
+      '   • **การกิน:** ทานพลังงานให้น้อยกว่าที่ร่างกายเผาผลาญ (Calorie Deficit -300 ถึง -500 kcal/วัน) แต่คงโปรตีนให้สูง (2.0-2.4 กรัม/กก.) เพื่อรักษามวลกล้ามเนื้อ\n' +
+      '   • **การฝึก:** รักษาน้ำหนักเวทให้หนักเท่าเดิม ควบคู่กับการคาร์ดิโอเสริมเพื่อช่วยเบิร์นไขมันออกครับ'
+  },
+  {
+    category: 'ท่าบริหารช่วงล่างแบบไม่ต้องยืน / เมื่อยขา (Seated & Lying Leg/Glute)',
+    intent: 'non_standing_leg_exercises',
+    regex: /(เตะขาไปข้างหลัง|donkey\s*kick|cable\s*kickback|เมื่อยขา.*บ่ต้องลุก|เมื่อยขา.*ไม่ต้องยืน|ท่าบริหาร.*ไม่ต้องลุก|นอนเล่นขา|นั่งเล่นขา)/i,
+    response: '🛋️ **ท่าบริหารขาและก้นแบบไม่ต้องลุกยืน (เหมาะสำหรับวันเมื่อยล้าหรือผ่อนคลาย):**\n\n' +
+      '1. **Glute Bridge (นอนหงายยกสะโพก):** นอนหงาย ชันเข่าขึ้น สองแขนวางข้างลำตัว แล้วเกร็งสะโพกดันก้นลอยขึ้นค้างไว้ 2 วินาที (3 เซ็ต x 15 ครั้ง) — บริหารก้นและหลังขาโดยไม่รับแรงกระแทก\n' +
+      '2. **Donkey Kick (ท่าคลานเตะขาไปข้างหลัง):** ท่าคลานสี่ขา ยกขาข้างหนึ่งถีบฝ่าเท้าขึ้นสู่เพดาน เกร็งก้นช้าๆ (3 เซ็ต x 12-15 ครั้ง/ข้าง) — ปั้นก้นกลมเด้งเน้นๆ\n' +
+      '3. **Seated Leg Extension (นั่งเก้าอี้เตะขาตรง):** นั่งหลังตรง ยกปลายขาเตะตรงไปข้างหน้า เกร็งหน้าขา 1-2 วินาทีแล้วผ่อนลง (3 เซ็ต x 15 ครั้ง) — กระชับต้นขาด้านหน้า\n' +
+      '4. **Lying Hamstring Stretch:** นอนหงาย ใช้มือหรือผ้าดึงขาเหยียดตรงเข้าหาตัว ค้างไว้ 30 วินาที ช่วยคลายอาการเมื่อยล้าได้ทันทีครับ! 🦵✨'
+  },
+  {
+    category: 'สรีรวิทยาการออกกำลังกาย (อาการคันยิบๆ)',
+    intent: 'exercise_itchiness_physiology',
+    regex: /(คันยิบ|คันตามตัว|คันผิวหนัง|คันเวลาออกกำลัง|คันตอนวิ่ง|คันตอนคาร์ดิโอ)/i,
+    response: '🩺 **ทำไมออกกำลังกายแล้วรู้สึกคันยิบๆ ตามผิวหนัง?**\n\n' +
+      'อาการนี้เรียกว่า **Exercise-Induced Urticaria หรือ Capillary Dilation** ซึ่งพบได้บ่อยและมัก**ไม่อันตราย**ครับ โดยมีสาเหตุหลักดังนี้:\n\n' +
+      '1. **การขยายตัวของหลอดเลือดฝอย:** เมื่อหัวใจสูบฉีดเลือดเร็วขึ้น หลอดเลือดฝอยใต้ผิวหนังที่เคยหดตัวจะขยายตัวอย่างรวดเร็ว ส่งผลให้เส้นประสาทรอบๆ ถูกกระตุ้นจนรู้สึกคันยิบๆ (มักเกิดกับคนที่ไม่ได้ออกกำลังกายมานาน หรือเพิ่งเริ่มคาร์ดิโอหนัก)\n' +
+      '2. **การหลั่งสารฮิสตามีน (Histamine):** ร่างกายหลั่งสารนี้เพื่อช่วยขยายหลอดเลือด ทำให้อาจมีอาการคันร่วมด้วย\n' +
+      '3. **ผิวแห้งหรือเหงื่อระคายเคือง:** เสื้อผ้าที่เสียดสีกับเหงื่อ\n\n' +
+      '💡 **วิธีรับมือ:** วอร์มอัพช้าๆ ให้ร่างกายปรับอุณหภูมิ, ดื่มน้ำให้เพียงพอ, และออกกำลังกายสม่ำเสมอ ร่างกายจะปรับตัวและอาการคันจะค่อยๆ หายไปเองใน 1-2 สัปดาห์ครับ (ยกเว้นมีอาการหายใจติดขัดหรือผื่นลมพิษบวมหนา ควรหยุดและปรึกษาแพทย์ทันทีครับ)'
+  },
+  {
+    category: 'การเพิ่มความหนักและ Progressive Overload',
+    intent: 'progressive_overload',
+    regex: /(progressive overload|เพิ่มน้ำหนักเมื่อไหร่|เพิ่มความหนัก|กี่สัปดาห์เพิ่มน้ำหนัก|ยกครบ 12 ครั้ง|เพิ่มโหลด|พัฒนาแรง|โอเวอร์โหลด|ก้าวหน้าในการยก|เพิ่มเวท)/i,
+    response: '🔥 **หลักการ Progressive Overload (หัวใจสำคัญที่สุดของการพัฒนาตามหลักวิทยาศาสตร์การกีฬา):**\n\n' +
+      '1. **ใช้กฎ “2-for-2 Rule” ในการตัดสินใจเพิ่มน้ำหนัก:**\n' +
+      '   - หากคุณสามารถยกในเซ็ตสุดท้ายได้เกินเป้าหมาย **2 ครั้ง ติดต่อกัน 2 สัปดาห์** ให้เพิ่มน้ำหนักทันทีครับ\n' +
+      '   - **ช่วงบน (Upper Body):** เพิ่มขึ้นครั้งละ 1–2.5 กก. (หรือ 2–5%)\n' +
+      '   - **ช่วงล่าง (Lower Body):** เพิ่มขึ้นครั้งละ 2.5–5 กก. (หรือ 5–10%)\n\n' +
+      '2. **5 มิติของการทำ Progressive Overload (ไม่ต้องเพิ่มแต่น้ำหนักเสมอไป):**\n' +
+      '   - **เพิ่มจำนวนครั้ง (Reps):** จากเดิมทำได้ 8 ครั้ง พัฒนาจนแตะ 12 ครั้งในน้ำหนักเดิม\n' +
+      '   - **เพิ่มจำนวนเซ็ต (Sets):** จากเดิม 3 เซ็ต เพิ่มเป็น 4 เซ็ต\n' +
+      '   - **เพิ่มเวลาตึงตัวของกล้ามเนื้อ (TUT):** ผ่อนจังหวะลงช้าๆ 3–4 วินาที (Eccentric control)\n' +
+      '   - **ลดเวลาพักระหว่างเซ็ต:** จากเดิมพัก 90 วินาที ลดเหลือ 60 วินาทีในน้ำหนักเดิม\n' +
+      '   - **พัฒนาฟอร์ม (Full ROM):** ลงให้ลึกขึ้น คุมกล้ามเนื้อได้นิ่งขึ้น\n\n' +
+      '💡 **เกณฑ์ RIR (Reps in Reserve):** ในเซ็ตปกติควรเหลือแรงสำรองไว้ 1–2 ครั้งก่อนหมดแรง (RIR 1–2 หรือ RPE 8–9) ไม่จำเป็นต้องยกจนหมดแรงทุกเซ็ตเพื่อป้องกันระบบประสาทล้าครับ'
+  },
+  {
+    category: 'โปรแกรม Push Pull Legs',
+    intent: 'push_pull_legs_split',
+    regex: /(push pull legs|ppl|พุช พูล เลก|พุชพูลเลก|ดัน ดึง ขา|สปลิต ppl)/i,
+    response: '🏋️‍♂️ **โครงสร้างโปรแกรม Push Pull Legs (PPL Split - สปลิตยอดนิยมระดับโลก):**\n\n' +
+      'หลักการของ PPL คือการจัดกลุ่มกล้ามเนื้อที่ทำงานสอดประสานกันไว้ในวันเดียวกัน เพื่อให้กล้ามเนื้อแต่ละส่วนได้พักฟื้นอย่างน้อย 48–72 ชั่วโมง:\n\n' +
+      '• **วัน Push (กล้ามเนื้อกลุ่มผลัก/ดัน):** อก, ไหล่ด้านหน้า/ด้านข้าง, หลังแขน (Triceps)\n' +
+      '  - ท่าหลัก: Bench Press / Dumbbell Press, Overhead Shoulder Press, Incline Dumbbell Press, Lateral Raise, Tricep Pushdown (3–4 เซ็ต, 8–12 ครั้ง)\n\n' +
+      '• **วัน Pull (กล้ามเนื้อกลุ่มดึง):** ปีกและหลังทั้งหมด, ไหล่ด้านหลัง, หน้าแขน (Biceps)\n' +
+      '  - ท่าหลัก: Lat Pulldown / Pull-up, Barbell/Dumbbell Row, Face Pull, Seated Cable Row, Bicep Curl (3–4 เซ็ต, 8–12 ครั้ง)\n\n' +
+      '• **วัน Legs (ช่วงล่างและแกนกลาง):** ต้นขาด้านหน้า (Quads), ต้นขาด้านหลัง (Hamstrings), ก้น (Glutes), น่อง (Calves), ท้อง (Abs)\n' +
+      '  - ท่าหลัก: Squat, Romanian Deadlift, Bulgarian Split Squat, Leg Press, Calf Raise, Plank (3–4 เซ็ต, 8–15 ครั้ง)\n\n' +
+      '🎯 **การจัดตาราง:**\n' +
+      '- **3 วัน/สัปดาห์ (ยอดเยี่ยมสำหรับคนทำงาน):** จันทร์ (Push) - พุธ (Pull) - ศุกร์ (Legs) สลับวันพัก\n' +
+      '- **6 วัน/สัปดาห์ (ระดับแอดวานซ์):** Push - Pull - Legs - พัก 1 วัน - Push - Pull - Legs'
+  },
+  {
+    category: 'โปรแกรม Upper Lower',
+    intent: 'upper_lower_split',
+    regex: /(upper lower|อัปเปอร์ โลเวอร์|บน ล่าง|ตารางบนล่าง|บน-ล่าง|สปลิตบนล่าง)/i,
+    response: '⚡ **โปรแกรม Upper / Lower Split (สมดุลที่สุดสำหรับตาราง 4 วันต่อสัปดาห์):**\n\n' +
+      'การแบ่งสปลิตบน-ล่างช่วยให้กล้ามเนื้อแต่ละมัดได้รับการกระตุ้น 2 ครั้งต่อสัปดาห์ (Optimal Frequency) สอดคล้องกับอัตราการสังเคราะห์โปรตีน:\n\n' +
+      '📅 **ตารางแนะนำ 4 วัน:**\n' +
+      '• **จันทร์ (Upper A - เน้นแรง):** Bench Press, Barbell Row, Shoulder Press, Lat Pulldown, Arm Supersets (3–4 เซ็ต, 6–8 ครั้ง)\n' +
+      '• **อังคาร (Lower A - เน้นแรง):** Squat, Romanian Deadlift, Leg Press, Calf Raise, Plank (3–4 เซ็ต, 6–8 ครั้ง)\n' +
+      '• **พุธ:** วันพักผ่อนและฟื้นฟู (Active Recovery)\n' +
+      '• **พฤหัสบดี (Upper B - เน้นความกระชับ):** Incline Dumbbell Press, Seated Row, Lateral Raise, Face Pull, Bicep & Tricep (3 เซ็ต, 10–12 ครั้ง)\n' +
+      '• **ศุกร์ (Lower B - เน้นความกระชับ):** Bulgarian Split Squat, Glute Bridge, Leg Extension, Hamstring Curl, Core (3 เซ็ต, 10–12 ครั้ง)\n' +
+      '• **เสาร์-อาทิตย์:** พักผ่อนเต็มที่หรือเดินเบาๆ ครับ'
+  },
+  {
+    category: 'โปรแกรม Full Body',
+    intent: 'full_body_split',
+    regex: /(full body|ฟูลบอดี้|เล่นทั่วตัว|ฝึกทั้งตัว|ทั้งร่างกาย|ฟูลบอดี)/i,
+    response: '🌟 **โปรแกรม Full Body (คุ้มค่าเวลาที่สุดสำหรับคนมีเวลา 2–3 วัน):**\n\n' +
+      'Full Body ช่วยให้กล้ามเนื้อทั่วร่างกายได้รับการกระตุ้นบ่อยครั้ง (High Frequency) เผาผลาญแคลอรี่สูงมากในแต่ละเซสชัน:\n\n' +
+      '🎯 **โครงสร้างท่าฝึก 5 ทิศทางหลักใน 1 วัน:**\n' +
+      '1. **Knee Dominant (หน้าขา):** Squat หรือ Goblet Squat (3 เซ็ต, 8–10 ครั้ง)\n' +
+      '2. **Hip Dominant (หลังขาและก้น):** Romanian Deadlift หรือ Glute Bridge (3 เซ็ต, 8–10 ครั้ง)\n' +
+      '3. **Push (อกและไหล่):** Push-up, Dumbbell Bench Press หรือ Overhead Press (3 เซ็ต, 8–12 ครั้ง)\n' +
+      '4. **Pull (หลัง):** Dumbbell Row หรือ Lat Pulldown (3 เซ็ต, 8–12 ครั้ง)\n' +
+      '5. **Core Stability (แกนกลาง):** Plank หรือ Bird Dog (3 เซ็ต, 30–45 วินาที)\n\n' +
+      '⏱️ สัปดาห์ละ 3 วัน (เช่น จันทร์ - พุธ - ศุกร์) ใช้เวลาเพียง 40–50 นาทีต่อครั้งครับ'
+  },
+  {
+    category: 'วอร์มอัพและคูลดาวน์',
+    intent: 'warmup_cooldown',
+    regex: /(วอร์มอัพ|คูลดาวน์|warm.?up|cool.?down|อบอุ่นร่างกาย|ยืดเหยียดก่อน|ยืดหลังออก|ยืดกล้ามเนื้อกี่นาที|ยืดก่อนหรือหลัง)/i,
+    response: '🧘‍♂️ **หลักการ Warm-up และ Cool-down ที่ถูกต้องตามหลักวิทยาศาสตร์การกีฬา:**\n\n' +
+      '1. **ก่อนออกกำลังกาย (Warm-up 5–10 นาที) -> ต้องเป็น “Dynamic Stretching” (ยืดแบบเคลื่อนไหว):**\n' +
+      '   - เพื่อเพิ่มอุณหภูมิแกนกลางร่างกาย หล่อลื่นข้อต่อ และเตรียมระบบประสาท\n' +
+      '   - ท่าที่แนะนำ: Arm Circles, Torso Twist, Cat-Cow, Leg Swings, Hip Openers, เดินเร็วหรือ March in place\n' +
+      '   - ⚠️ **ข้อควรระวัง:** ห้ามทำ Static Stretching (ยืดค้างนานๆ) ก่อนยกเวท เพราะจะลดพละกำลังของกล้ามเนื้อชั่วคราว\n\n' +
+      '2. **หลังออกกำลังกาย (Cool-down 5–10 นาที) -> ต้องเป็น “Static Stretching” (ยืดค้างไว้):**\n' +
+      '   - เพื่อปรับลดอัตราการเต้นของหัวใจ คลายความตึงตัว และคืนความยาวดั้งเดิมให้เส้นใยกล้ามเนื้อ\n' +
+      '   - ท่าที่แนะนำ: Chest Doorway Stretch, Hamstring Stretch, Quad Stretch, Child’s Pose\n' +
+      '   - ค้างไว้ท่าละ 20–30 วินาที หายใจเข้าออกลึกๆ ช้าๆ อย่างผ่อนคลายครับ'
+  },
+  {
+    category: 'วันพักและการฟื้นตัว',
+    intent: 'rest_recovery',
+    regex: /(วันพัก|พักกี่วัน|rest day|ฟื้นฟูกล้ามเนื้อ|พักฟื้น|overtraining|ซ่อมแซมกล้ามเนื้อ|ไม่พักได้ไหม|ออกกำลังกายทุกวันดีไหม)/i,
+    response: '💤 **วิทยาศาสตร์ของวันพักและการฟื้นตัว (Recovery Science):**\n\n' +
+      '“กล้ามเนื้อไม่ได้เติบโตหรือแข็งแรงขึ้นในยิม แต่เติบโตตอนที่คุณนอนหลับและพักผ่อน!”\n\n' +
+      '1. **ทำไมถึงต้องมีวันพัก:**\n' +
+      '   - การฝึกสร้างรอยฉีกขาดระดับไมโคร (Micro-tears) กล้ามเนื้อต้องการเวลา 24–48 ชั่วโมงในการซ่อมแซมและสร้างเส้นใยใหม่\n' +
+      '   - ป้องกัน Central Nervous System (CNS) Fatigue ซึ่งหากระบบประสาทล้า จะทำให้แรงตก เสี่ยงบาดเจ็บ และฮอร์โมนความเครียดสูงขึ้น\n\n' +
+      '2. **ควรมีวันพักกี่วัน:**\n' +
+      '   - มือใหม่ถึงระดับกลาง: พัก 2–4 วันต่อสัปดาห์\n' +
+      '   - ระดับกลางถึงสูง: พักอย่างน้อย 1–2 วันต่อสัปดาห์\n\n' +
+      '3. **Active Recovery:** ในวันพักให้เดินเล่นในสวน 20–30 นาที ปั่นจักรยานเบาๆ หรือยืดเหยียดโยคะ เพื่อช่วยให้เลือดไหลเวียนนำสารอาหารไปซ่อมแซมกล้ามเนื้อได้เร็วขึ้นครับ'
+  },
+  {
+    category: 'การจัดเวลาการออกกำลังกาย',
+    intent: 'time_management',
+    regex: /(มีเวลา 15 นาที|มีเวลา 20 นาที|มีเวลา 30 นาที|ออกกำลังกายตอนเช้า|ออกกำลังกายตอนเย็น|ช่วงเวลาไหนดี|จัดเวลาออกกำลังกาย|ควรออกกำลังกายเวลาไหน|ไม่มีเวลาออกกำลัง)/i,
+    response: '⏰ **กลยุทธ์การจัดเวลาออกกำลังกาย (Consistency Beats Timing):**\n\n' +
+      '1. **ออกกำลังกายตอนเช้า vs ตอนเย็น แบบไหนดีกว่ากัน?**\n' +
+      '   - **ตอนเช้า:** เหมาะกับคนที่งานยุ่งตอนเย็น ช่วยกระตุ้นระบบเผาผลาญและสดชื่นตลอดวัน โอกาสโดนแทรกคิวน้อย\n' +
+      '   - **ตอนเย็น (16:00–19:00 น.):** อุณหภูมิร่างกายและพละกำลังของระบบประสาท-กล้ามเนื้ออยู่ในจุดสูงสุด ยกเวทได้หนักที่สุด\n' +
+      '   - 👉 เวลาที่ดีที่สุดคือเวลาที่คุณทำได้ **สม่ำเสมอที่สุด** ครับ\n\n' +
+      '2. **เทคนิคออกกำลังกายเมื่อมีเวลาน้อย (15–30 นาที):**\n' +
+      '   - **Supersets:** สลับเล่น 2 ท่าที่ไม่ใช้กล้ามเนื้อมัดเดียวกันโดยไม่พัก เช่น อกสลับหลัง หรือ ขาสลับหน้าท้อง ประหยัดเวลาได้ 50%\n' +
+      '   - **Circuit:** ทำ 4–5 ท่าต่อเนื่อง พักหลังจบรอบ ได้ทั้งกล้ามเนื้อและคาร์ดิโอเบิร์นในเวลาสั้นครับ'
+  },
+  {
+    category: 'ลดน้ำหนักและลดไขมัน',
+    intent: 'fat_loss',
+    regex: /(ลดน้ำหนัก|ลดไขมัน|เบิร์นไขมัน|สลายไขมัน|เวทกับคาร์ดิโอ.*ลดไขมัน|คุมอาหารลดไขมัน|ลดพุง|ลดเหนียง)/i,
+    response: '🔥 **แผนลดไขมันที่ยั่งยืนและรักษามวลกล้ามเนื้อ (Fat Loss Blueprint):**\n\n' +
+      '1. **Caloric Deficit อย่างพอเหมาะ (70% ของผลลัพธ์):**\n' +
+      '   - ควบคุมพลังงานให้ติดลบ 300–500 kcal ต่อวันจากค่า TDEE ห้ามอดอาหารต่ำกว่า BMR เพราะจะทำให้ระบบเผาผลาญพังและกล้ามเนื้อสลาย\n' +
+      '   - อัตราการลดที่ปลอดภัยคือ 0.5–1 กิโลกรัมต่อสัปดาห์\n\n' +
+      '2. **เวทเทรนนิ่งเพื่อรักษากล้ามเนื้อ (รักษา BMR):**\n' +
+      '   - เล่นเวท 3–4 วันต่อสัปดาห์ เพื่อส่งสัญญาณบอกร่างกายให้รักษากล้ามเนื้อไว้ ใช้ Reps 10–15 ครั้ง พัก 45–60 วินาที\n\n' +
+      '3. **คาร์ดิโอ Zone 2 เผาผลาญไขมันสะสม:**\n' +
+      '   - ทำคาร์ดิโอระดับเบาถึงปานกลาง (Zone 2 - พูดคุยเป็นประโยคได้) สัปดาห์ละ 120–150 นาที ร่างกายจะดึงไขมันสะสมมาใช้เป็นพลังงานหลักโดยตรงครับ'
+  },
+  {
+    category: 'เพิ่มกล้ามเนื้อ',
+    intent: 'muscle_hypertrophy',
+    regex: /(เพิ่มกล้าม|สร้างกล้าม|กล้ามโต|เพิ่มขนาดกล้าม|hypertrophy|ยกเวทสร้างกล้าม|อยากตัวใหญ่)/i,
+    response: '💪 **กลยุทธ์การสร้างกล้ามเนื้อ (Hypertrophy Masterplan):**\n\n' +
+      '1. **Mechanical Tension (แรงตึงเชิงกลในกล้ามเนื้อ):**\n' +
+      '   - เลือกน้ำหนักที่ทำได้ 8–12 ครั้งต่อเซ็ต และเหลือแรงสำรองเพียง 1–2 ครั้งในเซ็ตสุดท้าย\n' +
+      '   - โฟกัสช่วงต้านน้ำหนักลง (Eccentric Phase) ช้าๆ 2–3 วินาที เพื่อสร้างการกระตุ้นเส้นใยกล้ามเนื้อสูงสุด\n\n' +
+      '2. **Volume การฝึกที่เหมาะสม:**\n' +
+      '   - สะสม 10–20 เซ็ตคุณภาพต่อกลุ่มกล้ามเนื้อต่อสัปดาห์ แบ่งเป็น 2 ครั้งต่อสัปดาห์ต่อกลุ่มกล้ามเนื้อ\n\n' +
+      '3. **โภชนาการสำหรับสร้างเนื้อเยื่อ:**\n' +
+      '   - ทานโปรตีน 1.6–2.2 กรัมต่อน้ำหนักตัว 1 กิโลกรัม กระจายมื้อละ 25–40 กรัม ทุก 3–4 ชั่วโมง\n' +
+      '   - Caloric Surplus เล็กน้อย 200–300 kcal เพื่อเป็นพลังงานในการสังเคราะห์กล้ามเนื้อใหม่ครับ'
+  },
+  {
+    category: 'ออกกำลังกายที่บ้าน',
+    intent: 'home_workout',
+    regex: /(ออกกำลังกายที่บ้าน|เล่นที่บ้าน|ในห้องนอน|ในห้องนั่งเล่น|พื้นที่จำกัด|อยู่คอนโด|อุปกรณ์ที่มีในบ้าน|ทำที่บ้าน)/i,
+    response: '🏡 **โปรแกรมออกกำลังกายที่บ้าน (Home Workout - ปลอดภัย เสียงเบา เหมาะกับคอนโด):**\n\n' +
+      'ไม่ต้องใช้อุปกรณ์ชิ้นใหญ่ ก็สามารถบริหารกล้ามเนื้อได้ครบทุกส่วนในพื้นที่ 2x2 เมตรครับ:\n\n' +
+      '• **ท่าที่ 1: Chair Squat / Squat (ต้นขาและก้น):** 3 เซ็ต, 12–15 ครั้ง\n' +
+      '• **ท่าที่ 2: Wall Push-up / Knee Push-up (อก ไหล่ หลังแขน):** 3 เซ็ต, 10–12 ครั้ง\n' +
+      '• **ท่าที่ 3: Glute Bridge (สะโพกและหลังส่วนล่าง):** 3 เซ็ต, 15 ครั้ง\n' +
+      '• **ท่าที่ 4: Bird Dog (แกนกลางลำตัวและการทรงตัว):** 3 เซ็ต, ข้างละ 10 ครั้ง\n' +
+      '• **ท่าที่ 5: March In Place (คาร์ดิโอถนอมเข่า ไร้เสียงกระทบพื้น):** 3 เซ็ต, เซ็ตละ 45–60 วินาที\n\n' +
+      '💡 ทำเป็นวงรอบ พักระหว่างท่า 30 วินาที จบรอบพัก 90 วินาที ทำซ้ำ 3 รอบ ใช้เวลาเพียง 20–25 นาทีครับ'
+  },
+  {
+    category: 'ไม่ใช้อุปกรณ์',
+    intent: 'bodyweight_no_equipment',
+    regex: /(ไม่ใช้อุปกรณ์|ไม่มีอุปกรณ์|บอดี้เวท|bodyweight|ใช้น้ำหนักตัว|คาลิสเทนิกส์|calisthenics)/i,
+    response: '🤸 **การออกกำลังกายแบบไม่ใช้อุปกรณ์ (Bodyweight Mastery):**\n\n' +
+      'การฝึกด้วยน้ำหนักตัวสามารถปรับความหนักได้หลากหลายวิธีโดยไม่ต้องใช้อุปกรณ์:\n\n' +
+      '1. **ปรับองศาและจุดหมุน (Leverage):**\n' +
+      '   - วิดพื้น: ผนัง (เบาสุด) -> เก้าอี้ -> วิดพื้นกับพื้น -> ยกเท้าวางบนเก้าอี้ (หนักสุด)\n' +
+      '   - สควอต: เก้าอี้สควอต -> สควอตปกติ -> บูลกาเรียนสปลิตสควอต (ขาทีละข้าง)\n\n' +
+      '2. **ปรับจังหวะ Tempo และ Pause:**\n' +
+      '   - ลดตัวลงช้าๆ 3–4 วินาที และหยุดค้างที่จุดต่ำสุด 2 วินาที จะเพิ่มความท้าทายให้กล้ามเนื้อทำงานหนักขึ้น 2 เท่าทันทีครับ'
+  },
+  {
+    category: 'โปรแกรมสำหรับมือใหม่',
+    intent: 'beginner_program',
+    regex: /(มือใหม่เริ่ม|เพิ่งเริ่มออกกำลัง|ไม่เคยเล่นเวท|เริ่มต้นยังไง|หัดเล่นเวท|beginner workout|คำแนะนำคนเพิ่งเริ่ม)/i,
+    response: '🌱 **คู่มือเริ่มต้นสำหรับมือใหม่ (Beginner Roadmap สู่ความฟิตที่ยั่งยืน):**\n\n' +
+      '1. **เป้าหมายเดือนแรก:** โฟกัสที่ “การสร้างวินัยและความสม่ำเสมอ” ไม่ใช่ความหนักหน่วง\n' +
+      '2. **ความถี่ที่เหมาะสม:** เริ่มต้นที่ 3 วันต่อสัปดาห์ (วันเว้นวัน เช่น จันทร์-พุธ-ศุกร์) ครั้งละ 25–35 นาที\n' +
+      '3. **เลือกท่าพื้นฐาน Compound:** Squat, Wall Push-up, Glute Bridge, Plank, March in Place\n' +
+      '4. **จำนวนเซ็ตและครั้ง:** 2–3 เซ็ตต่อท่า, 10–12 ครั้ง ไม่ต้องยกจนหมดแรง ให้เหลือแรงสำรองไว้เสมอ\n' +
+      '5. **อาการปวดเมื่อย (DOMS):** ปวดตึงกล้ามเนื้อ 24–48 ชม. แรกเป็นเรื่องปกติ ดื่มน้ำมากๆ นอนหลับให้พอ แล้วค่อยกลับมาซ้อมต่อครับ'
+  },
+  {
+    category: 'เพิ่มความแข็งแรง',
+    intent: 'strength_gain',
+    regex: /(เพิ่มความแข็งแรง|strength training|ยกหนักขึ้น|อยากแข็งแรง|เพิ่มแรงยก)/i,
+    response: '🏋️ **โปรแกรมเพิ่มความแข็งแรง (Strength Mastery):**\n\n' +
+      '1. **เน้นท่า Compound Lifts หลัก:** Squat, Bench Press, Deadlift, Overhead Press\n' +
+      '2. **เซ็ตและครั้ง:** 3–5 เซ็ต, 3–6 ครั้ง (ใช้น้ำหนัก 80–85% ของ 1RM)\n' +
+      '3. **เวลาพักระหว่างเซ็ต:** พัก 2–3 นาที เพื่อให้ระบบ ATP-CP และระบบประสาทฟื้นตัวเต็มที่'
+  },
+  {
+    category: 'คาร์ดิโอ',
+    intent: 'cardio_training',
+    regex: /(คาร์ดิโอ|cardio|วิ่งโซน 2|zone 2|วิ่งได้นานขึ้น|เพิ่มความอึด)/i,
+    response: '🏃 **การฝึกคาร์ดิโอและระบบหัวใจ (Cardiovascular Health):**\n\n' +
+      '• **Zone 2 Cardio (60–70% Max HR):** วิ่งหรือปั่นจักรยานในระดับที่พูดคุยเป็นประโยคได้โดยไม่หอบ 120–150 นาที/สัปดาห์ ช่วยเพิ่ม Mitochondria เผาผลาญไขมันดีที่สุด\n' +
+      '• **สลับกับเวทเทรนนิ่ง:** แนะนำเล่นเวทก่อนแล้วค่อยคาร์ดิโอ เพื่อให้มีพลังงานไกลโคเจนเต็มที่ในการยกเวทครับ'
+  },
+  {
+    category: 'HIIT',
+    intent: 'hiit_training',
+    regex: /(hiit|ฮิต|interval training|afterburn|epoc|คาร์ดิโอสั้นๆ)/i,
+    response: '⚡ **การฝึกแบบ HIIT (High-Intensity Interval Training):**\n\n' +
+      '• **สูตร Work:Rest:** ทำเต็มที่ 20–30 วินาที (HR 85–90%) สลับพัก 30–40 วินาที จำนวน 6–8 รอบ รวม 15–20 นาที\n' +
+      '• **Afterburn Effect (EPOC):** ร่างกายจะเผาผลาญพลังงานต่อเนื่องหลังซ้อมเสร็จนานถึง 12–24 ชั่วโมง ทำเพียง 1–2 ครั้ง/สัปดาห์ก็เพียงพอครับ'
+  },
+  {
+    category: 'ออกกำลังกายในยิม',
+    intent: 'gym_workout',
+    regex: /(เข้ายิม|เล่นที่ฟิตเนส|เครื่องเล่นในยิม|machine ในยิม|เข้าฟิตเนสครั้งแรก)/i,
+    response: '🏢 **แนวทางการเข้ายิมอย่างมั่นใจ (Gym Confidence Guide):**\n\n' +
+      '1. เริ่มจาก Resistance Machines (เครื่องแมชชีน) เพื่อเรียนรู้วิถีการเคลื่อนไหวที่ปลอดภัย\n' +
+      '2. ค่อยๆ ขยับมาใช้ Free Weights (Dumbbells/Barbells) เพื่อพัฒนาการทรงตัวและกล้ามเนื้อมัดเล็ก\n' +
+      '3. ปรับระดับเบาะนั่งให้ตรงกับแนวจุดหมุนของข้อต่อ และเช็ดทำความสะอาดอุปกรณ์ทุกครั้งหลังใช้งานครับ'
+  },
+  {
+    category: 'เทคนิคการฝึกขั้นสูง (Drop set & Intensity Techniques)',
+    intent: 'intensity_drop_set',
+    regex: /(ดร็อปเซ็ต|ดรอปเซ็ต|drop\s*set|super\s*set|ซูเปอร์เซ็ต|rest\s*pause|พีระมิดเซ็ต|ไจแอนท์เซ็ต)/i,
+    response: '🔥 **เทคนิคการฝึกแบบ Drop Set (ดร็อปเซ็ต):**\n\n' +
+      '• **Drop Set คืออะไร:** คือเทคนิคการเพิ่มความเข้มข้น โดยยกน้ำหนักจนหมดแรง (Failure) ในเซ็ตปกติ จากนั้น **ลดน้ำหนักลงทันทีประมาณ 20-30% แล้วยกต่อโดยไม่พัก** จนหมดแรงอีกรอบ (สามารถดร็อปได้ 1-3 จังหวะ)\n\n' +
+      '• **จุดประสงค์:** สร้างความล้าของเส้นใยกล้ามเนื้อในระดับสูงสุด (Metabolic Stress) กระตุ้นการขยายขนาดกล้ามเนื้อ (Hypertrophy) โดยประหยัดเวลา\n\n' +
+      '• **คำแนะนำ:**\n' +
+      '  - **มือใหม่เพิ่งเริ่มฝึก:** ยัง**ไม่แนะนำ**ให้ทำครับ เพราะร่างกายต้องการการปรับตัวด้านฟอร์มและระบบประสาท ควรโฟกัสที่การยกแบบมาตรฐาน (Straight Sets) และคุมฟอร์มให้เป๊ะก่อน\n' +
+      '  - **ผู้ฝึกระดับกลางขึ้นไป:** แนะนำให้ทำเฉพาะ **เซ็ตสุดท้ายของท่าสุดท้าย** สัปดาห์ละ 1-2 ท่า เพื่อไม่ให้ระบบประสาทส่วนกลางล้าสะสม (Overtraining) ครับ'
+  },
+  {
+    category: 'การเปรียบเทียบท่าฝึกเฉพาะทาง (RDL vs Conventional Deadlift)',
+    intent: 'deadlift_rdl_comparison',
+    regex: /(rdl|romanian\s*deadlift|โรมเนียน|เดดลิฟต์.*ต่าง|เดดลิฟต์.*สติฟ|sldl|stiff.*leg)/i,
+    response: '🏋️‍♂️ **ความแตกต่างระหว่าง Romanian Deadlift (RDL) กับ Conventional Deadlift:**\n\n' +
+      '1. **Romanian Deadlift (RDL):**\n' +
+      '   • **การเคลื่อนไหว:** เริ่มต้นจากท่ายืนตรง งอเข่าเล็กน้อยคงที่ (~15-20 องศา) แล้วพับสะโพกไปด้านหลัง (Hip Hinge) ให้บาร์เบลล์หรือดัมเบลเลื่อนลงระดับใต้เข่า/หน้าแข้ง โดย**ไม่วางลงพื้น**\n' +
+      '   • **กล้ามเนื้อเป้าหมาย:** โฟกัส **ต้นขาด้านหลัง (Hamstrings)** และ **ก้น (Glutes)** เป็นหลัก\n\n' +
+      '2. **Conventional Deadlift (เดดลิฟต์มาตรฐาน):**\n' +
+      '   • **การเคลื่อนไหว:** เริ่มยกจากพื้นทุกครั้ง โดยมีการย่อเข่าลงคล้ายการทำ Squat ผสม Hinge\n' +
+      '   • **กล้ามเนื้อเป้าหมาย:** ใช้พลังทั้งตัว (Full-body Power) รวมถึงต้นขาด้านหน้า (Quads) และแผ่นหลังส่วนล่าง\n\n' +
+      '💡 **ทริค:** ถ้าต้องการปั้นก้นและยืดหลังขาให้กระชับ ให้เลือกฝึก RDL ครับ!'
+  },
+  {
+    category: 'ท่าสควอทเฉพาะทางและการฝึกแบบพิงกำแพง (Pistol Squat & Wall Sit)',
+    intent: 'advanced_squat_variations',
+    regex: /(pistol\s*squat|พิสทอล|สควอทขาเดียว|สควอตขาเดียว|sissy\s*squat|ซิสซี่|wall\s*sit|วอลซิท|พิงกำแพง.*(ขา|เกร็ง|นั่ง)|นั่งพิงกำแพง|นั่งพิงผนัง)/i,
+    response: '🦵 **ท่าฝึกช่วงล่างเฉพาะทาง (Pistol Squat & Wall Sit):**\n\n' +
+      '1. **Pistol Squat (สควอทขาเดียว):**\n' +
+      '   • เป็นท่าบอดี้เวทขั้นสูงที่ฝึกพลังกล้ามเนื้อต้นขา ก้น และการทรงตัวของข้อเท้าอย่างมาก\n' +
+      '   • **วิธีฝึกเตรียมตัวสำหรับมือใหม่:**\n' +
+      '     1) เริ่มจาก **Chair Squat ขาเดียว:** นั่งลงบนเก้าอี้ด้วยขาข้างเดียว แล้วดันตัวยืนขึ้น\n' +
+      '     2) ใช้มือจับเสาหรือขอบโต๊ะช่วยพยุงน้ำหนักขณะย่อตัวลง\n' +
+      '     3) ฝึกความยืดหยุ่นของข้อเท้าและสะโพกเป็นประจำ\n\n' +
+      '2. **Wall Sit (นั่งพิงกำแพง):**\n' +
+      '   • คือท่านั่งพิงผนังทำมุมเข่า 90 องศา เกร็งค้างไว้ (Isometric Exercise)\n' +
+      '   • **ประโยชน์:** เสริมความทนทานของต้นขาด้านหน้า (Quads) โดย**ไม่มีแรงกระแทกหรือแรงหมุนที่ข้อเข่า** ปลอดภัยสูงมากสำหรับคนที่มีปัญหาเรื่องเข่าครับ'
+  },
+  
+  {
+    category: 'การฝึกขณะทำ IF หรือท้องว่าง (Fasted Training)',
+    intent: 'fasted_training_if',
+    regex: /(if.*(เวท|ยกเวท|ออกกำลัง)|ทำ\s*if.*(เวท|กล้าม)|ท้องว่าง.*(ยกเวท|เล่นเวท|สลายกล้าม)|fasted\s*training|fasted\s*cardio|กล้ามจะสลายไหม)/i,
+    response: '⚡ **ออกกำลังกายหรือยกเวทตอนทำ IF (ท้องว่าง) กล้ามจะสลายไหม?**\n\n' +
+      '**คำตอบสั้นๆ:** กล้ามเนื้อ**ไม่สลายง่ายขนาดนั้น**ครับ หากจัดการสารอาหารรวมต่อวันได้อย่างถูกต้อง!\n\n' +
+      '• **ข้อเท็จจริงทางวิทยาศาสตร์:**\n' +
+      '  1. **ฮอร์โมนช่วยปกป้องกล้ามเนื้อ:** ขณะอดอาหาร ระดับโกรทฮอร์โมน (HGH) จะสูงขึ้น ซึ่งมีส่วนช่วยลดการสลายตัวของโปรตีนในกล้ามเนื้อ\n' +
+      '  2. **กล้ามเนื้อจะสลายเมื่อ:** คุณทานโปรตีนรวมทั้งวันไม่ถึง หรือขาดดุลพลังงาน (Calorie Deficit) มากเกินไปเป็นเวลานาน\n\n' +
+      '• **คำแนะนำการฝึกระหว่างทำ IF:**\n' +
+      '  - **คาร์ดิโอเบา-ปานกลาง (LISS):** ทำตอนท้องว่างได้ดีมาก ช่วยดึงไขมันมาใช้\n' +
+      '  - **ยกเวทหนัก:** หากรู้สึกล้า ไม่มีแรง แนะนำให้ยกเวทในช่วงท้ายของเวลาอดอาหาร แล้วทานมื้อแรกหลังฝึกเสร็จทันที โดยเน้น **โปรตีน 25-35 กรัม + คาร์โบไฮเดรตเชิงซ้อน** เพื่อฟื้นฟูและสร้างกล้ามเนื้อเต็มที่ครับ'
+  },
+  {
+    category: 'การประยุกต์ใช้อุปกรณ์ในบ้าน (ขวดน้ำแทนดัมเบล)',
+    intent: 'household_equipment_substitute',
+    regex: /(ขวดน้ำ.*แทน|ไม่มีดัมเบล.*ใช้.*แทน|ใช้อะไรแทนดัมเบล|อุปกรณ์ในบ้าน.*ออกกำลัง)/i,
+    response: '🧴 **ใช้ขวดน้ำ 1.5 ลิตรแทนดัมเบลได้ไหม และได้กล้ามเนื้อเท่ากันไหม?**\n\n' +
+      '**คำตอบ:** **ใช้แทนได้ดีเยี่ยมสำหรับมือใหม่และกล้ามเนื้อมัดเล็กครับ!** 💧💪\n\n' +
+      '• **น้ำหนักจริง:** น้ำเปล่า 1.5 ลิตร จะมีน้ำหนักประมาณ **1.5 กิโลกรัม**\n' +
+      '• **ท่าที่เหมาะมาก:**\n' +
+      '  - Lateral Raise (ยกกางแขนบริหารไหล่ด้านข้าง)\n' +
+      '  - Bicep Curl (ยกบริหารหน้าแขน)\n' +
+      '  - Overhead Tricep Extension (บริหารหลังแขน)\n\n' +
+      '• **ข้อจำกัด:** สำหรับกล้ามเนื้อมัดใหญ่ เช่น อก หลัง ขา น้ำหนัก 1.5 กก. อาจเบาเกินไป (ไม่พอสร้าง Progressive Overload ในระยะยาว)\n' +
+      '• **ทริคเพิ่มความหนัก:**\n' +
+      '  1. เพิ่มจำนวนครั้งเป็น 15-20 ครั้ง/เซ็ต และโฟกัสจังหวะผ่อนลงช้าๆ (3 วินาที)\n' +
+      '  2. ใส่ทรายหรือกรวดลงในขวดแทนน้ำ เพื่อเพิ่มน้ำหนักขึ้นเป็น 2.5-3 กิโลกรัม\n' +
+      '  3. ฝึกท่าบอดี้เวทควบคู่ เช่น Push-up หรือ Squat ครับ'
+  }
+];
+
+function matchExerciseTrainingKnowledge(message) {
+  const text = String(message || '').trim();
+  if (!text) return null;
+
+  for (const rule of TRAINING_200K_RULES) {
+    if (rule.regex.test(text)) {
+      return {
+        category: rule.category,
+        intent: rule.intent,
+        isFrom200kDataset: true,
+        expected_response: rule.response,
+      };
+    }
+  }
+
+  // Fallback match using 200k dataset sample triggers
+  for (const [catName, catData] of Object.entries(exerciseTrainingKnowledge.categories || {})) {
+    if (Array.isArray(catData.sampleTriggers)) {
+      for (const trigger of catData.sampleTriggers) {
+        if (text.includes(trigger) || (trigger.length > 10 && text.includes(trigger.slice(0, 15)))) {
+          return {
+            category: catName,
+            intent: catData.intentKey || 'exercise_planning',
+            isFrom200kDataset: true,
+            expected_response: `🏋️‍♂️ **คำแนะนำจาก FitAI สำหรับ${catName}:**\n\n${catData.principles}\n\n• **แนวทางปฏิบัติ:** ${catData.recommendedPrescription || catData.recommendedStructure || 'จัดตารางและปริมาณการฝึกให้เหมาะสมกับเป้าหมาย'}\n\nคุณสามารถสอบถามรายละเอียดเพิ่มเติมเกี่ยวกับเซ็ต จำนวนครั้ง หรือท่าฝึกเฉพาะเจาะจงได้เลยครับ!`,
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function matchCoachingIntent(message = '') {
   const text = String(message || '').trim();
   if (!text) return null;
 
-  const persona = detectPersona(text);
-  const constraint = detectConstraint(text);
-  const foodHack = detectFoodHack(text);
+  // 1. Emergency Red Flags (Highest Priority - 1669 Medical Emergency)
+  const emergency = detectEmergencyRedFlags(text);
+  if (emergency) {
+    return {
+      intent: 'emergency_red_flag',
+      category: 'ความปลอดภัยฉุกเฉิน (1669)',
+      expected_response: emergency.responseMessage,
+      emergency: true,
+      emergencyDetails: emergency
+    };
+  }
+
+  // 2. Normalize Dialect for accurate understanding
+  const dialectInfo = detectAndNormalizeDialect(text);
+  const cleanMsg = dialectInfo.normalizedText;
+
+  // 3. Needs Care (Extreme Diets / Starvation / Diet Pills)
+  const isExtremeDiet = /(ลด.*(10|15|20).*โล.*(สัปดาห์|อาทิตย์)|อดข้าวทุกมื้อ|กิน.*(500|600|700).*แคล|ยาลดความอ้วน|ล้วงคอ|ยาขับปัสสาวะ)/i.test(cleanMsg);
+  if (isExtremeDiet) {
+    return {
+      intent: 'needs_care_extreme_diet',
+      category: 'ความเสี่ยง/ต้องตอบอย่างระวัง',
+      expected_response: 'อธิบายด้วยความอบอุ่น ไม่ตัดสิน ไม่ตอกย้ำความผิด ชี้แจงว่าการลดเร็วเกินไปส่งผลเสียต่อกล้ามเนื้อและระบบเผาผลาญ แนะนำอัตราลดที่ปลอดภัย 0.5-1 กก./สัปดาห์ และไม่ให้อดอาหารต่ำกว่า 800-1000 kcal',
+      needs_care: 1,
+      dialectInfo
+    };
+  }
+
+  // 4. Clarification on broad queries
+  const clarification = detectClarificationNeeded(cleanMsg);
+  if (clarification) {
+    return {
+      intent: 'clarification_needed_' + clarification.key,
+      category: clarification.category,
+      expected_response: clarification.clarificationPrompt,
+      needsClarification: true,
+      clarificationPrompt: clarification.clarificationPrompt,
+      dialectInfo
+    };
+  }
+
+  // 5. Match Persona, Constraint, Food Hack on cleaned message
+  const persona = detectPersona(cleanMsg);
+  const constraint = detectConstraint(cleanMsg);
+  const foodHack = detectFoodHack(cleanMsg);
 
   let matchedIntent = null;
   for (const rule of INTENT_RULES) {
-    if (rule.regex.test(text)) {
+    if (rule.regex.test(cleanMsg)) {
       const info = intentMap.get(rule.intent);
       if (info) {
         matchedIntent = {
@@ -189,6 +650,13 @@ function matchCoachingIntent(message = '') {
   }
 
   // If no INTENT_RULES matched, synthesize from persona / constraint / foodHack
+  if (!matchedIntent) {
+    const training200k = matchExerciseTrainingKnowledge(cleanMsg);
+    if (training200k) {
+      matchedIntent = training200k;
+    }
+  }
+
   if (!matchedIntent) {
     if (foodHack) {
       matchedIntent = {
@@ -219,7 +687,17 @@ function matchCoachingIntent(message = '') {
       ...matchedIntent,
       persona,
       constraint,
-      foodHack
+      foodHack,
+      dialectInfo
+    };
+  }
+
+  if (dialectInfo.hasDialect) {
+    return {
+      intent: 'general_coaching_dialect',
+      category: 'ทั่วไป',
+      expected_response: 'สวัสดีครับ FitAI ยินดีดูแลคุณครับ! 🏋️‍♂️✨ เข้าใจความต้องการของคุณอย่างชัดเจนครับ ไม่ว่าจะพิมพ์ภาษาถิ่นหรือสไตล์ไหนบอกผมได้สบายๆ เลยครับ! วันนี้มีเป้าหมายอยากฟิตส่วนไหน หรืออยากให้ผมช่วยจัดตารางท่าฝึกเฉพาะเรื่องใด บอกรายละเอียดเพิ่มเติมได้เลยนะครับ!',
+      dialectInfo
     };
   }
 
@@ -241,15 +719,79 @@ function getCoachingPrinciplePrompt(intentObj) {
   if (intentObj.foodHack) {
     lines.push(`• เกร็ดอาหารไทย (${intentObj.foodHack.title}): ${intentObj.foodHack.savings || ''} ${(intentObj.foodHack.rules || intentObj.foodHack.items || []).join('; ')}`);
   }
-  lines.push('(คำแนะนำจาก FitAI: ให้อิสระในการตอบ อธิบาย ยกตัวอย่าง ให้เหตุผลที่เป็นธรรมชาติ อบอุ่น และกระชับ ตรงจุด)');
   return lines.join('\n');
 }
 
-// Rich, dynamic fallback generator for coaching queries
-function generateIntentFallback(intentObj, message = '', context = {}) {
-  const profile = context.profile || {};
-  const intent = intentObj?.intent || '';
-  const category = intentObj?.category || '';
+function generateIntentFallback(intentObj, message, context = {}) {
+  if (!intentObj) return 'สวัสดีครับ FitAI ยินดีดูแลคุณครับ! 🏋️‍♂️✨ มีอะไรให้ผมช่วยแนะนำเรื่องการออกกำลังกายหรืออาหารไหมครับ?';
+
+  // 0. Critical Emergency Red Flags (1669 Triage)
+  if (intentObj.emergency) {
+    return intentObj.expected_response;
+  }
+
+  // 0.1 High Risk / Needs Care (Extreme Diets, Starvation, Diet Pills)
+  if (intentObj.needs_care) {
+    return 'ด้วยความห่วงใยจาก FitAI ครับ ❤️\n\n' + intentObj.expected_response;
+  }
+
+  // 0.15 200K Trained Knowledge Match
+  if (intentObj.isFrom200kDataset && intentObj.expected_response) {
+    return intentObj.expected_response;
+  }
+
+  // 0.2 Clarification for Broad Queries
+  if (intentObj.needsClarification) {
+    return intentObj.clarificationPrompt || intentObj.expected_response;
+  }
+
+  // 0.3 FitAI Self-Introduction & 5 Highlight Capabilities
+  if (intentObj.intent === 'app_introduction_capabilities') {
+    return [
+      'สวัสดีครับ! ผมคือ **FitAI Trainer** โค้ชฟิตเนส AI ส่วนตัวของคุณครับ 🏋️‍♂️✨',
+      'ผมได้รับการออกแบบมาเพื่อเป็นผู้ช่วยดูแลสุขภาพ การออกกำลังกาย และโภชนาการแบบครบวงจรในที่เดียว โดยมี **5 ฟังก์ชันเด่น** หลักที่จะช่วยให้คุณฟิตหุ่นและบรรลุเป้าหมายได้อย่างมีประสิทธิภาพ ดังนี้ครับ:',
+      '',
+      '---',
+      '',
+      '### 🌟 5 ฟังก์ชันเด่นของ FitAI Trainer:',
+      '',
+      '1. 🎯 **AI Real-Time Pose Tracking & Form Analysis (ตรวจจับและวิเคราะห์ท่าทางผ่านกล้อง)**',
+      '   • ตรวจจับข้อต่อและมุมร่างกายแบบเรียลไทม์ขณะออกกำลังกายผ่านกล้องเว็บแคม',
+      '   • ระบบนับจำนวนครั้ง (Rep Counter) อัตโนมัติอย่างแม่นยำ พร้อมจับเวลา',
+      '   • ตรวจจับและแจ้งเตือนข้อผิดพลาดของฟอร์มทันที (เช่น ย่อไม่ลึกพอ, หลังงอ, จังหวะเร็วเกินไป) พร้อมคำแนะนำปรับท่าให้ถูกต้องและปลอดภัย ป้องกันการบาดเจ็บ',
+      '   • รองรับโหมด **Unity 3D Interactive Workout** จำลองท่าทางด้วยโมเดล 3D เสมือนจริง',
+      '',
+      '2. 📅 **Personalized Smart Workout Plan (จัดและปรับตารางออกกำลังกายเฉพาะบุคคล)**',
+      '   • ออกแบบโปรแกรมฝึกประจำสัปดาห์ (Full-Body, Upper/Lower, Cardio, Low-Impact ฯลฯ) ที่คำนวณตามสรีระ (BMI, น้ำหนัก, ส่วนสูง), เป้าหมาย และเวลาของคุณ',
+      '   • ปรับเปลี่ยนแผนได้อย่างยืดหยุ่นผ่านการแชท เช่น *"ขอเปลี่ยนท่านี้", "วันนี้ขอเน้นหน้าท้อง", "เจ็บเข่าขอท่า Low-Impact"* หรือปรับเป็นวันพัก (Rest Day) ทันที',
+      '   • มีคลิปวิดีโอสาธิตแต่ละท่าจาก YouTube ในตารางฝึกเพื่อความเข้าใจที่ถูกต้อง',
+      '',
+      '3. 🥗 **AI Food & Nutrition Tracker (บันทึกและวิเคราะห์โภชนาการอัจฉริยะ)**',
+      '   • บันทึกมื้ออาหารในแต่ละวัน คำนวณพลังงาน (Calories) และสารอาหารหลัก (โปรตีน, คาร์โบไฮเดรต, ไขมัน)',
+      '   • คำนวณและเปรียบเทียบกับค่า BMR / TDEE ประจำวันของคุณแบบอัตโนมัติ เพื่อคุมน้ำหนักหรือสร้างกล้ามเนื้อ',
+      '   • มีระบบ Food Camera และ AI วิเคราะห์มื้ออาหาร หรือพิมพ์บอกเพื่อคำนวณแคลอรี่และสารอาหารได้ทันที',
+      '   • ให้คำแนะนำเมนูสุขภาพทางเลือกและเทคนิคการกินคลีนในชีวิตประจำวัน',
+      '',
+      '4. 🎙️ **Voice Coach & Interactive Audio (โค้ชเสียงตอบโต้เสมือนจริง)**',
+      '   • ระบบเสียงพูด AI โค้ช (Voice Coach) โทนเสียง Anime Mentor ชายเสียงทุ้ม สุขุม อบอุ่น และเป็นมืออาชีพ',
+      '   • คอยให้กำลังใจ นับจังหวะ และแนะนำท่าด้วยเสียงแบบเรียลไทม์ขณะกำลังออกกำลังกาย',
+      '   • สามารถเลือกเปิด-ปิดเสียงพูดได้ตามต้องการในหน้า Settings',
+      '',
+      '5. 📈 **Workout Progress & Analytics (ติดตามพัฒนาการและประวัติการฝึก)**',
+      '   • สรุปสถิติการออกกำลังกาย จำนวนแคลอรี่ที่เผาผลาญ และความสม่ำเสมอ (Streak)',
+      '   • บันทึกประวัติและแสดงแนวโน้มพัฒนาการ ให้คุณเห็นความก้าวหน้าของตัวเองได้อย่างชัดเจน',
+      '',
+      '---',
+      '',
+      '💡 **เริ่มต้นใช้งานได้ง่ายๆ:**',
+      '• อยากเริ่มฝึก? พิมพ์ **"เริ่มออกกำลังกายวันนี้"** หรือกดที่เมนู **Workout**',
+      '• อยากเช็กอาหาร? พิมพ์ **"วันนี้กินอกไก่ไป 200 กรัม กี่แคล"** หรือไปที่ **Food Tracker**',
+      '• มีคำถามเรื่องท่าออกกำลังกายหรือการฟิตหุ่น? พิมพ์สอบถามผมได้ตลอดเวลาเลยครับ พร้อมลุยไปด้วยกันครับ! 🔥'
+    ].join('\n');
+  }
+
+  const category = intentObj?.category;
+  const intent = intentObj?.intent;
   const persona = intentObj?.persona;
   const constraint = intentObj?.constraint;
   const foodHack = intentObj?.foodHack;
@@ -296,9 +838,9 @@ function generateIntentFallback(intentObj, message = '', context = {}) {
       return '🏪 **รวมเมนูโปรตีนสูง คุมแคลอรี่ใน 7-Eleven:**\n\n' +
         '1. **อกไก่นุ่ม CP (รสพริกไทยดำ/กระเทียม):** ~80-90 kcal | 🍗 โปรตีน 17-20g\n' +
         '2. **ไข่ต้มสมุนไพร / ยางมะตูม (แพ็ค 2 ฟอง):** ~140-150 kcal | 🥚 โปรตีน 12-14g\n' +
-        '3. **ไข่ตุ๋นคัพ:** ~70-80 kcal | 🍲 โปรตีน 6g (ทานง่าย ย่อยสบาย)\n' +
-        '4. **นมโปรตีนสูง High Protein Milk (ไม่เติมน้ำตาล):** ~170-200 kcal | 🥛 โปรตีน 28-30g\n' +
-        '5. **ถั่วแระญี่ปุ่น (Edamame):** ~120 kcal | 🫛 โปรตีน 9g พร้อมใยอาหารสูง อิ่มนานครับ!';
+        '3. **นมโปรตีนสูง (Meiji / Dutch Mill High Protein):** ~150-170 kcal | 🥛 โปรตีน 25-28g\n' +
+        '4. **สลัดผักอกไก่ (ราดน้ำสลัดงาญี่ปุ่นครึ่งซอง):** ~120 kcal | 🥗 โปรตีน 12g\n' +
+        '5. **กล้วยหอมทอง:** ~100-120 kcal (คาร์โบไฮเดรตเชิงซ้อน เหมาะเป็นพรีเวิร์กเอาต์ก่อนซ้อม 30 นาที)';
     }
   }
 
@@ -328,88 +870,17 @@ function generateIntentFallback(intentObj, message = '', context = {}) {
         '• **คาร์บคุณภาพประหยัด:** ข้าวกล้อง, กล้วยน้ำว้า, ข้าวโอ๊ตแบบต้ม\n' +
         '💡 สามารถทานโปรตีนแตะ 90-110g ได้อย่างสบายในงบเพียง 100-130 บาทต่อวันครับ!';
     }
-    if (persona?.key === 'office_worker' || /มนุษย์เงินเดือน|ออฟฟิศ/i.test(message)) {
-      return '💼 **โปรแกรมฟิตเนสสำหรับมนุษย์เงินเดือน & ออฟฟิศซินโดรม:**\n\n' +
-        '1. **เน้นท่าดึง (Pulling Exercises):** เช่น Dumbbell/Band Row และ Face Pull เพื่อดึงสะบักหลังกลับ แก้อาการไหล่ห่อหลังค่อม\n' +
-        '2. **ยืดกล้ามเนื้อ Hip Flexors & หน้าอก:** คลายสะโพกและหน้าอกที่หดเกร็งจากการนั่งโต๊ะนานหลายชั่วโมง\n' +
-        '3. **ทริคมื้อเที่ยง:** สั่งอาหารตามสั่งแบบผัดน้ำ หรือเลือกเกาเหลาน้ำใส เลี่ยงเครื่องดื่มชาเย็น/กาแฟหวานมันครับ';
-    }
-    if (persona?.key === 'night_owl' || /นอนดึก|กะดึก/i.test(message)) {
-      return '🌙 **คำแนะนำสำหรับคนนอนดึก / เข้ากะดึก:**\n\n' +
-        '1. **เวลาออกกำลังกาย:** ควรฝึกให้เสร็จก่อนเข้านอนอย่างน้อย 3 ชั่วโมง เพื่อให้อุณหภูมิร่างกายและอัตราการเต้นหัวใจกลับสู่ปกติ\n' +
-        '2. **งดคาเฟอีนก่อนนอน 6 ชม.:** หลีกเลี่ยงพรีเวิร์กเอาต์และกาแฟก่อนนอน เพื่อไม่ให้รบกวนคลื่นสมองช่วงหลับลึก\n' +
-        '3. **ห้องนอนต้องมืดสนิท:** ใช้ผ้าม่านกันแสงเพื่อช่วยให้ร่างกายหลั่งเมลาโทนินและ Growth Hormone ซ่อมแซมกล้ามเนื้อได้เต็มที่ครับ';
-    }
-    if (persona?.key === 'student' || /นักศึกษา|เด็กหอ/i.test(message)) {
-      return '🎓 **คำแนะนำฟิตหุ่นฉบับเด็กหอ / นักศึกษา:**\n\n' +
-        '1. **บอดี้เวทในห้องพัก:** Push-up, Squat, Plank และ Glute Bridge ไม่ต้องใช้พื้นที่เยอะและไม่ต้องเดินทาง\n' +
-        '2. **โปรตีนงบประหยัด:** ไข่ต้มเซเว่น, นมถั่วเหลืองไม่ใส่น้ำตาล, ข้าวราดแกงเน้นเนื้อไม่หนัง\n' +
-        '3. **บริหารช่วงสอบ:** ขยับร่างกายวันละ 15-20 นาที ช่วยให้สมองปลอดโปร่งและลดความเครียดจากการอ่านหนังสือครับ';
-    }
-    if (persona?.key === 'runner' || /นักวิ่ง|สายวิ่ง/i.test(message)) {
-      return '🏃 **คำแนะนำสำหรับสายวิ่ง / นักวิ่ง:**\n\n' +
-        '1. **เสริมเวทเทรนนิ่งสัปดาห์ละ 2 ครั้ง:** เน้นท่าขาข้างเดียว (Lunges, Bulgarian Split Squats) เพื่อสร้างสมดุลขาทั้งสองข้างและปกป้องข้อเข่า\n' +
-        '2. **ฝึกแกนกลางลำตัว (Core Strength):** ท่า Plank และ Deadbug ช่วยรักษาฟอร์มการวิ่งให้นิ่งแม้เหนื่อยล้าช่วงท้าย\n' +
-        '3. **โภชนาการ:** ทานคาร์โบไฮเดรตเชิงซ้อนสะสมพลังงาน และอย่าลืมจิบเกลือแร่เมื่อวิ่งระยะไกลครับ';
-    }
   }
 
-  // 4. Training Constraints (Condo quiet, home dumbbell, 30 min, etc.)
-  if (constraint || category === 'training_constraint') {
-    if (constraint?.key === 'condo_quiet' || /คอนโด|เสียงดัง/i.test(message)) {
-      return '🏢 **โปรแกรมออกกำลังกายในคอนโด (Low-Impact ไร้เสียงกระโดด 100%):**\n\n' +
-        '1. **Tempo Bodyweight Squat (3 เซ็ต · 12 ครั้ง):** ลงช้าๆ 3 วินาที เกร็งก้นและต้นขาแน่น ไร้แรงกระแทก\n' +
-        '2. **Standard หรือ Knee Push-up (3 เซ็ต · 10-12 ครั้ง):** บริหารหน้าอกและแขนแบบเงียบสนิท\n' +
-        '3. **Reverse Lunge (3 เซ็ต · ข้างละ 10 ครั้ง):** ก้าวถอยหลัง ปลอดภัยต่อข้อเข่าและไม่มีเสียงตึงตัง\n' +
-        '4. **Glute Bridge & Plank (3 เซ็ต · 30 วินาที):** เสริมสร้างแกนกลางลำตัวและสะโพก\n' +
-        '💡 *เคล็ดลับ:* ใช้เสื่อโยคะหรือแผ่นยางรอง และคุมจังหวะเกร็งกล้ามเนื้อช้าๆ จะช่วยกระตุ้นกล้ามเนื้อได้ยอดเยี่ยมโดยไม่ต้องกระโดดเลยครับ!';
-    }
-    if (constraint?.key === 'home_dumbbell' || /ดัมเบลคู่เดียว/i.test(message)) {
-      return '🏋️ **โปรแกรม Full Body ด้วยดัมเบลคู่เดียวที่บ้าน:**\n\n' +
-        '1. **Goblet Squat (3 เซ็ต · 10-12 ครั้ง):** ถือดัมเบลแนบอก สร้างความแข็งแรงต้นขาและสะโพก\n' +
-        '2. **Dumbbell Floor Press (3 เซ็ต · 10-12 ครั้ง):** นอนราบบนเสื่อ ดันดัมเบลขึ้น พัฒนาหน้าอกและหลังแขน\n' +
-        '3. **Dumbbell Bent-over Row (3 เซ็ต · 10-12 ครั้ง):** โค้งตัวดึงดัมเบลเข้าหาเอว พัฒนากล้ามเนื้อหลังและปีก\n' +
-        '4. **Standing Dumbbell Overhead Press (3 เซ็ต · 8-10 ครั้ง):** ดันดัมเบลขึ้นเหนือศีรษะ เสริมไหล่ให้กว้าง\n' +
-        '5. **Romanian Deadlift (3 เซ็ต · 10-12 ครั้ง):** พับสะโพกบริหารหลังขาและก้น';
-    }
-  }
-
-  // 5. Specific Body Parts
-  if (intent === 'goal_body_part' || /แขน|อก|หลัง|ขา|ไหล่|ท้อง/i.test(message)) {
-    if (/แขน/i.test(message)) {
-      return '💪 **โปรแกรมฝึกกล้ามแขน (หน้าแขน Biceps & หลังแขน Triceps):**\n\n' +
-        '**หลังแขน (Triceps - คิดเป็น 60% ของขนาดแขนทั้งหมด):**\n' +
-        '1. **Tricep Dips / Chair Dips** (3 เซ็ต · 10-12 ครั้ง)\n' +
-        '2. **Close-Grip Push-up** (3 เซ็ต · 8-10 ครั้ง)\n' +
-        '3. **Overhead Tricep Extension** (3 เซ็ต · 10-12 ครั้ง)\n\n' +
-        '**หน้าแขน (Biceps):**\n' +
-        '1. **Dumbbell Bicep Curl** (3 เซ็ต · 10-12 ครั้ง)\n' +
-        '2. **Hammer Curl** (3 เซ็ต · 10-12 ครั้ง - ช่วยสร้างมิติความหนาของแขน)\n\n' +
-        '💡 *คำแนะนำ:* โฟกัสการบีบเกร็งที่จุดสูงสุด 1 วินาที และผ่อนน้ำหนักลงช้าๆ 2-3 วินาที จะทำให้แขนพัฒนาได้รวดเร็วมากครับ!';
-    }
-    if (/อก/i.test(message)) {
-      return '🏋️ **โปรแกรมสร้างกล้ามเนื้อหน้าอก (Chest Workout):**\n\n' +
-        '1. **Standard Push-up / Bench Press:** (3 เซ็ต · 8-12 ครั้ง) สร้างมวลรวมของหน้าอก\n' +
-        '2. **Incline Push-up (เท้าวางบนเก้าอี้) หรือ Incline Press:** (3 เซ็ต · 10-12 ครั้ง) เน้นอกบนให้เต็ม\n' +
-        '3. **Chest Fly (ดัมเบลหรือสายยางยืด):** (3 เซ็ต · 12-15 ครั้ง) ยืดและบีบกล้ามเนื้ออกเข้าหากัน\n\n' +
-        '💡 ล็อกสะบักหลังให้แน่นและเปิดอกขึ้นเสมอเพื่อไม่ให้หัวไหล่รับภาระแทนหน้าอกครับ!';
-    }
-  }
-
-  // 6. Hypertrophy, DOMS, and Principles
-  if (intent === 'progressive_overload') {
-    return '📈 **Progressive Overload คือหัวใจของการพัฒนากล้ามเนื้อและความแข็งแรงครับ!**\nหมายถึงการค่อยๆ เพิ่มความท้าทายให้กล้ามเนื้อทีละระดับเมื่อร่างกายเริ่มปรับตัวได้ โดยทำได้หลายวิธี:\n1. **เพิ่มน้ำหนัก:** เมื่อยกน้ำหนักเดิมครบเซตด้วยฟอร์มสวยๆ ให้เพิ่มน้ำหนักขึ้น 2.5 - 5%\n2. **เพิ่มจำนวนครั้ง (Reps):** จากเดิมทำได้ 8 ครั้ง พัฒนาเป็น 10-12 ครั้ง\n3. **เพิ่มคุณภาพฟอร์ม & Tempo:** ควบคุมจังหวะผ่อนน้ำหนักลงช้าๆ 2-3 วินาที\n4. **ลดเวลาพักระหว่างเซต:** เพื่อเพิ่มความเข้มข้นของการฝึกครับ';
-  }
-
-  if (intent === 'doms') {
-    return '💪 **DOMS (Delayed Onset Muscle Soreness):**\nคืออาการปวดเมื่อยระบมกล้ามเนื้อที่มักจะเกิดขึ้นหลังออกกำลังกายไปแล้ว 24-48 ชั่วโมง เป็นกลไกปกติที่ร่างกายกำลังซ่อมแซมเส้นใยกล้ามเนื้อขนาดเล็กให้แข็งแรงขึ้นครับ\n\n💡 **วิธีบรรเทา:**\n• ทำ Active Recovery เช่น เดินเบาๆ หรือยืดเหยียดเบาๆ เพื่อกระตุ้นการไหลเวียนโลหิต\n• ดื่มน้ำให้เพียงพอและทานโปรตีนคุณภาพสูง\n• นอนหลับพักผ่อน 7-8 ชั่วโมง อาการจะค่อยๆ ดีขึ้นเองใน 2-3 วันครับ';
-  }
-
-  // Default intelligent fallback based on intent expected response
+  // 4. Default intelligent fallback based on intent expected response
   return `สวัสดีครับ FitAI ยินดีดูแลคุณครับ! 🏋️‍♂️✨\n\n💡 **คำแนะนำสำหรับเรื่องนี้:**\n${intentObj.expected_response}\n\nหากคุณต้องการให้ FitAI จัดตารางอย่างละเอียด หรือปรับเข้ากับเป้าหมายเฉพาะส่วน บอกรายละเอียดเพิ่มเติมได้เลยนะครับ!`;
 }
 
 module.exports = {
+  detectAndNormalizeDialect,
+  detectEmergencyRedFlags,
+  detectClarificationNeeded,
+  finetunedData,
   matchCoachingIntent,
   getCoachingPrinciplePrompt,
   generateIntentFallback,

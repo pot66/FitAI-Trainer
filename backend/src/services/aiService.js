@@ -198,6 +198,127 @@ function getRandomMenus(count = 3) {
   return shuffled.slice(0, count);
 }
 
+
+function getExerciseTechniqueAdvice(lowerText) {
+  // 1. Squat Depth & Form
+  if (/(ย่อลึก|สควอทยังไง|สควอทอย่างไร|ฟอร์ม.*squat|squat.*ยังไง|squat.*ฟอร์ม|ลึกแค่ไหน|ย่อเท่าไหร่|ท่า.*squat)/i.test(lowerText)) {
+    return [
+      "เทคนิคและฟอร์มการทำ Squat ที่ถูกต้องและปลอดภัย:",
+      "",
+      "1. ความลึก (Depth): ควรย่อตัวลงมาจนกระทั่งต้นขาขนานกับพื้น (ทำมุมประมาณ 90 องศา) หรือลึกเท่าที่หลังยังตรงและส้นเท้าไม่ลอย ไม่จำเป็นต้องย่อจนก้นติดพื้นหากกล้ามเนื้อยังไม่ยืดหยุ่นพอ",
+      "2. แนวกระดูกสันหลัง: ลำตัวตั้งตรง อกผาย เกร็งแกนกลางลำตัวตลอดเวลา ป้องกันหลังงอหรือแอ่นเกินไป",
+      "3. แนวหัวเข่า: ให้หัวเข่าชี้ไปในทิศทางเดียวกับปลายเท้าเสมอ กางขาประมาณความกว้างหัวไหล่ และไม่ให้เข่าหุบเข้าด้านใน",
+      "4. จังหวะการหายใจ: สูดลมหายใจเข้าขณะย่อตัวลง และพ่นลมหายใจออกขณะดันตัวขึ้นกลับสู่ท่ายืนครับ"
+    ].join("\n");
+  }
+
+  // 2. Breathing Technique
+  if (/(หายใจยังไง|การหายใจ|หายใจตอนไหน|จังหวะหายใจ|หายใจอย่างไร|กลั้นหายใจ)/i.test(lowerText)) {
+    return [
+      "หลักการหายใจที่ถูกต้องขณะออกกำลังกายแบบเวทเทรนนิ่งและบอดี้เวท:",
+      "",
+      "1. จังหวะผ่อนแรง (ยืดกล้ามเนื้อ): สูดลมหายใจเข้าทางจมูกช้าๆ เช่น ขณะย่อตัวลงใน Squat หรือลดหน้าอกลงใน Push-up",
+      "2. จังหวะออกแรง (ต้านแรงโน้มถ่วง): พ่นลมหายใจออกทางปาก เช่น ขณะดันตัวขึ้นใน Squat หรือดันพื้นขึ้นใน Push-up",
+      "3. ข้อควรระวังสำคัญ: ห้ามกลั้นหายใจขณะออกแรงเด็ดขาด เพราะจะทำให้ความดันในช่องอกและสมองสูงขึ้น อาจทำให้หน้ามืดหรือเวียนศีรษะได้ครับ"
+    ].join("\n");
+  }
+
+  // 3. Push-up Form
+  if (/(วิดพื้นยังไง|วิดพื้นอย่างไร|ฟอร์ม.*push.?up|push.?up.*ยังไง|ท่าวิดพื้น)/i.test(lowerText)) {
+    return [
+      "เทคนิคการทำ Push-up (วิดพื้น) ที่ถูกต้องและโดนกล้ามเนื้ออกเต็มๆ:",
+      "",
+      "1. การวางมือ: วางมือให้กว้างกว่าหัวไหล่เล็กน้อย นิ้วมือชี้ตรงไปข้างหน้า",
+      "2. ลำตัว: ลำตัวต้องเป็นแนวตรงตั้งแต่ศีรษะจรดส้นเท้า เกร็งหน้าท้องและบั้นท้าย ไม่ให้สะโพกตกหรือแอ่น",
+      "3. มุมข้อศอก: กางข้อศอกทำมุมประมาณ 45-60 องศากับลำตัว (ไม่กางศอก 90 องศาเพื่อเซฟหัวไหล่)",
+      "4. การเคลื่อนไหว: ลดหน้าอกลงจนเกือบแตะพื้น แล้วออกแรงดันพื้นขึ้นจนแขนเหยียดตรงโดยไม่ล็อกข้อศอกครับ"
+    ].join("\n");
+  }
+
+  // 4. Plank Form
+  if (/(แพลงก์ยังไง|แพลงก์อย่างไร|ฟอร์ม.*plank|plank.*ยังไง|ท่าแพลงก์)/i.test(lowerText)) {
+    return [
+      "เทคนิคการทำ Plank ให้แกนกลางลำตัวแข็งแรงและปลอดภัยต่อหลัง:",
+      "",
+      "1. วางข้อศอกให้ตรงกับแนวหัวไหล่ แขนและลำตัวขนานกับพื้น",
+      "2. เกร็งหน้าท้อง ดึงสะดือเข้าหากระดูกสันหลัง พร้อมเกร็งก้นและต้นขา",
+      "3. รักษาแนวกระดูกสันหลังให้เป็นเส้นตรง ไม่ยกสะโพกโด่งและไม่ทิ้งสะโพกห้อย",
+      "4. หายใจเข้าออกสม่ำเสมอ เริ่มต้นค้างไว้ 20-30 วินาทีต่อเซ็ต แล้วค่อยๆ เพิ่มเวลาครับ"
+    ].join("\n");
+  }
+
+  // 5. Sets, Reps & Rest Time
+  if (/(กี่เซ็ต|กี่ครั้ง|พักกี่นาที|พักระหว่างเซ็ต|พักนานแค่ไหน|พักเท่าไหร่)/i.test(lowerText)) {
+    return [
+      "คำแนะนำเรื่องจำนวนเซ็ต จำนวนครั้ง และเวลาพักระหว่างเซ็ต:",
+      "",
+      "- เพื่อกระชับกล้ามเนื้อและเผาผลาญไขมัน: 3-4 เซ็ต เซ็ตละ 12-15 ครั้ง พักระหว่างเซ็ต 45-60 วินาที",
+      "- เพื่อเสริมสร้างขนาดกล้ามเนื้อ (Hypertrophy): 3-4 เซ็ต เซ็ตละ 8-12 ครั้ง พักระหว่างเซ็ต 60-90 วินาที",
+      "- เพื่อพละกำลังและความแข็งแรง (Strength): 3-5 เซ็ต เซ็ตละ 4-6 ครั้ง พักระหว่างเซ็ต 2-3 นาที",
+      "",
+      "จิบน้ำเล็กน้อยระหว่างพักเซ็ตเพื่อให้ร่างกายสดชื่นอยู่เสมอครับ"
+    ].join("\n");
+  }
+
+  // 6. Warmup & Cooldown
+  if (/(วอร์มอัพ|อบอุ่นร่างกาย|คูลดาวน์|ยืดเหยียด|ยืดกล้ามเนื้อ)/i.test(lowerText)) {
+    return [
+      "คำแนะนำการวอร์มอัพและคูลดาวน์อย่างมีประสิทธิภาพ:",
+      "",
+      "1. ก่อนออกกำลังกาย (Dynamic Warmup): เน้นยืดเหยียดแบบเคลื่อนไหว 5-10 นาที เช่น หมุนหัวไหล่, แกว่งแขน, เตะขาสูง, Jumping Jacks เพื่อเพิ่มอุณหภูมิร่างกายและหล่อลื่นข้อต่อ",
+      "2. หลังออกกำลังกาย (Static Cooldown): ยืดเหยียดแบบค้างไว้ท่าละ 15-30 วินาที เช่น ยืดต้นขาด้านหน้า, ยืดหลังแขน, ยืดสะโพก เพื่อลดความตึงและเร่งการฟื้นฟูกล้ามเนื้อครับ"
+    ].join("\n");
+  }
+
+  return null;
+}
+
+function getFitAICapabilitiesResponse(context = {}) {
+    const profile = context.profile;
+    const nameGreeting = profile?.name ? `คุณ ${profile.name}` : "คุณ";
+    return [
+        `สวัสดีครับ${nameGreeting}! ผมคือ **FitAI Trainer** โค้ชฟิตเนส AI ส่วนตัวของคุณครับ 🏋️‍♂️✨`,
+        `ผมได้รับการออกแบบมาเพื่อเป็นผู้ช่วยดูแลสุขภาพ การออกกำลังกาย และโภชนาการแบบครบวงจรในที่เดียว โดยมี **5 ฟังก์ชันเด่น** หลักที่จะช่วยให้คุณฟิตหุ่นและบรรลุเป้าหมายได้อย่างมีประสิทธิภาพ ดังนี้ครับ:`,
+        "",
+        "---",
+        "",
+        "### 🌟 5 ฟังก์ชันเด่นของ FitAI Trainer:",
+        "",
+        "1. 🎯 **AI Real-Time Pose Tracking & Form Analysis (ตรวจจับและวิเคราะห์ท่าทางผ่านกล้อง)**",
+        "   • ใช้ AI Computer Vision ตรวจจับข้อต่อร่างกายแบบเรียลไทม์ขณะออกกำลังกายผ่านกล้องเว็บแคม",
+        "   • ระบบนับจำนวนครั้ง (Rep Counter) อัตโนมัติอย่างแม่นยำ พร้อมจับเวลา",
+        "   • ตรวจจับและแจ้งเตือนข้อผิดพลาดของฟอร์มทันที (เช่น ย่อไม่ลึกพอ, หลังงอ, จังหวะเร็วเกินไป) พร้อมคำแนะนำปรับท่าให้ถูกต้องและปลอดภัย ป้องกันอาการบาดเจ็บ",
+        "   • รองรับโหมด **Unity 3D Interactive Workout** จำลองท่าทางด้วยโมเดล 3D เสมือนจริง",
+        "",
+        "2. 📅 **Personalized Smart Workout Plan (จัดและปรับตารางออกกำลังกายเฉพาะบุคคล)**",
+        "   • ออกแบบโปรแกรมฝึกประจำสัปดาห์ (Full-Body, Upper/Lower, Cardio, Low-Impact ฯลฯ) ที่คำนวณตามสรีระ (BMI, น้ำหนัก, ส่วนสูง), เป้าหมาย และเวลาของคุณ",
+        "   • ปรับเปลี่ยนแผนได้อย่างยืดหยุ่นผ่านการแชท เช่น *\"ขอเปลี่ยนท่านี้\", \"วันนี้ขอเน้นหน้าท้อง\", \"เจ็บเข่าขอท่า Low-Impact\"* หรือปรับเป็นวันพัก (Rest Day) ทันที",
+        "   • มีคลิปวิดีโอสาธิตแต่ละท่าจาก YouTube ในตารางฝึกเพื่อความเข้าใจที่ถูกต้อง",
+        "",
+        "3. 🥗 **AI Food & Nutrition Tracker (บันทึกและวิเคราะห์โภชนาการอัจฉริยะ)**",
+        "   • บันทึกมื้ออาหารในแต่ละวัน คำนวณพลังงาน (Calories) และสารอาหารหลัก (โปรตีน, คาร์โบไฮเดรต, ไขมัน)",
+        "   • คำนวณและเปรียบเทียบกับค่า BMR / TDEE ประจำวันของคุณแบบอัตโนมัติ เพื่อคุมน้ำหนักหรือสร้างกล้ามเนื้อ",
+        "   • มีระบบ Food Camera และ AI วิเคราะห์มื้ออาหาร หรือพิมพ์บอกเพื่อคำนวณแคลอรี่และสารอาหารได้ทันที",
+        "   • ให้คำแนะนำเมนูสุขภาพทางเลือกและเทคนิคการกินคลีนในชีวิตประจำวัน",
+        "",
+        "4. 🎙️ **Voice Coach & Interactive Audio (โค้ชเสียงตอบโต้เสมือนจริง)**",
+        "   • ระบบเสียงพูด AI โค้ช (Voice Coach) โทนเสียง Anime Mentor ชายเสียงทุ้ม สุขุม อบอุ่น และเป็นมืออาชีพ",
+        "   • คอยให้กำลังใจ นับจังหวะ และแนะนำท่าด้วยเสียงแบบเรียลไทม์ขณะกำลังออกกำลังกาย",
+        "   • สามารถเลือกเปิด-ปิดเสียงพูดได้ตามต้องการในหน้า Settings",
+        "",
+        "5. 📈 **Workout Progress & Analytics (ติดตามพัฒนาการและประวัติการฝึก)**",
+        "   • สรุปสถิติการออกกำลังกาย จำนวนแคลอรี่ที่เผาผลาญ และความสม่ำเสมอ (Streak)",
+        "   • บันทึกประวัติและแสดงแนวโน้มพัฒนาการ ให้คุณเห็นความก้าวหน้าของตัวเองได้อย่างชัดเจน",
+        "",
+        "---",
+        "",
+        "💡 **เริ่มต้นใช้งานได้ง่ายๆ:**",
+        "• อยากเริ่มฝึก? พิมพ์ **\"เริ่มออกกำลังกายวันนี้\"** หรือกดที่เมนู **Workout**",
+        "• อยากเช็กอาหาร? พิมพ์ **\"วันนี้กินอกไก่ไป 200 กรัม กี่แคล\"** หรือไปที่ **Food Tracker**",
+        "• มีคำถามเรื่องท่าออกกำลังกายหรือการฟิตหุ่น? พิมพ์สอบถามผมได้ตลอดเวลาเลยครับ พร้อมลุยไปด้วยกันครับ! 🔥"
+    ].join("\n");
+}
+
 function generateFallbackResponse(message, context = {}) {
     const profile = context.profile || null;
     const workout = context.workout || [];
@@ -311,8 +432,15 @@ function generateFallbackResponse(message, context = {}) {
         ].join("\n");
     }
 
+    // 4.5 Exercise Technique & Breathing Queries (ย่อลึกแค่ไหน, หายใจยังไง, ฟอร์มที่ถูกต้อง)
+    const techniqueAdvice = getExerciseTechniqueAdvice(lowerText);
+    if (techniqueAdvice) {
+        return techniqueAdvice;
+    }
+
     // 5. Workout Advice / Routine Recommendations
-    const isWorkoutAdviceQuery = /(แนะนำ|ควรออก|ท่าไหน|ตาราง|แผน|ออกกำลังกาย|ซ้อม|workout|exercise| routine)/i.test(lowerText);
+    const isSelfIntro = /(แนะนำตัว|คุณคือใคร|คุณเป็นใคร|ช่วยอะไรได้บ้าง|ทำอะไรได้บ้าง|ฟังก์ชันเด่น|ฟังก์ชันของ|ความสามารถ|ระบบทำอะไร|แนะนำ.*fitai|fitai.*คืออะไร|มีฟังก์ชันอะไร|แนะนำระบบ|ฟังก์ชัน.*มีอะไร)/i.test(lowerText);
+    const isWorkoutAdviceQuery = !isSelfIntro && /(แนะนำ.*(ท่า|การฝึก|โปรแกรม)|ควรออก.*ท่า|ท่าไหน|ตารางการฝึก|แผนการฝึก|ซ้อมท่าไหน|workout routine)/i.test(lowerText);
     if (isWorkoutAdviceQuery) {
         if (context.activePlan) {
             return formatActivePlanRecommendation(context.activePlan, profile);
@@ -329,6 +457,22 @@ function generateFallbackResponse(message, context = {}) {
             "4. **Plank** (3 เซ็ต, 20-30 วินาที) — สร้างกล้ามเนื้อหน้าท้องที่มั่นคง",
             "",
             "🔥 **คำแนะนำ:** อย่าลืมวอร์มอัพ 3-5 นาทีก่อนเริ่ม และคูลดาวน์ยืดเหยียดหลังฝึกเสร็จนะครับ คุณสามารถบอกผมได้ตลอดว่าอยากเน้นส่วนไหนเป็นพิเศษครับ!"
+        ].join("\n");
+    }
+
+    // 5.5 Unknown or Unfamiliar Fitness Term / Movement Handler
+    // เมื่อผู้ใช้ถามคำศัพท์, ชื่อท่า, หรือเทคนิคการฝึกแปลกใหม่ที่ระบบไม่พบในฐานข้อมูล
+    const isAskingUnknownTerm = /(คืออะไร|หมายถึงอะไร|รู้จัก.*ไหม|แปลว่าอะไร|ทำยังไง|มีท่า.*ไหม|เรียกว่าอะไร)/i.test(lowerText);
+    if (isAskingUnknownTerm) {
+        return [
+            "เรื่องนี้หรือชื่อท่าที่คุณสอบถาม อาจเป็นคำศัพท์เฉพาะกลุ่ม เทคนิคเฉพาะทาง หรือชื่อเรียกเฉพาะตัวครับ 💡🏋️‍♂️",
+            "",
+            "เพื่อให้ผมช่วยวิเคราะห์และให้คำแนะนำที่ถูกต้องและปลอดภัยที่สุด รบกวนบอกข้อมูลเพิ่มเติมเล็กน้อยนะครับ:",
+            "1. ท่าหรือเทคนิคนี้เน้นบริหาร **กล้ามเนื้อส่วนไหน** ครับ? (เช่น ขา, ก้น, อก, หลัง, ไหล่, แขน หรือหน้าท้อง)",
+            "2. มีลักษณะการเคลื่อนไหวหรือใช้อุปกรณ์อะไรเป็นพิเศษไหมครับ? (เช่น ผลัก, ดึง, สควอท, ยกค้าง หรือใช้ดัมเบล/บอดี้เวท)",
+            "3. มีเป้าหมายเพื่อสร้างกล้ามเนื้อ เพิ่มความยืดหยุ่น หรือเผาผลาญไขมันครับ?",
+            "",
+            "บอกผมได้เลยครับ! FitAI พร้อมช่วยปรับฟอร์มและแนะนำท่าทางเลือกมาตรฐานที่ตรงจุดให้คุณทันทีครับ 💪✨"
         ].join("\n");
     }
 
@@ -590,25 +734,56 @@ function handleFoodAndNutritionQuery(message, context = {}) {
     ].join("\n");
   }
 
-  // --- SUB-CASE 4: Specific Food Calorie Query (ข้าวมันไก่กี่แคล / แกงส้มชะอมไข่กี่แคล / ต้มยำปลาแซลมอน ...) ---
-  const isCalorieQuery = /(?:กี่แคล|คำนวณแคล|แคลอรี่เท่า|พลังงานเท่า|กี่กิโลแคล|กี่แคลอรี่)/i.test(lower);
-  if (isCalorieQuery || /(?:กิน|ทาน).*(?:กี่แคล|เท่าไหร่)/i.test(lower)) {
-    let dishName = text.replace(/^(?:อยากทราบว่า|ช่วยบอกหน่อย|ช่วยคำนวณ|คำนวณ|บอกหน่อย|แนะนำ|อยากรู้ว่า|มีเมนู|กิน|ทาน)\s*/i, "");
-    dishName = dishName.replace(/(?:กี่แคลอรี่|กี่แคล|มีกี่แคล|แคลอรี่เท่าไร|แคลอรี่เท่าไหร่|พลังงานเท่าไร|พลังงานเท่าไหร่)[\s\S]*$/gi, "").trim();
-    dishName = dishName.replace(/[\s\?\,]+$/g, "").trim();
+  // --- SUB-CASE 4: Specific Food Calorie / Nutrition Query (อกไก่ 100 กรัมมีโปรตีนกี่กรัม / ข้าวมันไก่กี่แคล / ต้มยำ ...) ---
+  const isNutritionOrCalorieQuery =
+    /(?:กี่แคล|คำนวณแคล|แคลอรี่เท่า|พลังงานเท่า|กี่กิโลแคล|กี่แคลอรี่|โปรตีนเท่า|โปรตีนกี่|คาร์บเท่า|คาร์บกี่|ไขมันเท่า|สารอาหาร|โภชนาการ|กี่กรัม)/i.test(lower) ||
+    /(?:กิน|ทาน|มี).*(?:กี่แคล|เท่าไหร่|เท่าไร|กี่กรัม)/i.test(lower);
 
-    const knownEntry = findFoodEntry(dishName);
+  if (isNutritionOrCalorieQuery) {
+    const weightMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:กรัม|g|ขีด|กิโล|กก)/i);
+    let requestedGrams = null;
+    if (weightMatch) {
+      const val = parseFloat(weightMatch[1]);
+      if (/ขีด/i.test(weightMatch[0])) requestedGrams = val * 100;
+      else if (/กิโล|กก/i.test(weightMatch[0])) requestedGrams = val * 1000;
+      else requestedGrams = val;
+    }
+
+    let dishName = text
+      .replace(/^(?:อยากทราบว่า|ช่วยบอกหน่อย|ช่วยคำนวณ|คำนวณ|บอกหน่อย|แนะนำ|อยากรู้ว่า|มีเมนู|กิน|ทาน)\s*/i, "")
+      .replace(/\d+\s*(?:กรัม|g|ขีด|กิโล|กก)?/gi, "")
+      .replace(/(?:มี|ให้)?\s*(?:โปรตีน|คาร์บ|คาร์โบไฮเดรต|ไขมัน|แคลอรี่|พลังงาน|สารอาหาร)?\s*(?:ประมาณ)?\s*(?:กี่กรัม|กี่แคล|กี่กิโลแคล|เท่าไร|เท่าไหร่|อะไรบ้าง|กี่แคลอรี่)[\s\S]*$/gi, "")
+      .replace(/[\s\?\,]+$/g, "")
+      .trim();
+
+    const knownEntry = findFoodEntry(dishName) || findFoodEntry(text);
 
     if (knownEntry) {
-      const s = knownEntry.serving || { calories: 200, protein: 10, carbs: 20, fat: 5, unit: "จาน" };
+      let calories = 200, protein = 10, carbs = 20, fat = 5, unitText = "1 จาน";
+      
+      if (requestedGrams && knownEntry.per100g) {
+        const ratio = requestedGrams / 100;
+        calories = Math.round(knownEntry.per100g.calories * ratio);
+        protein = Math.round(knownEntry.per100g.protein * ratio * 10) / 10;
+        carbs = Math.round((knownEntry.per100g.carbs || 0) * ratio * 10) / 10;
+        fat = Math.round((knownEntry.per100g.fat || 0) * ratio * 10) / 10;
+        unitText = `${requestedGrams} กรัม`;
+      } else if (knownEntry.serving) {
+        calories = knownEntry.serving.calories;
+        protein = knownEntry.serving.protein;
+        carbs = knownEntry.serving.carbs;
+        fat = knownEntry.serving.fat;
+        unitText = `1 ${knownEntry.serving.unit || "จาน"}`;
+      }
+
       const sims = findSimilarFoodEntries(knownEntry.name, 2, knownEntry.id, knownEntry.name);
 
-      let reply = `FitAI คำนวณข้อมูลโภชนาการสำหรับ **${knownEntry.name}** ให้เรียบร้อยครับ 🍽️\n\n`;
-      reply += `- ⚡ พลังงาน: **${s.calories} kcal** (ต่อ 1 ${s.unit || "จาน"})\n`;
-      reply += `- 🍗 โปรตีน: **${s.protein} g** | 🍚 คาร์บ: **${s.carbs} g** | 🥑 ไขมัน: **${s.fat} g**\n\n`;
+      let reply = `FitAI คำนวณข้อมูลโภชนาการสำหรับ **${knownEntry.name}** (${unitText}) ให้เรียบร้อยครับ\n\n`;
+      reply += `- พลังงาน: **${calories} kcal**\n`;
+      reply += `- โปรตีน: **${protein} g** | คาร์โบไฮเดรต: **${carbs} g** | ไขมัน: **${fat} g**\n\n`;
 
       if (sims.length > 0) {
-        reply += `💡 **เมนูทางเลือกสุขภาพใกล้เคียง:**\n`;
+        reply += `**เมนูทางเลือกสุขภาพใกล้เคียง:**\n`;
         sims.forEach((alt) => {
           reply += `- **${alt.name}** (**${alt.serving?.calories} kcal**) — ${alt.reason || "เมนูใกล้เคียง"}\n`;
         });
@@ -617,27 +792,27 @@ function handleFoodAndNutritionQuery(message, context = {}) {
 
       const logData = {
         name: knownEntry.name,
-        calories: s.calories,
-        protein: s.protein,
-        carbs: s.carbs,
-        fat: s.fat,
-        unit: s.unit || "จาน",
+        calories,
+        protein,
+        carbs,
+        fat,
+        unit: unitText,
       };
       reply += `[LOG_FOOD_ACTION:${JSON.stringify(logData)}]\n\n`;
-      reply += `💡 *คุณสามารถกดปุ่ม "บันทึกลงมื้ออาหาร" เพื่อบันทึกเข้าตารางแคลอรี่ประจำวันได้ทันทีครับ!*`;
+      reply += `*คุณสามารถกดปุ่ม "บันทึกลงมื้ออาหาร" เพื่อบันทึกเข้าตารางแคลอรี่ประจำวันได้ทันทีครับ*`;
       return reply;
     } else if (dishName.length >= 2) {
-      // Unknown dish! Recommend similar dishes from database!
-      const est = getNutrition({ name: dishName });
+      const est = getNutrition({ name: dishName, weight: requestedGrams || 100 });
       const sims = findSimilarFoodEntries(dishName, 3);
+      const unitText = requestedGrams ? `${requestedGrams} กรัม` : `1 ${est.unit || "จาน"}`;
 
-      let reply = `FitAI ประมาณการข้อมูลโภชนาการสำหรับ **"${dishName}"** ให้เรียบร้อยครับ 🍽️\n\n`;
-      reply += `📊 **ค่าพลังงานและสารอาหารโดยประมาณ:**\n`;
-      reply += `- ⚡ พลังงาน: **~${est.calories} kcal** (ต่อ 1 ${est.unit})\n`;
-      reply += `- 🍗 โปรตีน: **~${est.protein} g** | 🍚 คาร์โบไฮเดรต: **~${est.carbs} g** | 🥑 ไขมัน: **~${est.fat} g**\n\n`;
+      let reply = `FitAI ประมาณการข้อมูลโภชนาการสำหรับ **"${dishName}"** (${unitText}) ให้เรียบร้อยครับ\n\n`;
+      reply += `**ค่าพลังงานและสารอาหารโดยประมาณ:**\n`;
+      reply += `- พลังงาน: **~${est.calories} kcal**\n`;
+      reply += `- โปรตีน: **~${est.protein} g** | คาร์โบไฮเดรต: **~${est.carbs} g** | ไขมัน: **~${est.fat} g**\n\n`;
 
       if (sims.length > 0) {
-        reply += `💡 **แม้ในระบบจะยังไม่มีเมนู "${dishName}" โดยตรง แต่ FitAI ขอแนะนำเมนูใกล้เคียงหรือใช้ทดแทนกันได้ในระบบ ดังนี้ครับ:**\n`;
+        reply += `**เมนูใกล้เคียงหรือใช้ทดแทนกันได้ในระบบ:**\n`;
         sims.forEach((item, idx) => {
           const s = item.serving || { calories: 150, protein: 0, carbs: 0, fat: 0, unit: "จาน" };
           reply += `${idx + 1}. **${item.name}** (**${s.calories} kcal**) — ${item.reason || "โภชนาการใกล้เคียง"}\n`;
@@ -651,10 +826,10 @@ function handleFoodAndNutritionQuery(message, context = {}) {
         protein: est.protein,
         carbs: est.carbs,
         fat: est.fat,
-        unit: est.unit,
+        unit: unitText,
       };
       reply += `[LOG_FOOD_ACTION:${JSON.stringify(logData)}]\n\n`;
-      reply += `💡 *คุณสามารถกดปุ่มบันทึกด้านบนเพื่อบันทึก **${dishName}** หรือเลือกเมนูแนะนำเข้าสู่ตารางประจำวันได้ทันทีครับ!*`;
+      reply += `*คุณสามารถกดปุ่มบันทึกด้านบนเพื่อบันทึก **${dishName}** หรือเลือกเมนูแนะนำเข้าสู่ตารางประจำวันได้ทันทีครับ*`;
       return reply;
     }
   }
@@ -726,6 +901,18 @@ async function generateAIResponse(message, context = {}) {
         return formatSearchResultsForFallback(context.searchData);
     }
 
+    // 0. Emergency Red Flag Triage (Highest Priority - Medical Safety 1669)
+    const emergencyCheck = matchCoachingIntent(message);
+    if (emergencyCheck && emergencyCheck.emergency) {
+        return emergencyCheck.expected_response;
+    }
+
+    // 0. Self-introduction & Capabilities Guard
+    const isSelfIntroOrCapabilities = /(แนะนำตัว|คุณคือใคร|คุณเป็นใคร|ช่วยอะไรได้บ้าง|ทำอะไรได้บ้าง|ฟังก์ชันเด่น|ฟังก์ชันของ|ความสามารถ|ระบบทำอะไร|แนะนำ.*fitai|fitai.*คืออะไร|มีฟังก์ชันอะไร|แนะนำระบบ|ฟังก์ชัน.*มีอะไร)/i.test(String(message || ""));
+    if (isSelfIntroOrCapabilities) {
+        return getFitAICapabilitiesResponse(context);
+    }
+
     // 0. Strict Fitness Scope Guardrail: Do not answer non-fitness/tech/coding/political topics
     const isNonFitnessQuery = /(เขียนโค้ด|python|javascript|c\+\+|php|html|css|sql|เขียนโปรแกรม|แจกโค้ด|แก้บั๊ก|การเมือง|หุ้น|คริปโต|หวย|ดูดวง|ซ่อมรถ|ข่าวบันเทิง)/i.test(String(message || ""));
     if (isNonFitnessQuery) {
@@ -745,7 +932,7 @@ async function generateAIResponse(message, context = {}) {
     }
 
     // 2. If user is asking for exercise recommendation / advice / today's poses, strictly adhere to the table
-    const isRecRequest = /(แนะนำ.*(ท่า|ออกกำลัง|การออกกำลัง|ทำอะไร|โปรแกรม)|ควรออก.*ท่า|มีท่า.*แนะนำ|ท่า.*เหมาะกับ|วันนี้.*(ออก|ทำ|ฝึก|ท่า)|(ออก|ทำ|ฝึก).*ท่าไหน|ท่าอะไร(ดี|บ้าง)?|ช่วยเลือกท่า|ขอท่า|ท่าที่ต้องออก|ตาราง|แผน|ออกกำลังกาย.*อะไร|workout|exercise|routine|program|today)/i.test(message);
+    const isRecRequest = !isSelfIntroOrCapabilities && /(แนะนำ.*(ท่า|การออกกำลัง|โปรแกรมการฝึก)|ควรออก.*ท่า|มีท่า.*แนะนำ|ท่า.*เหมาะกับ|วันนี้.*(ออก|ฝึก).*ท่า|ท่าอะไร(ดี|บ้าง)?|ช่วยเลือกท่า|ขอท่า|ท่าที่ต้องออก|ออกกำลังกาย.*ท่าไหน)/i.test(message);
     if (context.activePlan && isRecRequest) {
         answer = formatActivePlanRecommendation(context.activePlan, context.profile);
         return await enrichResponseWithVideos(answer, message);
@@ -1051,11 +1238,438 @@ function sanitizePlan(plan) {
   });
 }
 
+
+const DAYS_OF_WEEK_SCHEDULE = [
+  { key: "monday", label: "วันจันทร์" },
+  { key: "tuesday", label: "วันอังคาร" },
+  { key: "wednesday", label: "วันพุธ" },
+  { key: "thursday", label: "วันพฤหัสบดี" },
+  { key: "friday", label: "วันศุกร์" },
+  { key: "saturday", label: "วันเสาร์" },
+  { key: "sunday", label: "วันอาทิตย์" },
+];
+
+const HIGH_IMPACT_EXERCISES_LIST = [
+  "Jumping Jack", "Burpee", "Squat Jump", "High Knees", "Jump Rope",
+  "Jogging", "Skater", "Shuffle Dance Workout", "Zumba", "Aerobic Dance",
+  "Football", "Basketball", "Badminton", "Tennis", "Volleyball"
+];
+
+const KNEE_SAFE_EXERCISES_LIST = [
+  "Chair Squat", "Glute Bridge", "Wall Push Up", "Calf Raise", "Standing Calf Raise",
+  "Donkey Kick", "Fire Hydrant", "Bird Dog", "Dead Bug", "Side Plank",
+  "Plank", "Arm Circles", "Cat Cow", "March In Place", "Leg Press",
+  "Seated Row", "Bench Press", "Biceps Curl", "Triceps Dip", "Incline Push-up"
+];
+
+const DUMBBELL_EXERCISES_LIST = [
+  "Biceps Curl", "Hammer Curl", "Concentration Curl", "Arnold Press", "Shoulder Press",
+  "Lateral Raise", "Front Raise", "Reverse Fly", "Chest Fly", "Dumbbell Skull Crusher",
+  "Romanian Deadlift", "Single-leg Romanian Deadlift", "Triceps Kickback",
+  "Overhead Triceps Extension", "Upright Row"
+];
+
+function parseUserPlanRequirements(prompt, profile) {
+  const text = String(prompt || "").toLowerCase();
+
+  const specificDays = [];
+  if (/(จันทร์|mon)/i.test(text)) specificDays.push("monday");
+  if (/(อังคาร|tue)/i.test(text)) specificDays.push("tuesday");
+  if (/(พุธ|wed)/i.test(text)) specificDays.push("wednesday");
+  if (/(พฤหัส|thu)/i.test(text)) specificDays.push("thursday");
+  if (/(ศุกร์|fri)/i.test(text)) specificDays.push("friday");
+  if (/(เสาร์|sat)/i.test(text)) specificDays.push("saturday");
+  if (/(อาทิตย์|sun)/i.test(text)) specificDays.push("sunday");
+
+  let trainingDays = null;
+  const restMatch = text.match(/พัก\s*(\d+)\s*(?:วัน|day)/i);
+  const daysMatch = text.match(/(\d+)\s*(?:วัน|day)/i);
+
+  if (restMatch) {
+    const restCount = parseInt(restMatch[1], 10);
+    trainingDays = Math.max(1, Math.min(6, 7 - restCount));
+  } else if (daysMatch && !/(15|20|30|40|45|50|60)\s*นาที/i.test(daysMatch[0])) {
+    trainingDays = Math.max(1, Math.min(7, parseInt(daysMatch[1], 10)));
+  } else if (/(สองวัน|2 วัน)/i.test(text)) {
+    trainingDays = 2;
+  } else if (/(สามวัน|3 วัน)/i.test(text)) {
+    trainingDays = 3;
+  } else if (/(สี่วัน|4 วัน)/i.test(text)) {
+    trainingDays = 4;
+  } else if (/(ห้าวัน|5 วัน)/i.test(text)) {
+    trainingDays = 5;
+  } else if (/(หกวัน|6 วัน)/i.test(text)) {
+    trainingDays = 6;
+  } else if (/(ทุกวัน|7 วัน)/i.test(text)) {
+    trainingDays = 7;
+  } else if (/(เสาร์\s*อาทิตย์|วันหยุด)/i.test(text) && !/(จันทร์|อังคาร|พุธ|พฤหัส|ศุกร์)/i.test(text)) {
+    trainingDays = 2;
+    if (specificDays.length === 0) specificDays.push("saturday", "sunday");
+  } else if (specificDays.length > 0) {
+    trainingDays = specificDays.length;
+  }
+
+  const hasKneePain = /(เข่า|เจ็บเข่า|ปวดเข่า|ข้อเข่า|ไม่กระโดด|ห้ามกระโดด|เลี่ยงกระโดด|เซฟเข่า|low\s*impact|แรงกระแทกต่ำ)/i.test(text);
+  const hasBackPain = /(หลัง|เจ็บหลัง|ปวดหลัง|หลังล่าง|lower\s*back)/i.test(text);
+  const hasWristPain = /(ข้อมือ|เจ็บข้อมือ|ปวดข้อมือ)/i.test(text);
+  const isBeginner = /(มือใหม่|เพิ่งเริ่ม|ไม่เคยออก|เหนื่อยง่าย|beginner)/i.test(text);
+  const isAdvanced = /(แอดวานซ์|ระดับสูง|หนักๆ|หนักหน่วง|advanced)/i.test(text);
+
+  const isFatLoss = /(ลดไขมัน|ลดน้ำหนัก|เบิร์น|คาร์ดิโอ|ผอม|ลีน|burn|fat\s*loss|cardio|hiit|weight\s*loss)/i.test(text);
+  const isMuscle = /(สร้างกล้าม|เพิ่มกล้าม|กล้ามเนื้อ|เพิ่มขนาด|ยกเวท|เวทเทรนนิ่ง|hypertrophy|muscle|strength|bulk)/i.test(text);
+  const isTone = /(กระชับ|เฟิร์ม|ฟิต|สัดส่วน|tone|shape)/i.test(text);
+  const isMobility = /(ยืดเหยียด|ฟื้นฟู|โยคะ|mobility|stretch|flexibility)/i.test(text);
+
+  const targetChest = /(อก|หน้าอก|chest)/i.test(text);
+  const targetArm = /(แขน|ต้นแขน|ไทรเซป|ไบเซป|arm|bicep|tricep)/i.test(text);
+  const targetBack = /(หลัง|ปีกหลัง|back|lat)/i.test(text);
+  const targetShoulder = /(ไหล่|หัวไหล่|shoulder)/i.test(text);
+  const targetLower = /(ขา|ก้น|สะโพก|ต้นขา|lower|leg|glute|butt|thigh)/i.test(text);
+  const targetCore = /(หน้าท้อง|พุง|เอว|แกนกลาง|core|abs|sixpack|เบิร์นพุง)/i.test(text);
+  const targetFullBody = /(ทั่วตัว|ทั้งตัว|full\s*body)/i.test(text);
+
+  const hasDumbbell = /(ดัมเบล|dumbbell|เวท)/i.test(text);
+  const isBodyweightOnly = /(บอดี้เวท|bodyweight|ไม่ใช้อุปกรณ์|ไม่มีอุปกรณ์|ที่บ้าน)/i.test(text);
+
+  let targetMinutes = 30;
+  const timeMatch = text.match(/(\d+)\s*นาที/i);
+  if (timeMatch) {
+    targetMinutes = parseInt(timeMatch[1], 10);
+  }
+
+  const bmi = Number(profile?.bmi || 0);
+  const age = Number(profile?.age || 0);
+  const autoLowImpact = hasKneePain || bmi >= 28 || age >= 55;
+
+  if (!trainingDays) {
+    if (isBeginner) trainingDays = 3;
+    else if (isFatLoss) trainingDays = 4;
+    else if (isMuscle) trainingDays = 5;
+    else trainingDays = 4;
+  }
+
+  return {
+    rawPrompt: prompt,
+    trainingDays,
+    specificDays,
+    hasKneePain,
+    hasBackPain,
+    hasWristPain,
+    autoLowImpact,
+    isBeginner,
+    isAdvanced,
+    isFatLoss,
+    isMuscle,
+    isTone,
+    isMobility,
+    targets: {
+      chest: targetChest,
+      arm: targetArm,
+      back: targetBack,
+      shoulder: targetShoulder,
+      lower: targetLower,
+      core: targetCore,
+      fullBody: targetFullBody,
+    },
+    hasDumbbell,
+    isBodyweightOnly,
+    targetMinutes,
+    bmi,
+    age,
+  };
+}
+
+async function customizeWeeklyPlan({ prompt, profile = {}, exercises = [], currentPlan = [] }) {
+  const reqs = parseUserPlanRequirements(prompt, profile);
+  const {
+    trainingDays,
+    specificDays,
+    autoLowImpact,
+    hasKneePain,
+    hasBackPain,
+    isBeginner,
+    isMuscle,
+    isFatLoss,
+    targets,
+    hasDumbbell,
+    isBodyweightOnly,
+    targetMinutes,
+  } = reqs;
+
+  const validDbNames = new Set(exercises.map((e) => e.name).filter(Boolean));
+
+  let activeDayKeys = [];
+  if (specificDays && specificDays.length > 0) {
+    activeDayKeys = DAYS_OF_WEEK_SCHEDULE.map((d) => d.key).filter((k) => specificDays.includes(k));
+  } else {
+    switch (trainingDays) {
+      case 1: activeDayKeys = ["wednesday"]; break;
+      case 2: activeDayKeys = ["tuesday", "friday"]; break;
+      case 3: activeDayKeys = ["monday", "wednesday", "friday"]; break;
+      case 4: activeDayKeys = ["monday", "tuesday", "thursday", "friday"]; break;
+      case 5: activeDayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday"]; break;
+      case 6: activeDayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]; break;
+      case 7: activeDayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]; break;
+      default: activeDayKeys = ["monday", "tuesday", "thursday", "friday"]; break;
+    }
+  }
+
+  const focusPlans = [];
+  if (targets.chest || targets.arm) {
+    focusPlans.push({ focus: "อกและไหล่ (Upper Push)", category: "upper_push" });
+    focusPlans.push({ focus: "หลังและแขน (Upper Pull)", category: "upper_pull" });
+    focusPlans.push({ focus: "ช่วงล่างและสะโพก (Lower Body)", category: "lower" });
+    focusPlans.push({ focus: "แขนและหน้าท้อง (Arm & Core)", category: "arm" });
+    focusPlans.push({ focus: "ทั่วร่างกายเผาผลาญ (Full Body)", category: "full" });
+    focusPlans.push({ focus: "แกนกลางและความทนทาน (Core & Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ฟื้นฟูและยืดเหยียด (Active Recovery)", category: "mobility" });
+  } else if (targets.lower) {
+    focusPlans.push({ focus: "ต้นขาและสะโพก (Legs & Glutes)", category: "lower" });
+    focusPlans.push({ focus: "แกนกลางและหน้าท้อง (Core & Abs)", category: "core" });
+    focusPlans.push({ focus: "ช่วงบนและแขน (Upper Body)", category: "upper_push" });
+    focusPlans.push({ focus: "ช่วงล่างและน่อง (Lower Power)", category: "lower" });
+    focusPlans.push({ focus: "คาร์ดิโอเผาผลาญ (Fat Burn Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกาย (Full Body)", category: "full" });
+    focusPlans.push({ focus: "ฟื้นฟูและยืดเหยียด (Mobility)", category: "mobility" });
+  } else if (targets.core) {
+    focusPlans.push({ focus: "แกนกลางและหน้าท้อง (Core & Six-pack)", category: "core" });
+    focusPlans.push({ focus: "ช่วงบนและอก (Upper Push)", category: "upper_push" });
+    focusPlans.push({ focus: "ช่วงล่างและขา (Lower Body)", category: "lower" });
+    focusPlans.push({ focus: "เอวและหน้าท้องส่วนลึก (Deep Core)", category: "core" });
+    focusPlans.push({ focus: "คาร์ดิโอเผาผลาญพุง (Fat Burn Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกาย (Full Body)", category: "full" });
+    focusPlans.push({ focus: "ฟื้นฟูกล้ามเนื้อ (Mobility)", category: "mobility" });
+  } else if (isFatLoss) {
+    focusPlans.push({ focus: "คาร์ดิโอและช่วงล่าง (Cardio & Lower Burn)", category: "cardio" });
+    focusPlans.push({ focus: "ช่วงบนและแกนกลางลำตัว (Upper & Core)", category: "upper_push" });
+    focusPlans.push({ focus: "คาร์ดิโอความทนทาน (Endurance Burn)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกายสลายไขมัน (Full Body Circuit)", category: "full" });
+    focusPlans.push({ focus: "แกนกลางและหน้าท้อง (Core Burn)", category: "core" });
+    focusPlans.push({ focus: "คาร์ดิโอเบิร์นต่อเนื่อง (HIIT Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ยืดเหยียดและฟื้นฟู (Active Recovery)", category: "mobility" });
+  } else if (isMuscle) {
+    focusPlans.push({ focus: "กล้ามเนื้ออกและไหล่ (Chest & Shoulders)", category: "upper_push" });
+    focusPlans.push({ focus: "กล้ามเนื้อหลังและแขน (Back & Arms)", category: "upper_pull" });
+    focusPlans.push({ focus: "กล้ามเนื้อขาและสะโพก (Quads & Glutes)", category: "lower" });
+    focusPlans.push({ focus: "ไหล่และแกนกลางลำตัว (Shoulders & Core)", category: "upper_push" });
+    focusPlans.push({ focus: "ทั่วร่างกายสร้างพลัง (Full Body Power)", category: "full" });
+    focusPlans.push({ focus: "แขนและหน้าท้อง (Arms & Abs)", category: "arm" });
+    focusPlans.push({ focus: "ยืดเหยียดกล้ามเนื้อ (Mobility)", category: "mobility" });
+  } else {
+    focusPlans.push({ focus: "กล้ามเนื้อช่วงล่าง (Lower Body)", category: "lower" });
+    focusPlans.push({ focus: "กล้ามเนื้อช่วงบน (Upper Body)", category: "upper_push" });
+    focusPlans.push({ focus: "แกนกลางลำตัว (Core & Abs)", category: "core" });
+    focusPlans.push({ focus: "คาร์ดิโอและความทนทาน (Cardio)", category: "cardio" });
+    focusPlans.push({ focus: "ทั่วร่างกาย (Full Body)", category: "full" });
+    focusPlans.push({ focus: "ฟื้นฟูและยืดเหยียด (Mobility)", category: "mobility" });
+    focusPlans.push({ focus: "แอโรบิกและฟื้นฟู (Active Recovery)", category: "cardio" });
+  }
+
+  const isRestrictedImpact = autoLowImpact || hasKneePain;
+
+  function filterSafeExercises(list) {
+    let res = [...list];
+    if (isRestrictedImpact) {
+      res = res.filter((name) => !HIGH_IMPACT_EXERCISES_LIST.includes(name));
+      if (res.length < 3) {
+        res = [...res, ...KNEE_SAFE_EXERCISES_LIST.filter((e) => !res.includes(e))];
+      }
+    }
+    if (hasBackPain) {
+      res = res.filter((name) => !["Good Morning", "Deadlift", "Burpee"].includes(name));
+    }
+    if (hasDumbbell) {
+      res.sort((a, b) => (DUMBBELL_EXERCISES_LIST.includes(b) ? 1 : 0) - (DUMBBELL_EXERCISES_LIST.includes(a) ? 1 : 0));
+    } else if (isBodyweightOnly) {
+      res = res.filter((name) => !DUMBBELL_EXERCISES_LIST.includes(name));
+    }
+    const existing = res.filter((name) => validDbNames.has(name));
+    return existing.length >= 3 ? existing : res;
+  }
+
+  const categoryExerciseMap = {
+    lower: filterSafeExercises([
+      "Chair Squat", "Glute Bridge", "Squat", "Lunges", "Bulgarian Split Squat",
+      "Calf Raise", "Sumo Squat", "Hip Thrust", "Donkey Kick", "Step Up",
+      "Leg Press", "Standing Calf Raise", "Romanian Deadlift"
+    ]),
+    upper_push: filterSafeExercises([
+      "Push Up", "Chest Fly", "Shoulder Press", "Wall Push Up", "Incline Push-up",
+      "Lateral Raise", "Arnold Press", "Decline Push-up", "Diamond Push-up"
+    ]),
+    upper_pull: filterSafeExercises([
+      "Seated Row", "Bodyweight Row", "Superman", "Reverse Fly", "Lat Pulldown",
+      "Inverted Row", "Pull-up", "Biceps Curl", "Upright Row"
+    ]),
+    arm: filterSafeExercises([
+      "Biceps Curl", "Hammer Curl", "Concentration Curl", "Triceps Dip",
+      "Overhead Triceps Extension", "Triceps Kickback", "Arm Circles",
+      "Wall Push Up", "Dumbbell Skull Crusher"
+    ]),
+    core: filterSafeExercises([
+      "Plank", "Bird Dog", "Dead Bug", "Glute Bridge", "Side Plank",
+      "Crunch", "Bicycle Crunch", "Russian Twist", "Leg Raise", "Reverse Crunch"
+    ]),
+    cardio: filterSafeExercises(
+      isRestrictedImpact
+        ? ["March In Place", "Stationary Bike", "Walking", "Step Up", "Elliptical", "Chair Squat"]
+        : ["Jumping Jack", "High Knees", "Burpee", "March In Place", "Squat Jump", "Skater", "Jump Rope", "Stationary Bike"]
+    ),
+    full: filterSafeExercises([
+      "Squat", "Push Up", "Glute Bridge", "Plank", "Lunges", "Bird Dog",
+      "Chair Squat", "Wall Push Up", "March In Place"
+    ]),
+    mobility: filterSafeExercises([
+      "Cat Cow", "Arm Circles", "Bird Dog", "Dead Bug", "Glute Bridge"
+    ]),
+  };
+
+  const usedPrimaryNames = new Set();
+  let activeIndex = 0;
+
+  const plan = DAYS_OF_WEEK_SCHEDULE.map((day, dayIndex) => {
+    const isActive = activeDayKeys.includes(day.key);
+
+    if (!isActive) {
+      return {
+        key: day.key,
+        label: day.label,
+        focus: "พักผ่อนและฟื้นฟู",
+        exerciseName: "Rest",
+        exercises: [],
+        sets: "",
+        repetitions: "พักผ่อน / ยืดเหยียดเบา ๆ",
+        reason: isRestrictedImpact
+          ? "วันพักฟื้นฟูข้อต่อและกล้ามเนื้อตามหลักวิทยาศาสตร์การกีฬาเพื่อป้องกันการบาดเจ็บ"
+          : "วันพักผ่อนเพื่อให้เส้นใยกล้ามเนื้อซ่อมแซมและเติบโตอย่างเต็มที่",
+        dayIndex,
+        isRest: true,
+      };
+    }
+
+    const planConfig = focusPlans[activeIndex % focusPlans.length];
+    activeIndex++;
+
+    const pool = categoryExerciseMap[planConfig.category] || categoryExerciseMap.lower;
+    const exerciseCount = targetMinutes <= 20 ? 3 : targetMinutes <= 35 ? 4 : 5;
+
+    let primaryName = pool.find((name) => !usedPrimaryNames.has(name)) || pool[0] || "Squat";
+    usedPrimaryNames.add(primaryName);
+
+    const remainingInPool = pool.filter((name) => name !== primaryName);
+    const selectedExerciseNames = [primaryName, ...remainingInPool.slice(0, exerciseCount - 1)];
+
+    const defaultSets = isBeginner ? 2 : isMuscle ? (targets.chest || targets.arm ? 4 : 3) : 3;
+    const defaultReps =
+      planConfig.category === "cardio"
+        ? isRestrictedImpact ? "30–45 วินาที" : "45–60 วินาที"
+        : planConfig.category === "mobility"
+        ? "8–10 นาที"
+        : isMuscle
+        ? "8–10 ครั้ง"
+        : isFatLoss
+        ? "12–15 ครั้ง"
+        : "10–12 ครั้ง";
+
+    const dailyExercises = selectedExerciseNames.map((name) => {
+      const isTimeBased = /(Plank|Dead Bug|Bird Dog|March In Place|Cat Cow|Stationary Bike)/i.test(name);
+      return {
+        name,
+        sets: defaultSets,
+        repetitions: isTimeBased ? "30–45 วินาที" : defaultReps,
+      };
+    });
+
+    let reason = `AI คำนวณตารางเน้นกลุ่ม ${planConfig.focus}`;
+    if (isRestrictedImpact) {
+      reason += " โดยคัดกรองเฉพาะท่าที่ปลอดภัยต่อข้อเข่า (Low Impact)";
+    }
+    if (hasDumbbell) {
+      reason += " พร้อมเพิ่มท่าฝึกด้วยดัมเบล";
+    }
+
+    return {
+      key: day.key,
+      label: day.label,
+      focus: planConfig.focus,
+      exerciseName: primaryName,
+      exercises: dailyExercises,
+      sets: defaultSets,
+      repetitions: dailyExercises[0]?.repetitions || defaultReps,
+      reason,
+      dayIndex,
+      isRest: false,
+    };
+  });
+
+  const workoutDaysCount = activeDayKeys.length;
+  const restDaysCount = 7 - workoutDaysCount;
+
+  const badges = [
+    `ฝึก ${workoutDaysCount} วัน / สัปดาห์`,
+    `พัก ${restDaysCount} วัน ฟื้นฟูกล้ามเนื้อ`,
+  ];
+  if (isRestrictedImpact) badges.push("เซฟข้อเข่า (Low Impact)");
+  if (isFatLoss) badges.push("เป้าหมาย: เผาผลาญไขมัน");
+  if (isMuscle) badges.push("เป้าหมาย: สร้างกล้ามเนื้อ");
+  if (hasDumbbell) badges.push("อุปกรณ์: ดัมเบล");
+  if (isBeginner) badges.push("ระดับ: เริ่มต้น (ปลอดภัย)");
+  badges.push(`เวลา: ${targetMinutes} นาที / วัน`);
+
+  const activeDayNamesThai = activeDayKeys.map((k) => DAYS_OF_WEEK_SCHEDULE.find((d) => d.key === k)?.label).join(", ");
+  const summary = `${isFatLoss ? "แผนลดไขมัน" : isMuscle ? "แผนสร้างกล้ามเนื้อ" : "แผนออกกำลังกายเฉพาะบุคคล"} ${workoutDaysCount} วัน ${isRestrictedImpact ? "(Low Impact เซฟข้อเข่า)" : ""}`;
+
+  const strategy = `AI คำนวณและจัดตารางสัปดาห์นี้ตามความต้องการของคุณเรียบร้อยแล้วครับ: จัดโปรแกรมฝึก ${workoutDaysCount} วัน (${activeDayNamesThai}) สลับวันพัก ${restDaysCount} วัน ${isRestrictedImpact ? "โดยคัดกรองท่ากระโดดและแรงกระแทกออกทั้งหมดเพื่อความปลอดภัยสูงสุดของข้อเข่า " : ""}${hasDumbbell ? "พร้อมเสริมท่าดัมเบลตามที่ต้องการ " : ""}คุมระดับความหนักและเวลาฝึก ${targetMinutes} นาทีต่อวัน`;
+
+  // Format rich chat message with week breakdown
+  const dayBreakdown = plan.map((day) => {
+    if (day.isRest) {
+      return `• **${day.label}**: พักผ่อนและฟื้นฟูร่างกาย`;
+    }
+    const exList = day.exercises.map((e) => `${e.name} (${e.sets} เซ็ต · ${e.repetitions})`).join(", ");
+    return `• **${day.label}** (${day.focus}): ${exList}`;
+  }).join("\n");
+
+  const chatMessageRaw = `FitAI จัดตารางออกกำลังกายทั้งสัปดาห์ให้คุณใหม่ตามความต้องการเรียบร้อยแล้วครับ!\n\n**กลยุทธ์การฝึก:** ${strategy}\n\n**ตารางการฝึกประจำสัปดาห์ (7 วัน):**\n${dayBreakdown}\n\nตารางในระบบได้รับการอัปเดตเรียบร้อยแล้วครับ สามารถเริ่มฝึกได้ทันที!`;
+  const chatMessage = await enrichResponseWithVideos(chatMessageRaw);
+
+  return {
+    plan,
+    summary,
+    strategy,
+    trainingDaysCount: workoutDaysCount,
+    restDaysCount,
+    badges,
+    chatMessage,
+  };
+}
+
+
 async function suggestPlanAdjustment({ profile, exercises = [], plan = [], message, todayKey, lastAssistantMessage = "" }) {
+    const lowerMessage = String(message || "").toLowerCase();
+
+    // Guard: Self-introduction / Capabilities query must not adjust plan
+    const isSelfIntroOrCapabilities = /(แนะนำตัว|คุณคือใคร|คุณเป็นใคร|ช่วยอะไรได้บ้าง|ทำอะไรได้บ้าง|ฟังก์ชันเด่น|ฟังก์ชันของ|ความสามารถ|ระบบทำอะไร|แนะนำ.*fitai|fitai.*คืออะไร|มีฟังก์ชันอะไร|แนะนำระบบ|ฟังก์ชัน.*มีอะไร)/i.test(lowerMessage);
+    if (isSelfIntroOrCapabilities) {
+        return { plan, changed: false, message: "" };
+    }
+
+    // Check if user requested a whole-week plan adjustment or customization
+    const isWholeWeek = /(ทั้งสัปดาห์|ทั้งอาทิตย์|ตลอดสัปดาห์|ตารางสัปดาห์|ปรับแผนทั้ง|จัดตารางทั้ง|จัดตารางใหม่|ปรับตารางใหม่|แผนใหม่ทั้ง|ตารางใหม่|\d+\s*วันต่อสัปดาห์|\d+\s*วันต่ออาทิตย์|เล่น\s*\d+\s*วัน|พัก\s*\d+\s*วัน|เฉพาะวันหยุด)/i.test(lowerMessage);
+    if (isWholeWeek) {
+        const customized = await customizeWeeklyPlan({ prompt: message, profile, exercises, currentPlan: plan });
+        return {
+            plan: sanitizePlan(customized.plan),
+            changed: true,
+            message: customized.chatMessage,
+            summary: customized.summary,
+            strategy: customized.strategy,
+            badges: customized.badges,
+        };
+    }
     const targetIndex = Math.max(0, plan.findIndex((day) => day.key === todayKey));
     const current = plan[targetIndex] || { key: todayKey, focus: "ช่วงล่าง", exercises: [] };
     const allowed = exercises.map((exercise) => exercise.name).filter(Boolean);
-    const lowerMessage = String(message || "").toLowerCase();
 
         // Check anaphoric references from previous assistant recommendation
     const isAnaphoric = /(ท่านี้|ท่าเหล่านี้|ท่าพวกนี้|ตามนี้|ที่แนะนำ|ที่บอก|ท่านั้น|ท่าข้างบน|เอาท่านี้|นำท่านี้|ใช้ท่านี้|จัดตามนี้|อัปเดตตามนี้|ใส่ตารางของวันนี้|ใช้ในตาราง|ใส่ตาราง|นำมาใช้ในตาราง|นำไปใช้ในตาราง|เพิ่มในตาราง|ลงตาราง)/i.test(lowerMessage);
@@ -1287,6 +1901,7 @@ function generateWeeklyPlan({ profile, exercises = [] }) {
 }
 
 module.exports = {
+    customizeWeeklyPlan,
     generateAIResponse,
     generateFallbackResponse,
     generateWeeklyPlan,

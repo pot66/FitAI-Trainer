@@ -3,16 +3,14 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
-
-import {
-  AuthProvider,
-} from "./contexts/AuthProvider";
-
+import { AuthProvider } from "./contexts/AuthProvider";
+import { initSecurityGuard } from "./utils/securityGuard";
 import "./index.css";
 
-ReactDOM.createRoot(
-  document.getElementById("root")
-).render(
+// Initialize Production Client Security & Anti-Inspection Guard (F12, DevTools, View Source Blocker)
+initSecurityGuard();
+
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>

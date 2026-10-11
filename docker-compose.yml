@@ -7,10 +7,10 @@ services:
     command:
       - --lower_case_table_names=1
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fitai_trainer}
+      MYSQL_USER: ${MYSQL_USER:-fitai}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-fitai_password}
     ports:
       - "127.0.0.1:3307:3306"
     volumes:
@@ -62,6 +62,65 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: fitai-backend:latest
+    container_name: fitai-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - HOST=0.0.0.0
+      - IS_DOCKER=true
+      - DATABASE_URL=mysql://${MYSQL_USER:-fitai}:${MYSQL_PASSWORD:-fitai_password}@mysql:3306/${MYSQL_DATABASE:-fitai_trainer}
+      - JWT_SECRET=${JWT_SECRET:-fitai_trainer_production_secret_key_change_me}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - AI_SERVICE_URL=http://ai-service:8000
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_ENABLED=${OLLAMA_ENABLED:-true}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:80,http://127.0.0.1}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-FitAI Trainer <rphiphathnl@gmail.com>}
+      - SMTP_SERVICE=${SMTP_SERVICE:-gmail}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_SECURE=${SMTP_SECURE:-true}
+      - SMTP_USER=${SMTP_USER:-rphiphathnl@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-knaccxknvcsnweyd}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: fitai-frontend:latest
+    container_name: fitai-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   mysql_data:

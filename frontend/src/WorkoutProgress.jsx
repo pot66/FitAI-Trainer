@@ -148,7 +148,7 @@ function WorkoutProgress({ onBack }) {
     <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex flex-col font-sans">
       {/* Header */}
       <header className="border-b border-[#9bb0c4] bg-[#abbed2] sticky top-0 z-20 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={onBack}
@@ -157,9 +157,8 @@ function WorkoutProgress({ onBack }) {
             <span>←</span>
             <span>กลับ</span>
           </button>
-          <span className="text-sm font-bold text-[#1e293b] tracking-wide">Workout Progress</span>
-          <span className="px-3 py-1 bg-white/50 border border-white/60 rounded-full text-xs font-semibold text-[#1e293b] shadow-sm">
-            AI Analytics
+          <span className="text-sm font-bold text-[#1e293b] tracking-wide">ประวัติการออกกำลังกาย</span>
+          <span className="hidden sm:inline-block px-3 py-1 bg-white/50 border border-white/60 rounded-full text-xs font-semibold text-[#1e293b] shadow-sm">AI Analytics
           </span>
         </div>
       </header>
@@ -171,7 +170,7 @@ function WorkoutProgress({ onBack }) {
           </div>
           <h1 className="text-3xl font-extrabold text-[#1e293b] tracking-tight flex items-center gap-2">
             <span>📈</span>
-            <span>Workout Progress</span>
+            <span>ประวัติการออกกำลังกาย</span>
           </h1>
           <p className="text-sm text-[#475569] mt-1">
             สถิติการออกกำลังกายและพัฒนาการของคุณ
@@ -277,7 +276,7 @@ function WorkoutProgress({ onBack }) {
           <div>
             <h2 className="text-base font-bold text-[#1e293b] flex items-center gap-2">
               <span>🏋️‍♂️</span>
-              <span>ประวัติการฝึกซ้อมล่าสุด</span>
+              <span>ประวัติการออกกำลังกายล่าสุด</span>
             </h2>
             <p className="text-xs text-[#64748b] mt-0.5">รายการเซสชันการออกกำลังกายที่เสร็จสิ้น</p>
           </div>

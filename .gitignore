@@ -61,3 +61,11 @@ malong/
 # Ignore all Markdown files
 *.md
 **/*.md
+
+# Cache & DB
+*.db
+fitai_trainer/
+*.nmodel
+
+# Allow README.md
+!README.md

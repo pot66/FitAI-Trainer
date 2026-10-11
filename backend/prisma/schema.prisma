@@ -178,3 +178,17 @@ model FoodItem {
   @@index([foodLogId])
   @@map("fooditem")
 }
+
+
+model OtpVerification {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  purpose   String   // REGISTER, FORGOT_PASSWORD, CHANGE_PASSWORD
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, purpose])
+  @@map("otpverification")
+}

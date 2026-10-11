@@ -1,5 +1,5 @@
 const prisma = require('../services/prisma');
-const { generateWeeklyPlan, suggestPlanAdjustment } = require('../services/aiService');
+const { generateWeeklyPlan, suggestPlanAdjustment, customizeWeeklyPlan: customizeWeeklyPlanService } = require('../services/aiService');
 const { aiConfig } = require('../config');
 
 async function createWeeklyPlan(req, res) {
@@ -60,4 +60,30 @@ async function adjustWeeklyPlan(req, res) {
   }
 }
 
-module.exports = { createWeeklyPlan, detectExercise, adjustWeeklyPlan };
+
+async function customizeWeeklyPlan(req, res) {
+  try {
+    const { prompt, currentPlan } = req.body || {};
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+      return res.status(400).json({ success: false, message: 'กรุณาระบุความต้องการของคุณสำหรับตารางสัปดาห์' });
+    }
+    const userId = req.user.userId;
+    const [profile, exercises] = await Promise.all([
+      prisma.profile.findUnique({ where: { userId } }),
+      prisma.exercise.findMany({ orderBy: { id: 'asc' } }),
+    ]);
+    const result = await customizeWeeklyPlanService({
+      prompt: prompt.trim(),
+      profile: profile || {},
+      exercises,
+      currentPlan: currentPlan || [],
+      user: { id: userId },
+    });
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('AI customize weekly plan error:', error);
+    return res.status(500).json({ success: false, message: 'ไม่สามารถปรับแต่งแผนออกกำลังกายด้วย AI ได้' });
+  }
+}
+
+module.exports = { createWeeklyPlan, detectExercise, adjustWeeklyPlan, customizeWeeklyPlan };

@@ -60,8 +60,8 @@ function Onboarding({ onComplete }) {
       console.error("Onboarding Error:", err);
       setError(
         err.response?.data?.message ||
-          err.message ||
-          "บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
+        err.message ||
+        "บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
       );
     } finally {
       setSaving(false);
@@ -69,10 +69,10 @@ function Onboarding({ onComplete }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#edf1f4] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#edf1f4] flex items-center justify-center p-3 sm:p-4">
       {/* Outer Shell Card */}
-      <div className="w-full max-w-[350px] sm:max-w-[370px] bg-[#abbed2] rounded-[32px] pt-6 pb-4 px-3.5 shadow-2xl flex flex-col items-center relative border border-white/20">
-        
+      <div className="w-full max-w-[350px] sm:max-w-[370px] bg-[#abbed2] rounded-[28px] sm:rounded-[32px] pt-6 pb-4 px-3 sm:px-3.5 shadow-2xl flex flex-col items-center relative border border-white/20">
+
         {/* Top Header Section */}
         <div className="text-[11px] font-bold tracking-[0.2em] text-[#1d6092] uppercase mb-1">
           AI TRAINER
@@ -82,7 +82,7 @@ function Onboarding({ onComplete }) {
           เริ่มต้นให้ AI รู้จักคุณ
         </h1>
 
-        <p className="text-xs text-[#475569] text-center max-w-[270px] leading-relaxed mb-3.5">
+        <p className="text-xs text-[#475569] text-center max-w-[270px] w-full leading-relaxed mb-3.5">
           ข้อมูลนี้ช่วยให้ FitAI แนะนำการออกกำลังกายได้เหมาะกับคุณมากขึ้น
         </p>
 
@@ -96,7 +96,7 @@ function Onboarding({ onComplete }) {
         </div>
 
         {/* Inner White Form Card */}
-        <div className="w-full bg-white rounded-[26px] p-5 shadow-sm flex flex-col gap-3">
+        <div className="w-full bg-white rounded-[22px] sm:rounded-[26px] p-4 sm:p-5 shadow-sm flex flex-col gap-3">
           <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
             {/* ชื่อ */}
             <div className="flex flex-col">
@@ -131,8 +131,6 @@ function Onboarding({ onComplete }) {
                 <option value="" disabled className="text-slate-400">เลือกเพศ</option>
                 <option value="male">ชาย</option>
                 <option value="female">หญิง</option>
-                <option value="non_binary">หลากหลายทางเพศ</option>
-                <option value="prefer_not_to_say">ไม่ต้องการระบุ</option>
               </select>
             </div>
 

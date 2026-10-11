@@ -313,7 +313,7 @@ export default function FoodTracker({ onBack }) {
   return (
     <div className="min-h-screen bg-[#edf1f4] text-[#1e293b] flex flex-col font-sans">
       <header className="sticky top-0 z-30 bg-[#abbed2] border-b border-[#9bb0c4] px-4 py-3 shadow-sm">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -326,7 +326,7 @@ export default function FoodTracker({ onBack }) {
             </button>
             <div>
               <h1 className="text-base sm:text-lg font-bold text-[#1e293b] flex items-center gap-2">
-                <span>AI Food Tracker</span>
+                <span>คำนวณแคลอรี</span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/70 text-[#1e293b] border border-white/80 shadow-sm">
                   Calorie & Nutrition
                 </span>
@@ -468,20 +468,20 @@ export default function FoodTracker({ onBack }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/80 text-center">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-3 p-2.5 sm:p-4 rounded-2xl bg-[#f8fafc] border border-slate-200/80 text-center">
                 <div>
                   <span className="text-xs text-[#64748b] font-medium">รับประทานแล้ว</span>
-                  <p className="text-xl sm:text-2xl font-black text-[#3b99e2] mt-1">{consumed}</p>
+                  <p className="text-base sm:text-2xl font-black text-[#3b99e2] mt-0.5 sm:mt-1 truncate">{consumed}</p>
                   <span className="text-[11px] text-[#64748b]">kcal</span>
                 </div>
                 <div className="border-x border-slate-200">
                   <span className="text-xs text-[#64748b] font-medium">เป้าหมายประจำวัน</span>
-                  <p className="text-xl sm:text-2xl font-black text-[#1e293b] mt-1">{target}</p>
+                  <p className="text-base sm:text-2xl font-black text-[#1e293b] mt-0.5 sm:mt-1 truncate">{target}</p>
                   <span className="text-[11px] text-[#64748b]">kcal</span>
                 </div>
                 <div>
                   <span className="text-xs text-[#64748b] font-medium">คงเหลือ</span>
-                  <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{remaining}</p>
+                  <p className="text-base sm:text-2xl font-black text-emerald-600 mt-0.5 sm:mt-1 truncate">{remaining}</p>
                   <span className="text-[11px] text-[#64748b]">kcal</span>
                 </div>
               </div>

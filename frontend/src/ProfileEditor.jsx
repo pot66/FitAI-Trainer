@@ -1,4 +1,3 @@
-import { stopSpeech } from "./utils/speechUtils";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "./services/api";
@@ -15,16 +14,7 @@ function ProfileEditor({ onBack }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [aiVoiceEnabled, setAiVoiceEnabled] = useState(
-    () => localStorage.getItem("fitai-ai-voice-enabled") !== "false"
-  );
-
-  const toggleAiVoice = () => {
-    const next = !aiVoiceEnabled;
-    setAiVoiceEnabled(next);
-    localStorage.setItem("fitai-ai-voice-enabled", String(next));
-    if (!next) stopSpeech();
-  };
+  
 
   const handleBack = () => {
     if (onBack) {
@@ -146,7 +136,7 @@ function ProfileEditor({ onBack }) {
             <span>←</span>
             <span>กลับ</span>
           </button>
-          <span className="text-sm font-bold text-[#1e293b] tracking-wide">My Profile</span>
+          <span className="text-sm font-bold text-[#1e293b] tracking-wide">Profile</span>
           <span className="px-3 py-1 bg-white/50 border border-white/60 rounded-full text-xs font-semibold text-[#1e293b] shadow-sm">
             AI Profile
           </span>
@@ -161,7 +151,7 @@ function ProfileEditor({ onBack }) {
           </div>
           <h1 className="text-3xl font-extrabold text-[#1e293b] tracking-tight flex items-center gap-2">
             <span>👤</span>
-            <span>My Profile</span>
+            <span>Profile</span>
           </h1>
           <p className="text-sm text-[#475569] mt-1">
             ข้อมูลส่วนตัวและการคำนวณดัชนีมวลกายสำหรับวิเคราะห์การออกกำลังกาย
@@ -290,7 +280,7 @@ function ProfileEditor({ onBack }) {
             </div>
 
             {/* Scale Legend */}
-            <div className="grid grid-cols-4 gap-1.5 text-center text-[11px]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center text-[11px]">
               <div className="p-2 rounded-xl bg-[#f8fafc] border border-slate-200">
                 <span className="block font-bold text-sky-600">&lt;18.5</span>
                 <span className="text-[#64748b]">ผอม</span>
@@ -315,27 +305,7 @@ function ProfileEditor({ onBack }) {
           </section>
         </div>
 
-        {/* AI Voice Toggle Card */}
-        <section className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex items-center justify-between gap-4">
-          <div>
-            <div className="text-xs font-bold text-[#3b99e2] uppercase tracking-wider mb-1">การตั้งค่า</div>
-            <h2 className="text-base font-bold text-[#1e293b]">เปิด/ปิด เสียง AI (Text-to-Speech)</h2>
-            <p className="text-xs text-[#64748b] mt-0.5">
-              เมื่อเปิดใช้งาน FitAI จะอ่านออกเสียงคำแนะนำในห้องแชทและช่วงออกกำลังกายให้อัตโนมัติ
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={aiVoiceEnabled}
-            onClick={toggleAiVoice}
-            className={`w-14 h-8 rounded-full p-1 transition-colors cursor-pointer flex items-center shrink-0 ${
-              aiVoiceEnabled ? "bg-[#3b99e2] justify-end" : "bg-slate-300 justify-start"
-            }`}
-          >
-            <span className="w-6 h-6 rounded-full bg-white shadow-md transform transition-transform" />
-          </button>
-        </section>
+        
       </main>
     </div>
   );

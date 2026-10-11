@@ -10,12 +10,9 @@ import {
   isExerciseCompletedToday,
 } from "./utils/workoutCompletionUtils";
 import {
-  IconCube,
   IconDumbbell,
-  IconFlame,
   IconTrophy,
   IconTarget,
-  IconCheck,
   IconAlert,
   IconCamera,
   IconScreen,
@@ -26,8 +23,6 @@ import {
   IconSave,
   IconVolumeOn,
   IconVolumeOff,
-  IconBot,
-  IconThinking,
   IconMic,
   IconClose,
   renderEncouragementIcon
@@ -36,8 +31,7 @@ import {
   speakText,
   stopSpeech,
   speakAnimeMentorCue,
-  ANIME_MENTOR_PHRASES,
-  ANIME_MENTOR_VOICE_CONFIG
+  ANIME_MENTOR_PHRASES
 } from "./utils/speechUtils";
 
 function Workout({ onBack }) {
@@ -823,8 +817,6 @@ function Workout({ onBack }) {
   }
 
   const currentReps = aiResult?.reps ?? 0;
-  const targetRepsMatch = String(activePlan?.repetitions || "10-12").match(/\d+/);
-  const targetReps = targetRepsMatch ? Number(targetRepsMatch[0]) : 12;
   const estimatedCalories = Math.round(currentReps * 0.45 + (duration / 60) * 3.8);
 
   // การวิเคราะห์เป้าหมายสำหรับ Real-time HUD และ Modal สรุปผล

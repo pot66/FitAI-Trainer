@@ -3,7 +3,6 @@ const { analyzeFoodImage } = require("../services/foodAiService");
 const {
   calculateTotalNutrition,
   getNutrition,
-  searchFoodDatabase,
   searchFoodsWithSuggestions,
   findSimilarFoodEntries,
 } = require("../services/nutritionService");

@@ -7,7 +7,7 @@
 // Analyze Angle
 // ============================================
 
-function analyzeAngle(
+export function analyzeAngle(
   angle,
   min,
   max

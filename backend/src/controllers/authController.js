@@ -4,9 +4,7 @@ const prisma = require("../services/prisma");
 const crypto = require("crypto");
 const { appConfig } = require("../config");
 
-const {
-  sendVerificationEmail,
-} = require("../services/emailService");
+// Email delivery handled via otpService
 
 const {
   createAndSendOtp,

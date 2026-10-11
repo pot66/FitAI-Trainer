@@ -24,16 +24,13 @@ import {
   Search,
   Flame,
   Sparkles,
-  CheckCircle2,
   AlertCircle,
   Upload,
   X,
-  RefreshCw,
   ChevronDown,
   Calendar,
   Play,
   MessageSquare,
-  Menu,
 } from "lucide-react";
 
 import api from "./services/api";
@@ -53,7 +50,7 @@ import {
   isExerciseCompletedToday,
   toggleExerciseCompletedToday,
 } from "./utils/workoutCompletionUtils";
-import { speakText, stopSpeech, isSpeakingNow } from "./utils/speechUtils";
+import { speakText, stopSpeech } from "./utils/speechUtils";
 
 function AIAssistant({
   user,

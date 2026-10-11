@@ -1,7 +1,5 @@
 #  FitAI Trainer — ขั้นตอนการติดตั้งและการรันระบบ (Installation & Getting Started)
 
-### ขั้นตอนที่ 1: ดาวน์โหลดโปรเจกต์และกำหนดค่า Environment Variables
-
  คัดลอกไฟล์ตัวแปรสภาพแวดล้อม `.env.example` ไปเป็น `.env`:
    ```bash
    cp .env.example .env

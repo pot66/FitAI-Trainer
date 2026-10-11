@@ -12,15 +12,6 @@
 docker compose up -d
 ```
 
-> **ตรวจสอบสถานะบริการที่เปิดใช้งาน:**
-> - **MySQL 8.4**: พร้อมใช้งานที่พอร์ต `3307` (ภายนอก) ➔ `3306` (ภายใน Container)
-> - **phpMyAdmin**: เปิดดูหน้าจัดการฐานข้อมูลได้ที่ `http://localhost:8081`  
->   *(Username: `fitai` | Password: `fitai_password`)*
-> - **AI Vision Microservice**: พร้อมให้บริการที่ `http://localhost:8000`  
->   *(ตรวจสอบสถานะ: `http://localhost:8000/health`)*
-
----
-
 
 เปิด Terminal แล้วเข้าไปที่โฟลเดอร์ `backend`:
 
@@ -73,17 +64,6 @@ npm run dev
  ตรวจสอบว่า Ollama กำลังทำงานอยู่ที่ `http://127.0.0.1:11434`
 
 ---
-
-##  สรุปรายการพอร์ตและบริการ (Service Port Mapping)
-
-| บริการ (Service) | URL / Port | รายละเอียดการทำงาน |
-| :--- | :--- | :--- |
-| **Frontend** | `http://localhost:5173` | หน้าเว็บแอปพลิเคชันหลัก (React 18 + Vite + TailwindCSS) |
-| **Backend API** | `http://localhost:5000` | REST API Server (Node.js + Express + Prisma ORM) |
-| **AI Vision Service** | `http://localhost:8000` | FastAPI Microservice ตรวจจับท่าทาง YOLO & จำแนกภาพอาหาร |
-| **phpMyAdmin** | `http://localhost:8081` | เครื่องมือจัดการฐานข้อมูลผ่านเว็บ GUI |
-| **MySQL Database** | `localhost:3307` | ฐานข้อมูลหลักของระบบ (MySQL 8.4) |
-| **Ollama (Optional)** | `http://localhost:11434` | บริการ Local LLM API |
 
 ---
 
